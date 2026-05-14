@@ -2,4 +2,4 @@
 
 ### https://sidecoin.app
 
-Desktop and Mobile wallet supporting eCash and Drivechains.
+Web, Mobile and Desktop wallets supporting eCash and its community of drivechains.

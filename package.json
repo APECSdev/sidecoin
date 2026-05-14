@@ -1,0 +1,20 @@
+{
+  "name": "sidecoin",
+  "version": "26.5.11",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@9.15.4",
+  "scripts": {
+    "dev:web": "pnpm --filter @sidecoin/web dev",
+    "dev:mobile": "pnpm --filter @sidecoin/mobile start",
+    "dev:desktop": "pnpm --filter @sidecoin/desktop dev",
+    "build:web": "pnpm --filter @sidecoin/web build",
+    "build:desktop": "pnpm --filter @sidecoin/desktop build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "type-check": "pnpm -r type-check"
+  }
+}
