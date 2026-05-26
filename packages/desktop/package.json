@@ -1,7 +1,8 @@
 {
-  "name": "sidecoin-desktop",
-  "description": "Desktop wallet supporting eCash and its community of drivechains.",
+  "name": "@sidecoin/desktop",
   "version": "26.5.11",
+  "description": "Sidecoin — Desktop wallet for the eCash Bitcoin hard fork with BIP-300/301 Drivechain support.",
+  "private": true,
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -22,11 +23,14 @@
     "wdio": "wdio run ./wdio.conf.ts"
   },
   "dependencies": {
+    "@sidecoin/shared": "workspace:*",
+
     "@heroicons/vue": "2.2.0",
     "@scure/base": "2.0.0",
     "@tauri-apps/plugin-opener": "2.5.0",
     "@tauri-apps/plugin-process": "2.3.0",
     "@tauri-apps/plugin-updater": "2.9.0",
+
     "bip39": "3.1.0",
     "crypto-js": "4.2.0",
     "marked": "17.0.2",

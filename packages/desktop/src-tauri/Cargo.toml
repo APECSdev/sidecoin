@@ -1,10 +1,10 @@
 # src-tauri/Cargo.toml
 
 [package]
-name = "sidecoin"
+name = "sidecoin-desktop"
 version = "26.5.11"
-description = "Desktop wallet supporting eCash and its community of drivechains."
-authors = ["APECS.dev"]
+description = "Sidecoin — Desktop wallet for the eCash Bitcoin hard fork with BIP-300/301 Drivechain support."
+authors = ["Sidecoin developers"]
 edition = "2021"
 build = "build.rs"
 default-run = "sidecoin"
@@ -25,7 +25,7 @@ tauri-plugin-shell = { version = "2.3.4" }
 tauri-plugin-store = { version = "2.4.2" }
 tauri-plugin-updater = { version = "2.4.0" }
 
-# DAPI / RPC
+# RPC / Electrum / Node Communication
 lazy_static = "1.4"
 lru_time_cache = "0.11"
 regex = "1.10"
@@ -35,7 +35,7 @@ tokio = { version = "1.47", features = ["full", "test-util"] }
 tower = { version = "0.5.3", features = ["limit", "load-shed", "util"] }
 tracing = "0.1"
 
-# Crypto
+# Crypto — Bitcoin / eCash primitives
 sha2 = "0.10"
 rand = "0.9.2"
 ripemd = "0.1"
@@ -45,7 +45,7 @@ bitcoin = "0.32.8"
 base64 = "0.22.1"
 hex = "0.4.3"
 
-# Debugging
+# Debugging / Telemetry
 sentry = "0.46.1"
 tauri-plugin-sentry = "0.5"
 

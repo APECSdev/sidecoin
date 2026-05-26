@@ -1,0 +1,21 @@
+{
+  "name": "@sidecoin/shared",
+  "version": "26.5.11",
+  "private": true,
+  "license": "MIT",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src/"
+  },
+  "dependencies": {
+    "bip39": "3.1.0",
+    "uuid": "13.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.8.3",
+    "vitest": "4.0.18"
+  }
+}
