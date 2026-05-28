@@ -1,0 +1,38 @@
+{
+  "name": "@sidecoin/webapp",
+  "version": "26.5.11",
+  "description": "Sidecoin — Browser-based wallet for the eCash Bitcoin hard fork with BIP-300/301 Drivechain support.",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "type-check": "vue-tsc --noEmit",
+    "lint": "eslint src/",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@sidecoin/shared": "workspace:*",
+
+    "pinia": "3.0.3",
+    "qrcode.vue": "3.6.0",
+    "vue": "3.5.22",
+    "vue-router": "4.5.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "6.0.1",
+    "@vitest/coverage-v8": "4.0.18",
+    "@vue/test-utils": "2.4.6",
+    "autoprefixer": "10.4.20",
+    "happy-dom": "20.0.11",
+    "tailwindcss": "3.4.17",
+    "typescript": "5.6.3",
+    "vite": "7.1.9",
+    "vite-tsconfig-paths": "6.0.5",
+    "vitest": "4.0.18",
+    "vue-tsc": "3.1.0"
+  }
+}
