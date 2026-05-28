@@ -1,6 +1,6 @@
 // packages/webapp/src/router/index.ts
 
-import { createRouter, createWebHistory } from "vue-router";
+import { createRouter, createWebHashHistory } from "vue-router";
 
 import DashboardView from "../views/DashboardView.vue";
 import SendView from "../views/SendView.vue";
@@ -9,7 +9,7 @@ import SidechainsView from "../views/SidechainsView.vue";
 import SettingsView from "../views/SettingsView.vue";
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: [
     { path: "/", name: "dashboard", component: DashboardView },
     { path: "/send", name: "send", component: SendView },
