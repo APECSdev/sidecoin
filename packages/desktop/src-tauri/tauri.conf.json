@@ -1,0 +1,53 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nicoverbruggen/tauri-v2-schema/refs/heads/main/src/tauri.conf.json",
+  "productName": "Sidecoin",
+  "version": "26.5.11",
+  "identifier": "com.ecash.sidecoin",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5173",
+    "beforeBuildCommand": "pnpm build",
+    "beforeDevCommand": "pnpm dev"
+  },
+  "app": {
+    "title": "Sidecoin — eCash Drivechains Wallet",
+    "windows": [
+      {
+        "label": "main",
+        "title": "Sidecoin — eCash Drivechains Wallet",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 600,
+        "resizable": true,
+        "fullscreen": false,
+        "center": true
+      }
+    ],
+    "trayIcon": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true,
+      "tooltip": "Sidecoin"
+    },
+    "security": {
+      "csp": "default-src 'self'; connect-src 'self' https://*.ecash.com; img-src 'self' asset: https://data: ; style-src 'self' 'unsafe-inline'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "",
+      "endpoints": []
+    }
+  }
+}
