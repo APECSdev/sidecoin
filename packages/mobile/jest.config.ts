@@ -81,19 +81,14 @@ const config: Config = {
 
   // ────────────────────────────────────────────────────
   // setupFiles:
-  //   Load polyfills before any test runs.
+  //   Load polyfills and test-library matchers before
+  //   any test runs.
   //   The polyfills file injects Buffer, process, and
   //   crypto.getRandomValues globally.
+  //   jest-native matchers add toBeVisible, toHaveStyle, etc.
   // ────────────────────────────────────────────────────
   setupFiles: [
     "./src/polyfills.ts",
-  ],
-
-  // ────────────────────────────────────────────────────
-  // setupFilesAfterFramework:
-  //   Jest-native matchers (toBeVisible, toHaveStyle, etc.)
-  // ────────────────────────────────────────────────────
-  setupFilesAfterFramework: [
     "@testing-library/jest-native/extend-expect",
   ],
 
