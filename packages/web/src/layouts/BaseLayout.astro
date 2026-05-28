@@ -51,6 +51,10 @@ const ogImage = new URL("/og-image.png", Astro.site);
     <style>
       @import "../styles/global.css";
     </style>
+
+    <!-- Analytics -->
+    <script async defer src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+    <noscript><img src="https://queue.simpleanalyticscdn.com/noscript.gif" alt="" referrerpolicy="no-referrer-when-downgrade" /></noscript>
   </head>
   <body class="min-h-screen bg-gray-950 text-gray-100 antialiased">
     <slot />
