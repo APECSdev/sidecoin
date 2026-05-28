@@ -1,0 +1,51 @@
+# packages/mobile/.gitignore
+#
+# Mobile-specific ignores (supplements root .gitignore)
+
+# ──────────────────────────────────────────────────────
+# React Native / Metro
+# ──────────────────────────────────────────────────────
+*.bundle
+*.jsbundle
+*.map
+
+# ──────────────────────────────────────────────────────
+# Android
+# ──────────────────────────────────────────────────────
+android/.gradle/
+android/app/build/
+android/build/
+android/local.properties
+android/captures/
+android/*.apk
+
+# ──────────────────────────────────────────────────────
+# iOS
+# ──────────────────────────────────────────────────────
+ios/Pods/
+ios/build/
+ios/*.xcworkspace/xcuserdata/
+ios/**/*.xcuserdata
+ios/**/*.xccheckout
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ──────────────────────────────────────────────────────
+# Ruby (CocoaPods / Bundler)
+# ──────────────────────────────────────────────────────
+ios/Podfile.lock
+vendor/bundle/
+.bundle/
+
+# ──────────────────────────────────────────────────────
+# Coverage
+# ──────────────────────────────────────────────────────
+coverage/
+
+# ──────────────────────────────────────────────────────
+# Temporary files
+# ──────────────────────────────────────────────────────
+*.tmp
+*.temp

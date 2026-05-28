@@ -28,6 +28,7 @@
     }
   },
   "scripts": {
+    "build": "tsc --noEmit",
     "type-check": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest --watch",

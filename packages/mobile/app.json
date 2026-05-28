@@ -1,0 +1,12 @@
+{
+  "name": "Sidecoin",
+  "displayName": "Sidecoin",
+  "expo": false,
+  "bundleIdentifier": "app.sidecoin",
+  "androidPackage": "app.sidecoin",
+  "scheme": "sidecoin",
+  "platforms": [
+    "android",
+    "ios"
+  ]
+}

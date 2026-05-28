@@ -1,0 +1,56 @@
+{
+  "extends": "../../tsconfig.base.json",
+
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ES2022"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "jsx": "react-jsx",
+
+    "strict": true,
+    "noEmit": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@sidecoin/shared": ["../shared/src/index.ts"],
+      "@sidecoin/shared/*": ["../shared/src/*"]
+    },
+
+    "types": [
+      "react",
+      "react-native",
+      "jest",
+      "@testing-library/jest-native"
+    ]
+  },
+
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "index.js",
+    "jest.config.ts",
+    "metro.config.js",
+    "babel.config.js",
+    "tailwind.config.js",
+    "react-native.config.js",
+    "global.d.ts"
+  ],
+
+  "exclude": [
+    "node_modules",
+    "android",
+    "ios",
+    "dist",
+    "build",
+    ".turbo",
+    "coverage"
+  ]
+}
