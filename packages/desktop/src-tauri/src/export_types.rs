@@ -2,7 +2,7 @@
 //! Invoked by `pnpm type:gen` / `cargo run --bin export_types`.
 
 fn main() {
-    let builder = sidecoin_desktop::create_specta_builder();
+    let builder = sidecoin::create_specta_builder();
 
     builder
         .export(

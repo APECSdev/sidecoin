@@ -10,7 +10,6 @@
     "beforeDevCommand": "pnpm dev"
   },
   "app": {
-    "title": "Sidecoin — eCash Drivechains Wallet",
     "windows": [
       {
         "label": "main",
