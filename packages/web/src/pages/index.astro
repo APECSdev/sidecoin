@@ -1,0 +1,180 @@
+---
+// packages/web/src/pages/index.astro
+//
+// Landing page for sidecoin.app
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ForkCountdown from "../components/ForkCountdown.vue";
+import SidechainCard from "../components/SidechainCard.astro";
+
+const sidechains = [
+  { slot: 0, name: "Thunder Network", description: "Payment channel network for instant, low-fee transactions. Lightning-compatible layer for everyday payments.", status: "active" },
+  { slot: 1, name: "zSide", description: "Privacy-focused sidechain with shielded transactions. Zcash-style zero-knowledge proofs on a Bitcoin-secured chain.", status: "active" },
+  { slot: 2, name: "BitNames", description: "Decentralized naming and identity system. Register human-readable names anchored to the Bitcoin-secured mainchain.", status: "active" },
+  { slot: 3, name: "BitAssets", description: "Tokenized assets and prediction markets. Issue and trade synthetic assets secured by Bitcoin hashrate.", status: "active" },
+  { slot: 4, name: "Photon", description: "EVM-compatible smart contract sidechain. Run Solidity contracts with Bitcoin-grade security via merged mining.", status: "active" },
+  { slot: 5, name: "Truthcoin", description: "Paul Sztorc's prediction market sidechain. Decentralized oracle system using peer-to-peer outcome resolution.", status: "active" },
+  { slot: 6, name: "CoinShift", description: "Cross-chain atomic swap sidechain. Trustless exchange between eCash and other cryptocurrency networks.", status: "active" },
+  { slot: 7, name: "Sidechain #8 (TBA)", description: "Reserved sidechain slot. Details to be announced before the August 2026 hard fork.", status: "proposed" },
+];
+---
+
+<BaseLayout>
+  <!-- ─── Hero ──────────────────────────────────────────────── -->
+  <header class="relative overflow-hidden">
+    <!-- Background gradient -->
+    <div class="absolute inset-0 bg-gradient-to-b from-ecash-950/20 via-gray-950 to-gray-950"></div>
+
+    <div class="relative mx-auto max-w-5xl px-6 pb-20 pt-24 text-center md:pt-32">
+      <!-- Logo / Brand -->
+      <h1 class="text-5xl font-extrabold tracking-tight md:text-7xl">
+        <span class="text-ecash-400">Sidecoin</span>
+      </h1>
+      <p class="mx-auto mt-4 max-w-2xl text-lg text-gray-400 md:text-xl">
+        Open-source wallet for the eCash hard fork.<br />
+        BIP-300 / BIP-301 Drivechains · 8 sidechains at launch.
+      </p>
+
+      <!-- Countdown -->
+      <div class="mt-12">
+        <ForkCountdown client:load />
+      </div>
+
+      <!-- CTA buttons -->
+      <div class="mt-12 flex flex-wrap items-center justify-center gap-4">
+        <a
+          href="https://github.com/nicholasgasior/sidecoin/releases"
+          class="rounded-lg bg-ecash-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-ecash-600/20 transition-colors hover:bg-ecash-500"
+        >
+          Download Desktop
+        </a>
+        <a
+          href="https://f-droid.org/packages/app.sidecoin.wallet/"
+          class="rounded-lg border border-gray-700 bg-gray-900 px-8 py-3 text-sm font-semibold text-gray-300 transition-colors hover:border-ecash-700 hover:text-white"
+        >
+          F-Droid (Android)
+        </a>
+        <a
+          href="https://github.com/nicholasgasior/sidecoin"
+          class="rounded-lg border border-gray-700 bg-gray-900 px-8 py-3 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+        >
+          View Source
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- ─── What is Sidecoin ──────────────────────────────────── -->
+  <section class="mx-auto max-w-5xl px-6 py-20">
+    <h2 class="text-center text-3xl font-bold md:text-4xl">
+      What is <span class="text-ecash-400">Sidecoin</span>?
+    </h2>
+    <p class="mx-auto mt-6 max-w-3xl text-center text-lg leading-relaxed text-gray-400">
+      Sidecoin is a multi-platform wallet built for the upcoming eCash hard fork
+      (block ~964,000, August 21 2026). It supports BIP-300 Hashrate Escrows and
+      BIP-301 Blind Merged Mining — enabling trustless sidechains secured by
+      Bitcoin's full SHA-256d hashrate.
+    </p>
+
+    <div class="mt-16 grid gap-8 md:grid-cols-3">
+      <!-- Feature cards -->
+      <div class="rounded-xl border border-gray-800 bg-gray-900/40 p-6">
+        <div class="mb-3 text-3xl">🖥️</div>
+        <h3 class="text-lg font-semibold text-white">Desktop</h3>
+        <p class="mt-2 text-sm text-gray-400">
+          Native app powered by Tauri + Rust. Full node connectivity,
+          hardware wallet support, and BIP-300 deposit/withdrawal management.
+        </p>
+      </div>
+
+      <div class="rounded-xl border border-gray-800 bg-gray-900/40 p-6">
+        <div class="mb-3 text-3xl">📱</div>
+        <h3 class="text-lg font-semibold text-white">Mobile</h3>
+        <p class="mt-2 text-sm text-gray-400">
+          React Native app for Android (F-Droid) and iOS. QR scanning,
+          biometric auth, and lightweight SPV mode for on-the-go payments.
+        </p>
+      </div>
+
+      <div class="rounded-xl border border-gray-800 bg-gray-900/40 p-6">
+        <div class="mb-3 text-3xl">🌐</div>
+        <h3 class="text-lg font-semibold text-white">Web</h3>
+        <p class="mt-2 text-sm text-gray-400">
+          Browser-based wallet (coming soon). No install required — connect
+          to your node and manage sidechains from any device.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Sidechains ────────────────────────────────────────── -->
+  <section class="mx-auto max-w-5xl px-6 py-20">
+    <h2 class="text-center text-3xl font-bold md:text-4xl">
+      8 Sidechains at Launch
+    </h2>
+    <p class="mx-auto mt-4 max-w-2xl text-center text-gray-400">
+      Each sidechain occupies a BIP-300 slot and is secured by Bitcoin's
+      full hashrate via Blind Merged Mining (BIP-301).
+    </p>
+
+    <div class="mt-12 grid gap-4 md:grid-cols-2">
+      {sidechains.map((sc) => (
+        <SidechainCard
+          slotNumber={sc.slot}
+          name={sc.name}
+          description={sc.description}
+          status={sc.status}
+        />
+      ))}
+    </div>
+  </section>
+
+  <!-- ─── Technical Details ─────────────────────────────────── -->
+  <section class="border-t border-gray-800 bg-gray-900/30">
+    <div class="mx-auto max-w-5xl px-6 py-20">
+      <h2 class="text-center text-3xl font-bold md:text-4xl">
+        Technical Details
+      </h2>
+      <div class="mt-12 grid gap-8 font-mono text-sm md:grid-cols-2">
+        <div class="space-y-3 rounded-xl border border-gray-800 bg-gray-950 p-6">
+          <h3 class="font-sans text-lg font-semibold text-ecash-400">Chain Parameters</h3>
+          <p class="text-gray-400">PoW: <span class="text-white">SHA-256d</span></p>
+          <p class="text-gray-400">Block Time: <span class="text-white">600s (10 min)</span></p>
+          <p class="text-gray-400">Block Weight: <span class="text-white">4,000,000 WU</span></p>
+          <p class="text-gray-400">Subsidy at Fork: <span class="text-white">3.125 eCash</span></p>
+          <p class="text-gray-400">Halving: <span class="text-white">every 210,000 blocks</span></p>
+          <p class="text-gray-400">Coinbase Maturity: <span class="text-white">100 blocks</span></p>
+        </div>
+        <div class="space-y-3 rounded-xl border border-gray-800 bg-gray-950 p-6">
+          <h3 class="font-sans text-lg font-semibold text-ecash-400">Fork Activation</h3>
+          <p class="text-gray-400">Block Height: <span class="text-white">~964,000</span></p>
+          <p class="text-gray-400">Timestamp: <span class="text-white">2026-08-21 15:00 UTC</span></p>
+          <p class="text-gray-400">BIP-300: <span class="text-ecash-400">Active</span></p>
+          <p class="text-gray-400">BIP-301: <span class="text-ecash-400">Active</span></p>
+          <p class="text-gray-400">Sidechains: <span class="text-white">8 at launch</span></p>
+          <p class="text-gray-400">Withdrawal Window: <span class="text-white">26,300 blocks (~6 mo)</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── Footer ────────────────────────────────────────────── -->
+  <footer class="border-t border-gray-800">
+    <div class="mx-auto max-w-5xl px-6 py-12">
+      <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
+        <div>
+          <p class="text-lg font-bold text-ecash-400">Sidecoin</p>
+          <p class="text-sm text-gray-500">eCash Drivechains Wallet · Open Source · MIT License</p>
+        </div>
+        <div class="flex gap-6 text-sm text-gray-400">
+          <a href="https://github.com/nicholasgasior/sidecoin" class="hover:text-white">GitHub</a>
+          <a href="https://ecash.com" class="hover:text-white">eCash</a>
+          <a href="https://bip300.info" class="hover:text-white">BIP-300</a>
+        </div>
+      </div>
+      <p class="mt-8 text-center text-xs text-gray-600">
+        © 2026 Sidecoin Contributors. Not affiliated with eCash or Bitcoin ABC.
+      </p>
+    </div>
+  </footer>
+</BaseLayout>

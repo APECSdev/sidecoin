@@ -1,0 +1,36 @@
+/* packages/web/src/styles/global.css */
+
+@import "tailwindcss";
+
+/* ──────────────────────────────────────────────────────
+   eCash brand palette — shared with desktop
+   ────────────────────────────────────────────────────── */
+
+@theme {
+  --color-ecash-50: #f0fdf4;
+  --color-ecash-100: #dcfce7;
+  --color-ecash-200: #bbf7d0;
+  --color-ecash-300: #86efac;
+  --color-ecash-400: #4ade80;
+  --color-ecash-500: #22c55e;
+  --color-ecash-600: #16a34a;
+  --color-ecash-700: #15803d;
+  --color-ecash-800: #166534;
+  --color-ecash-900: #14532d;
+  --color-ecash-950: #052e16;
+}
+
+/* ──────────────────────────────────────────────────────
+   Base resets for the landing page
+   ────────────────────────────────────────────────────── */
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

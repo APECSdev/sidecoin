@@ -1,0 +1,11 @@
+/* packages/webapp/src/style.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* eCash brand base styles */
+body {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}

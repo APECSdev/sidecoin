@@ -11,8 +11,10 @@
     "dev:web": "pnpm --filter @sidecoin/web dev",
     "dev:mobile": "pnpm --filter @sidecoin/mobile start",
     "dev:desktop": "pnpm --filter @sidecoin/desktop dev",
+    "dev:webapp": "pnpm --filter @sidecoin/webapp dev",
     "build:web": "pnpm --filter @sidecoin/web build",
     "build:desktop": "pnpm --filter @sidecoin/desktop build",
+    "build:webapp": "pnpm --filter @sidecoin/webapp build",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check"
