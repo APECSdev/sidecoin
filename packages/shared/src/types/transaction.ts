@@ -4,6 +4,8 @@
 // These are intentionally kept generic enough to be used
 // across web, mobile, and desktop without platform-specific imports.
 
+import type { SidechainSlot } from "./sidechain";
+
 /**
  * Supported address formats for display and validation.
  */
