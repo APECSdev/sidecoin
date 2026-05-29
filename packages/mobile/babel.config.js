@@ -4,8 +4,8 @@
 //
 // Plugin order matters:
 //   1. @react-native/babel-preset — core RN transforms
-//   2. module-resolver — path aliases (@/, @sidecoin/shared)
-//   3. nativewind/babel — Tailwind CSS className → style transform
+//   2. nativewind/babel — Tailwind CSS className → style transform (is a preset)
+//   3. module-resolver — path aliases (@/, @sidecoin/shared)
 //   4. react-native-reanimated/plugin — MUST be last (it wraps worklets)
 
 module.exports = function (api) {
@@ -18,6 +18,16 @@ module.exports = function (api) {
       // Includes JSX transform, Flow strip, etc.
       // ────────────────────────────────────────────────
       "@react-native/babel-preset",
+
+      // ────────────────────────────────────────────────
+      // NativeWind:
+      //   Transforms Tailwind className props into
+      //   React Native StyleSheet objects at build time.
+      //   Despite its name, nativewind/babel exports a
+      //   preset (returns { plugins: [...] }), not a
+      //   single plugin.
+      // ────────────────────────────────────────────────
+      "nativewind/babel",
     ],
 
     plugins: [
@@ -51,13 +61,6 @@ module.exports = function (api) {
           },
         },
       ],
-
-      // ────────────────────────────────────────────────
-      // NativeWind:
-      //   Transforms Tailwind className props into
-      //   React Native StyleSheet objects at build time.
-      // ────────────────────────────────────────────────
-      "nativewind/babel",
 
       // ────────────────────────────────────────────────
       // Reanimated:

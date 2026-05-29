@@ -52,16 +52,13 @@ if (typeof globalThis.process === "undefined") {
 // ──────────────────────────────────────────────────────
 // 4. TextEncoder / TextDecoder
 //
-//    Hermes (RN 0.81's default JS engine) does provide
-//    TextEncoder/TextDecoder, but some older engines or
-//    polyfill chains may not. We guard defensively.
+//    Hermes (RN 0.81's default JS engine) provides
+//    TextEncoder/TextDecoder natively. No polyfill
+//    is needed. This comment is kept for documentation
+//    purposes — if targeting an older engine without
+//    native support, install "fast-text-encoding" and
+//    import it here unconditionally.
 // ──────────────────────────────────────────────────────
-if (typeof globalThis.TextEncoder === "undefined") {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const { TextEncoder, TextDecoder } = require("util");
-  globalThis.TextEncoder = TextEncoder;
-  globalThis.TextDecoder = TextDecoder;
-}
 
 // ──────────────────────────────────────────────────────
 // 5. URL

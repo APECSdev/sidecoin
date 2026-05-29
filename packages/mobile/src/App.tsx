@@ -16,7 +16,7 @@
 import React from "react";
 import { StatusBar, StyleSheet, Text, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -50,9 +50,10 @@ const queryClient = new QueryClient({
 // ──────────────────────────────────────────────────────
 function PlaceholderHome(): React.JSX.Element {
   const countdown = getForkCountdown(ECASH_MAINNET);
+  const insets = useSafeAreaInsets();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }]}>
       <View style={styles.content}>
 
         {/* ── App Title ── */}
@@ -112,7 +113,7 @@ function PlaceholderHome(): React.JSX.Element {
         </View>
 
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 
