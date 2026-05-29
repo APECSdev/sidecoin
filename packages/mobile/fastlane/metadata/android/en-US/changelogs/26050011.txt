@@ -1,0 +1,5 @@
+Initial release:
+• Dashboard with balance and block info
+• Fork countdown (2026-08-21 15:00 UTC)
+• 8 BIP-300 sidechains displayed
+• Workspace linking with @sidecoin/shared

@@ -1,0 +1,1 @@
+eCash Drivechains wallet with BIP-300/301 sidechain support.
