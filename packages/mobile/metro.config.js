@@ -72,6 +72,7 @@ const config = {
       /android\/app\/build\/.*/,
       /android\/\.gradle\/.*/,
       /android\/app\/\.cxx\/.*/,
+      /\.cxx\/.*/,
       /ios\/build\/.*/,
       /ios\/Pods\/.*/,
     ],
