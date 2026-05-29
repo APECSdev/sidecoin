@@ -37,12 +37,16 @@ const config = {
   // watchFolders:
   //   Metro only watches the project root by default.
   //   We need it to also watch:
-  //     - The monorepo root (for hoisted node_modules)
+  //     - The monorepo root node_modules (for hoisted deps)
   //     - The shared package (for live-reload during dev)
+  //
+  //   NOTE: We intentionally do NOT watch the entire
+  //   monorepo root — that would index 150K+ files and
+  //   cause Metro to hang on startup.
   // ────────────────────────────────────────────────────
   watchFolders: [
-    monorepoRoot,
     sharedPackage,
+    path.resolve(monorepoRoot, "node_modules"),
   ],
 
   resolver: {
@@ -55,6 +59,21 @@ const config = {
     nodeModulesPaths: [
       path.resolve(projectRoot, "node_modules"),
       path.resolve(monorepoRoot, "node_modules"),
+    ],
+
+    // ──────────────────────────────────────────────────
+    // blockList:
+    //   Exclude heavy non-JS directories from Metro's
+    //   file watcher to prevent startup hangs. These
+    //   directories contain native build artifacts that
+    //   Metro never needs to process.
+    // ──────────────────────────────────────────────────
+    blockList: [
+      /android\/app\/build\/.*/,
+      /android\/\.gradle\/.*/,
+      /android\/app\/\.cxx\/.*/,
+      /ios\/build\/.*/,
+      /ios\/Pods\/.*/,
     ],
 
     // ──────────────────────────────────────────────────
