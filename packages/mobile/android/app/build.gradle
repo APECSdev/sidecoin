@@ -1,15 +1,30 @@
 // packages/mobile/android/app/build.gradle
 
 apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
 
 /**
- * React Native configuration — controls Hermes, code generation, etc.
+ * React Native configuration — controls Hermes, autolinking, etc.
  */
 react {
-    // Hermes is the default JS engine in RN 0.81
-    // Controlled by hermesEnabled in gradle.properties
+    autolinkLibrariesWithApp()
 }
+
+/**
+ * Set this to true to run Proguard on Release builds to minify the Java bytecode.
+ */
+def enableProguardInReleaseBuilds = true
+
+/**
+ * The preferred build flavor of JavaScriptCore (JSC)
+ *
+ * The international variant includes ICU i18n library and necessary data
+ * allowing to use e.g. `Date.toLocaleString` and `String.localeCompare` that
+ * give correct results when using with locales other than en-US. Note that
+ * this variant is about 6MiB larger per architecture than default.
+ */
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
 /**
  * Load the signing config from local keystore.properties if present.
@@ -43,14 +58,6 @@ android {
             keyAlias 'androiddebugkey'
             keyPassword 'android'
         }
-        if (keystorePropertiesFile.exists()) {
-            release {
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-            }
-        }
     }
 
     buildTypes {
@@ -58,15 +65,10 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            minifyEnabled true
-            shrinkResources true
+            signingConfig signingConfigs.debug
+            minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
-            if (keystorePropertiesFile.exists()) {
-                signingConfig signingConfigs.release
-            } else {
-                // F-Droid builds use their own signing
-                signingConfig signingConfigs.debug
-            }
         }
     }
 }
@@ -81,6 +83,3 @@ dependencies {
         implementation jscFlavor
     }
 }
-
-apply from: file("../../node_modules/@react-native-community/cli-platform-android/native_modules.gradle")
-applyNativeModulesAppBuildGradle(project)
