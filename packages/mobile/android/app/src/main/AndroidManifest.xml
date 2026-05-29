@@ -1,7 +1,4 @@
-<!-- packages/mobile/android/app/src/main/AndroidManifest.xml -->
-
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-
     <!-- Network access for node RPC communication -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
