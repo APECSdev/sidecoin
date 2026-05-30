@@ -2,6 +2,11 @@
 #
 # Sidecoin Monorepo CI Suite
 # Runs on every push/PR to master across all packages.
+#
+# IMPORTANT: All cargo commands use --locked to ensure deterministic
+# builds from the committed Cargo.lock. Without --locked, Cargo may
+# resolve newer transitive dependencies (e.g. tauri-runtime) that
+# introduce breaking trait changes and fail compilation.
 
 name: Sidecoin CI Suite
 
@@ -99,7 +104,7 @@ jobs:
 
       - name: Clippy Lint
         working-directory: packages/desktop/src-tauri
-        run: cargo clippy --all-features --lib -- -D warnings
+        run: cargo clippy --locked --all-features --lib -- -D warnings
 
       # ── Desktop — Build ─────────────────────────────────────
 
@@ -111,7 +116,7 @@ jobs:
         shell: bash
         working-directory: packages/desktop/src-tauri
         run: |
-          cargo run --bin export_types
+          cargo run --locked --bin export_types
           node -e "
             const fs = require('fs');
             const path = require('path');
@@ -137,7 +142,7 @@ jobs:
         if: matrix.platform != 'windows-latest'
         working-directory: packages/desktop/src-tauri
         shell: bash
-        run: cargo llvm-cov --all-features --lib --lcov --output-path lcov-rust.info
+        run: cargo llvm-cov --locked --all-features --lib --lcov --output-path lcov-rust.info
 
       - name: Run Desktop Frontend Tests
         run: pnpm --filter @sidecoin/desktop test
