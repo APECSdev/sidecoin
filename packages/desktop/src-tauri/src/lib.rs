@@ -10,8 +10,8 @@ use tauri_specta::{collect_commands, Builder};
 pub mod commands;
 
 pub use commands::{
-    BlockInfo, Sidechain, WalletBalance,
-    get_balance, get_latest_block, get_sidechains, get_receive_address, health_check,
+    get_balance, get_latest_block, get_receive_address, get_sidechains, health_check, BlockInfo,
+    Sidechain, WalletBalance,
 };
 
 // ---------------------------------------------------------------------------

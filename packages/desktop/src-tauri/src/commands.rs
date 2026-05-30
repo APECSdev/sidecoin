@@ -71,13 +71,48 @@ pub async fn get_latest_block() -> Result<BlockInfo, String> {
 pub async fn get_sidechains() -> Result<Vec<Sidechain>, String> {
     // TODO: query drivechain state
     let sidechains = vec![
-        Sidechain { slot: 0, name: "Thunder".into(),    description: "Payment channel network".into(),   active: false },
-        Sidechain { slot: 1, name: "zSide".into(),      description: "Privacy sidechain (zk)".into(),    active: false },
-        Sidechain { slot: 2, name: "BitNames".into(),    description: "Decentralized identity".into(),    active: false },
-        Sidechain { slot: 3, name: "BitAssets".into(),   description: "Tokenized assets".into(),          active: false },
-        Sidechain { slot: 4, name: "Photon".into(),      description: "Smart contracts".into(),           active: false },
-        Sidechain { slot: 5, name: "Truthcoin".into(),   description: "Prediction markets".into(),        active: false },
-        Sidechain { slot: 6, name: "CoinShift".into(),   description: "Cross-chain bridge".into(),        active: false },
+        Sidechain {
+            slot: 0,
+            name: "Thunder".into(),
+            description: "Payment channel network".into(),
+            active: false,
+        },
+        Sidechain {
+            slot: 1,
+            name: "zSide".into(),
+            description: "Privacy sidechain (zk)".into(),
+            active: false,
+        },
+        Sidechain {
+            slot: 2,
+            name: "BitNames".into(),
+            description: "Decentralized identity".into(),
+            active: false,
+        },
+        Sidechain {
+            slot: 3,
+            name: "BitAssets".into(),
+            description: "Tokenized assets".into(),
+            active: false,
+        },
+        Sidechain {
+            slot: 4,
+            name: "Photon".into(),
+            description: "Smart contracts".into(),
+            active: false,
+        },
+        Sidechain {
+            slot: 5,
+            name: "Truthcoin".into(),
+            description: "Prediction markets".into(),
+            active: false,
+        },
+        Sidechain {
+            slot: 6,
+            name: "CoinShift".into(),
+            description: "Cross-chain bridge".into(),
+            active: false,
+        },
     ];
     Ok(sidechains)
 }
