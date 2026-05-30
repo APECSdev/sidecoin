@@ -14,6 +14,16 @@ const config: Config = {
   preset: "react-native",
 
   // ────────────────────────────────────────────────────
+  // globals:
+  //   React Native's bundler defines __DEV__ at build
+  //   time. Jest doesn't, so we set it here to match
+  //   the development environment.
+  // ────────────────────────────────────────────────────
+  globals: {
+    __DEV__: true,
+  },
+
+  // ────────────────────────────────────────────────────
   // transform:
   //   Use ts-jest for TypeScript files.
   //   babel-jest handles JS/JSX (inherited from preset).
@@ -89,16 +99,32 @@ const config: Config = {
 
   // ────────────────────────────────────────────────────
   // setupFiles:
-  //   Load polyfills and test-library matchers before
-  //   any test runs.
-  //   The polyfills file injects Buffer, process, and
-  //   crypto.getRandomValues globally.
-  //   jest-native matchers add toBeVisible, toHaveStyle, etc.
+  //   Load polyfills before any test runs.
+  //
+  //   We use test-setup.ts instead of polyfills.ts
+  //   because react-native-get-random-values declares
+  //   `let module` which collides with Jest's CommonJS
+  //   `module` global. Jest's jsdom already provides
+  //   crypto.getRandomValues so the polyfill is skipped.
   // ────────────────────────────────────────────────────
   setupFiles: [
-    "./src/polyfills.ts",
-    "@testing-library/jest-native/extend-expect",
+    "./src/test-setup.ts",
   ],
+
+  // ────────────────────────────────────────────────────
+  // setupFilesAfterFramework → not available in Jest 29.
+  //
+  // @testing-library/jest-native/extend-expect adds
+  // matchers like toBeVisible(), toHaveStyle(), etc.
+  // It calls expect.extend() at import time and needs
+  // the test framework to be initialized first.
+  // It is loaded via test-setup.ts using a deferred
+  // require() that waits until `expect` is defined.
+  //
+  // The current tests only use standard Jest matchers
+  // (toBeTruthy, toBeNull) so this is a safety net for
+  // future tests that use jest-native matchers.
+  // ────────────────────────────────────────────────────
 
   // ────────────────────────────────────────────────────
   // testMatch:

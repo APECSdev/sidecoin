@@ -11,10 +11,15 @@ import App from "../App";
 
 // ---------------------------------------------------------------------------
 // Mock native modules that crash in a Jest environment
+//
+// IMPORTANT: jest.mock() factories are hoisted above all imports.
+// They cannot reference any imported variables (like `React`).
+// Instead, use require() inline inside each factory.
 // ---------------------------------------------------------------------------
 
 // react-native-gesture-handler
 jest.mock("react-native-gesture-handler", () => {
+  const React = require("react");
   const View = require("react-native").View;
   return {
     GestureHandlerRootView: ({ children, ...props }: any) =>
@@ -35,6 +40,7 @@ jest.mock("react-native-gesture-handler", () => {
 
 // react-native-safe-area-context
 jest.mock("react-native-safe-area-context", () => {
+  const React = require("react");
   const inset = { top: 0, right: 0, bottom: 0, left: 0 };
   const View = require("react-native").View;
   return {
