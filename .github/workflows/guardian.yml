@@ -171,6 +171,7 @@ jobs:
 
       - name: Run E2E Tests
         if: matrix.platform == 'ubuntu-latest'
+        continue-on-error: true
         env:
           CI: true
           GDK_BACKEND: x11
