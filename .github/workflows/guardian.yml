@@ -35,8 +35,6 @@ jobs:
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 10.7.0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -81,6 +79,17 @@ jobs:
 
       - name: Build Web
         run: pnpm --filter @sidecoin/web build
+
+      # ── Wallet ──────────────────────────────────────────────
+
+      - name: Build Wallet
+        run: pnpm --filter @sidecoin/wallet build
+
+      - name: Test Wallet
+        run: pnpm --filter @sidecoin/wallet test
+
+      - name: Type-check Wallet
+        run: pnpm --filter @sidecoin/wallet type-check
 
       # ── Desktop — Rust Quality Gates ────────────────────────
 
@@ -178,6 +187,26 @@ jobs:
         with:
           files: packages/desktop/src-tauri/lcov-rust.info
           flags: rust
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload Desktop Frontend Coverage
+        if: matrix.platform == 'ubuntu-latest'
+        uses: codecov/codecov-action@v4
+        with:
+          files: packages/desktop/coverage/lcov.info
+          flags: desktop-frontend
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Upload Wallet Coverage
+        if: matrix.platform == 'ubuntu-latest'
+        uses: codecov/codecov-action@v4
+        with:
+          files: packages/wallet/coverage/lcov.info
+          flags: wallet
           fail_ci_if_error: false
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
