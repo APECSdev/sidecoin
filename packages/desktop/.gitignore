@@ -20,7 +20,13 @@ coverage/
 # =============================================================================
 
 src-tauri/target/
-src-tauri/Cargo.lock
+# NOTE: Cargo.lock is deliberately tracked in git.
+# Tauri is a binary/application project (not a library), so the lockfile
+# must be committed to ensure deterministic builds. CI uses `cargo build
+# --locked` which requires Cargo.lock to exist. Without it, Cargo resolves
+# the latest compatible transitive dependencies (e.g. tauri-runtime),
+# which can introduce breaking trait changes and fail compilation.
+# See: https://doc.rust-lang.org/cargo/faq.html#why-have-cargolock-in-version-control
 
 # Tauri generated
 src-tauri/gen/
