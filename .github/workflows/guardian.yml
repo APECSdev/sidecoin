@@ -70,7 +70,9 @@ jobs:
             libappindicator3-dev \
             librsvg2-dev \
             patchelf \
-            xvfb
+            xvfb \
+            webkit2gtk-driver
+          cargo install tauri-driver
 
       - name: Install Frontend dependencies
         run: pnpm install --frozen-lockfile
@@ -168,16 +170,13 @@ jobs:
       # ── Desktop — E2E ───────────────────────────────────────
 
       - name: Run E2E Tests
-        continue-on-error: ${{ matrix.platform != 'ubuntu-latest' }}
+        if: matrix.platform == 'ubuntu-latest'
         env:
           CI: true
+          GDK_BACKEND: x11
+          WEBKIT_DISABLE_COMPOSITING_MODE: "1"
         shell: bash
-        run: |
-          if [ "${{ matrix.platform }}" == "ubuntu-latest" ]; then
-            xvfb-run --auto-servernum pnpm --filter @sidecoin/desktop test:e2e
-          else
-            pnpm --filter @sidecoin/desktop test:e2e
-          fi
+        run: xvfb-run --auto-servernum pnpm --filter @sidecoin/desktop test:e2e
 
       # ── Coverage Upload ─────────────────────────────────────
 
