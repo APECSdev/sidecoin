@@ -21,11 +21,22 @@ import { NavigationContainer } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 // ──────────────────────────────────────────────────────
+// Sentry — conditional init (no-ops on F-Droid builds)
+// ──────────────────────────────────────────────────────
+import { initSentry } from "./lib/sentry";
+
+// ──────────────────────────────────────────────────────
 // Shared package — validate workspace linking works
 // ──────────────────────────────────────────────────────
 import { ECASH_MAINNET } from "@sidecoin/shared/chain";
 import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
 import { getForkCountdown } from "@sidecoin/shared/chain";
+
+// ──────────────────────────────────────────────────────
+// Initialize Sentry as early as possible.
+// On F-Droid (fdroid flavor) this is a safe no-op.
+// ──────────────────────────────────────────────────────
+initSentry();
 
 // ──────────────────────────────────────────────────────
 // TanStack Query client — global instance.

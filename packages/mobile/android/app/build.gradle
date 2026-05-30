@@ -60,6 +60,21 @@ android {
         }
     }
 
+    /**
+     * Distribution flavors:
+     *   - fdroid:    Clean FOSS build, no proprietary SDKs (Sentry, etc.)
+     *   - playstore: Full build with Sentry crash reporting + analytics
+     */
+    flavorDimensions "distribution"
+    productFlavors {
+        fdroid {
+            dimension "distribution"
+        }
+        playstore {
+            dimension "distribution"
+        }
+    }
+
     buildTypes {
         debug {
             signingConfig signingConfigs.debug
@@ -82,4 +97,7 @@ dependencies {
     } else {
         implementation jscFlavor
     }
+
+    // Sentry — playstore builds only (excluded from F-Droid)
+    playstoreImplementation 'io.sentry:sentry-android:7.14.0'
 }
