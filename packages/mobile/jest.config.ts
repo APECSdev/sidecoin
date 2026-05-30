@@ -26,6 +26,7 @@ const config: Config = {
         babelConfig: true,
       },
     ],
+    "^.+\\.jsx?$": "babel-jest",
   },
 
   // ────────────────────────────────────────────────────
@@ -57,9 +58,16 @@ const config: Config = {
   //   React Native and many RN libraries ship untranspiled
   //   ES modules. We need to tell Jest to transform them.
   //   This regex whitelists the known packages that need it.
+  //
+  //   pnpm hoists packages into a .pnpm directory with a
+  //   nested node_modules path, e.g.:
+  //     node_modules/.pnpm/react-native@x.y.z/node_modules/react-native/...
+  //   The pattern must account for both standard and pnpm
+  //   resolved paths by optionally matching the .pnpm
+  //   intermediate segment.
   // ────────────────────────────────────────────────────
   transformIgnorePatterns: [
-    "node_modules/(?!("
+    "node_modules/(?!(\\.pnpm/.*node_modules/)?("
       + "react-native"
       + "|@react-native"
       + "|@react-native-community"
