@@ -96,6 +96,19 @@ jobs:
       - name: Type-check Wallet
         run: pnpm --filter @sidecoin/wallet type-check
 
+      # ── Desktop — Placeholder Dist ──────────────────────────
+      #
+      # Tauri's generate_context!() proc macro validates that
+      # frontendDist ("../dist") exists at compile time. This
+      # placeholder must exist BEFORE any cargo command that
+      # compiles the Tauri app (clippy, build, llvm-cov, etc.).
+      # It is replaced by the real frontend build later.
+      # ────────────────────────────────────────────────────────
+
+      - name: Create Placeholder Dist
+        shell: bash
+        run: mkdir -p packages/desktop/dist && touch packages/desktop/dist/index.html
+
       # ── Desktop — Rust Quality Gates ────────────────────────
 
       - name: Check Rust Formatting
@@ -107,10 +120,6 @@ jobs:
         run: cargo clippy --locked --all-features --lib -- -D warnings
 
       # ── Desktop — Build ─────────────────────────────────────
-
-      - name: Create Placeholder Dist
-        shell: bash
-        run: mkdir -p packages/desktop/dist && touch packages/desktop/dist/index.html
 
       - name: Generate Types (Specta)
         shell: bash
