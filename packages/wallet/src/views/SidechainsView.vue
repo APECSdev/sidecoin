@@ -1,4 +1,4 @@
-<!-- packages/webapp/src/views/SidechainsView.vue -->
+<!-- packages/wallet/src/views/SidechainsView.vue -->
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";

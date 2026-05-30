@@ -1,5 +1,5 @@
 {
-  "name": "@sidecoin/webapp",
+  "name": "@sidecoin/wallet",
   "version": "26.5.11",
   "description": "Sidecoin — Browser-based wallet for the eCash Bitcoin hard fork with BIP-300/301 Drivechain support.",
   "private": true,

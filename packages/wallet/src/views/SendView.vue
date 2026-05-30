@@ -1,4 +1,4 @@
-<!-- packages/webapp/src/views/SendView.vue -->
+<!-- packages/wallet/src/views/SendView.vue -->
 
 <script setup lang="ts">
 import { ref } from "vue";

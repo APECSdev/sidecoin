@@ -1,4 +1,4 @@
-// packages/webapp/src/api/index.ts
+// packages/wallet/src/api/index.ts
 //
 // Abstraction layer that replaces Tauri's `invoke()` for the web edition.
 //

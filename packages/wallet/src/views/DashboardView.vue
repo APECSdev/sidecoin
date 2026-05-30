@@ -1,4 +1,4 @@
-<!-- packages/webapp/src/views/DashboardView.vue -->
+<!-- packages/wallet/src/views/DashboardView.vue -->
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";

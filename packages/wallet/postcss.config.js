@@ -1,4 +1,4 @@
-// packages/webapp/postcss.config.js
+// packages/wallet/postcss.config.js
 
 export default {
   plugins: {

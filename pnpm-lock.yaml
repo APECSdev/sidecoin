@@ -404,35 +404,7 @@ importers:
         specifier: 4.0.18
         version: 4.0.18(@types/node@25.0.3)(@vitest/ui@4.0.16)(happy-dom@20.0.11)(jiti@2.7.0)(jsdom@27.3.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
 
-  packages/web:
-    dependencies:
-      '@astrojs/check':
-        specifier: 0.9.9
-        version: 0.9.9(prettier@3.8.3)(typescript@5.8.3)
-      '@astrojs/vue':
-        specifier: 6.0.1
-        version: 6.0.1(@types/node@25.0.3)(astro@6.3.8(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(rollup@4.60.4)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(vue@3.5.22(typescript@5.8.3))(yaml@2.9.0)
-      '@sidecoin/shared':
-        specifier: workspace:*
-        version: link:../shared
-      '@tailwindcss/vite':
-        specifier: 4.1.11
-        version: 4.1.11(vite@7.3.3(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))
-      astro:
-        specifier: 6.3.8
-        version: 6.3.8(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(rollup@4.60.4)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
-      tailwindcss:
-        specifier: 4.1.11
-        version: 4.1.11
-      vue:
-        specifier: 3.5.22
-        version: 3.5.22(typescript@5.8.3)
-    devDependencies:
-      typescript:
-        specifier: 5.8.3
-        version: 5.8.3
-
-  packages/webapp:
+  packages/wallet:
     dependencies:
       '@sidecoin/shared':
         specifier: workspace:*
@@ -483,6 +455,34 @@ importers:
       vue-tsc:
         specifier: 3.1.0
         version: 3.1.0(typescript@5.6.3)
+
+  packages/web:
+    dependencies:
+      '@astrojs/check':
+        specifier: 0.9.9
+        version: 0.9.9(prettier@3.8.3)(typescript@5.8.3)
+      '@astrojs/vue':
+        specifier: 6.0.1
+        version: 6.0.1(@types/node@25.0.3)(astro@6.3.8(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(rollup@4.60.4)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(vue@3.5.22(typescript@5.8.3))(yaml@2.9.0)
+      '@sidecoin/shared':
+        specifier: workspace:*
+        version: link:../shared
+      '@tailwindcss/vite':
+        specifier: 4.1.11
+        version: 4.1.11(vite@7.3.3(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))
+      astro:
+        specifier: 6.3.8
+        version: 6.3.8(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(rollup@4.60.4)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
+      tailwindcss:
+        specifier: 4.1.11
+        version: 4.1.11
+      vue:
+        specifier: 3.5.22
+        version: 3.5.22(typescript@5.8.3)
+    devDependencies:
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
 
 packages:
 

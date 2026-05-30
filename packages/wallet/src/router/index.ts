@@ -1,4 +1,4 @@
-// packages/webapp/src/router/index.ts
+// packages/wallet/src/router/index.ts
 
 import { createRouter, createWebHashHistory } from "vue-router";
 

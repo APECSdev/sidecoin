@@ -1,4 +1,4 @@
-// packages/webapp/src/main.ts
+// packages/wallet/src/main.ts
 
 import { createApp } from "vue";
 import { createPinia } from "pinia";

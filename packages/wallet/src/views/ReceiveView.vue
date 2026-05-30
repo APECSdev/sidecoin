@@ -1,4 +1,4 @@
-<!-- packages/webapp/src/views/ReceiveView.vue -->
+<!-- packages/wallet/src/views/ReceiveView.vue -->
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
