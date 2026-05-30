@@ -1,28 +1,12 @@
-// packages/wallet/src/__tests__/SettingsView.test.ts
+// packages/desktop/src/__tests__/SettingsView.test.ts
 //
 // Tests for SettingsView.vue.
-// Covers form rendering, save functionality, mock/live mode banners,
-// debug info section, and API integration.
+// Covers form rendering, save functionality, debug info section,
+// and default field values.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import SettingsView from "../views/SettingsView.vue";
-
-// ---------------------------------------------------------------------------
-// Mock the API module
-// ---------------------------------------------------------------------------
-
-vi.mock("../api", () => ({
-  getApiBaseUrl: vi.fn(),
-  setApiBaseUrl: vi.fn(),
-  isMockMode: vi.fn(),
-}));
-
-import { getApiBaseUrl, setApiBaseUrl, isMockMode } from "../api";
-
-const mockGetApiBaseUrl = vi.mocked(getApiBaseUrl);
-const mockSetApiBaseUrl = vi.mocked(setApiBaseUrl);
-const mockIsMockMode = vi.mocked(isMockMode);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -32,8 +16,6 @@ describe("SettingsView.vue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
-    mockGetApiBaseUrl.mockReturnValue("");
-    mockIsMockMode.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -44,22 +26,6 @@ describe("SettingsView.vue", () => {
   it("should render the 'Settings' heading", () => {
     const wrapper = mount(SettingsView);
     expect(wrapper.find("h2").text()).toBe("Settings");
-  });
-
-  it("should show Demo Mode banner when in mock mode", () => {
-    mockIsMockMode.mockReturnValue(true);
-    const wrapper = mount(SettingsView);
-    expect(wrapper.text()).toContain("Demo Mode Active");
-    expect(wrapper.text()).toContain("Configure a node URL below");
-  });
-
-  it("should show Connected banner when not in mock mode", async () => {
-    mockIsMockMode.mockReturnValue(false);
-    mockGetApiBaseUrl.mockReturnValue("http://127.0.0.1:8332");
-    const wrapper = mount(SettingsView);
-    await flushPromises();
-    expect(wrapper.text()).toContain("Connected");
-    expect(wrapper.text()).toContain("http://127.0.0.1:8332");
   });
 
   it("should render Node RPC URL input", () => {
@@ -92,30 +58,11 @@ describe("SettingsView.vue", () => {
     );
   });
 
-  it("should populate Node URL from existing API config", async () => {
-    mockGetApiBaseUrl.mockReturnValue("http://mynode:8332");
-    mockIsMockMode.mockReturnValue(false);
-    const wrapper = mount(SettingsView);
-    await flushPromises();
-    const inputs = wrapper.findAll("input");
-    expect((inputs[0].element as HTMLInputElement).value).toBe(
-      "http://mynode:8332"
-    );
-  });
-
   it("should render Save Settings button", () => {
     const wrapper = mount(SettingsView);
     const button = wrapper.find("button[type='submit']");
     expect(button.exists()).toBe(true);
     expect(button.text()).toBe("Save Settings");
-  });
-
-  it("should call setApiBaseUrl on save", async () => {
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const wrapper = mount(SettingsView);
-    await wrapper.find("form").trigger("submit.prevent");
-    expect(mockSetApiBaseUrl).toHaveBeenCalledWith("http://127.0.0.1:8332");
-    consoleSpy.mockRestore();
   });
 
   it("should change button text to 'Saved ✓' after saving", async () => {
@@ -164,31 +111,6 @@ describe("SettingsView.vue", () => {
   it("should display version in debug info", () => {
     const wrapper = mount(SettingsView);
     expect(wrapper.text()).toContain("Version: 26.5.11");
-  });
-
-  it("should display platform as Web in debug info", () => {
-    const wrapper = mount(SettingsView);
-    expect(wrapper.text()).toContain("Platform: Web");
-  });
-
-  it("should display Demo mode in debug info when in mock mode", () => {
-    mockIsMockMode.mockReturnValue(true);
-    const wrapper = mount(SettingsView);
-    expect(wrapper.text()).toContain("Mode: Demo (mock)");
-  });
-
-  it("should display Live mode in debug info when connected", async () => {
-    mockIsMockMode.mockReturnValue(false);
-    mockGetApiBaseUrl.mockReturnValue("http://127.0.0.1:8332");
-    const wrapper = mount(SettingsView);
-
-    // Trigger save to update mockMode ref after isMockMode returns false
-    const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    await wrapper.find("form").trigger("submit.prevent");
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("Mode: Live");
-    consoleSpy.mockRestore();
   });
 
   it("should display fork target in debug info", () => {

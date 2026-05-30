@@ -1,4 +1,4 @@
-// packages/wallet/src/__tests__/ReceiveView.test.ts
+// packages/desktop/src/__tests__/ReceiveView.test.ts
 //
 // Tests for ReceiveView.vue.
 // Covers address display, copy button, loading/error states,
@@ -9,16 +9,16 @@ import { mount, flushPromises } from "@vue/test-utils";
 import ReceiveView from "../views/ReceiveView.vue";
 
 // ---------------------------------------------------------------------------
-// Mock the API module
+// Mock @tauri-apps/api/core
 // ---------------------------------------------------------------------------
 
-vi.mock("../api", () => ({
-  getReceiveAddress: vi.fn(),
+vi.mock("@tauri-apps/api/core", () => ({
+  invoke: vi.fn(),
 }));
 
-import { getReceiveAddress } from "../api";
+import { invoke } from "@tauri-apps/api/core";
 
-const mockGetReceiveAddress = vi.mocked(getReceiveAddress);
+const mockInvoke = vi.mocked(invoke);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -27,8 +27,8 @@ const mockGetReceiveAddress = vi.mocked(getReceiveAddress);
 describe("ReceiveView.vue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockGetReceiveAddress.mockResolvedValue(
-      "bc1q0000000000000000000000000000000000000000"
+    mockInvoke.mockResolvedValue(
+      "bc1q0000000000000000000000000000000000000000" as never
     );
   });
 
@@ -64,15 +64,15 @@ describe("ReceiveView.vue", () => {
     expect(button.text()).toBe("Copy Address");
   });
 
-  it("should call getReceiveAddress on mount", async () => {
+  it("should call invoke with get_receive_address on mount", async () => {
     mount(ReceiveView);
     await flushPromises();
-    expect(mockGetReceiveAddress).toHaveBeenCalledTimes(1);
+    expect(mockInvoke).toHaveBeenCalledWith("get_receive_address");
   });
 
-  it("should show error state when getReceiveAddress fails", async () => {
+  it("should show error state when invoke fails", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockGetReceiveAddress.mockRejectedValue(new Error("Address gen failed"));
+    mockInvoke.mockRejectedValue(new Error("Address gen failed"));
     const wrapper = mount(ReceiveView);
     await flushPromises();
     expect(wrapper.text()).toContain("Error generating address");
@@ -82,7 +82,7 @@ describe("ReceiveView.vue", () => {
 
   it("should log error to console when address generation fails", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockGetReceiveAddress.mockRejectedValue(new Error("No connection"));
+    mockInvoke.mockRejectedValue(new Error("No connection"));
     mount(ReceiveView);
     await flushPromises();
     expect(consoleSpy).toHaveBeenCalledWith(
