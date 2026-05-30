@@ -42,7 +42,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: Setup Rust
@@ -199,9 +199,9 @@ jobs:
             libpango1.0-dev libatk1.0-dev libgdk-pixbuf2.0-dev \
             libsoup-3.0-dev xdg-utils file desktop-file-utils libfuse2
 
-      - name: Install Node.js 20
+      - name: Install Node.js 22
         run: |
-          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
           apt-get install -y nodejs
 
       - name: Install Rust
@@ -246,7 +246,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -296,7 +296,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -341,7 +341,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: Install dependencies
@@ -373,7 +373,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "22"
           cache: "pnpm"
 
       - name: Install dependencies
