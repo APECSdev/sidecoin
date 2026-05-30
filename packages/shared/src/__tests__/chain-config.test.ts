@@ -399,7 +399,7 @@ describe("Address Format Detection", () => {
   });
 
   it("returns unknown for unrecognized format", () => {
-    expect(detectAddressFormat("notanaddress", ECASH_MAINNET)).toBe("unknown");
+    expect(detectAddressFormat("xyz_not_a_valid_address!", ECASH_MAINNET)).toBe("unknown");
   });
 });
 

@@ -138,7 +138,7 @@ jobs:
 
       - name: Run Mobile Tests
         if: matrix.platform == 'ubuntu-latest'
-        run: pnpm --filter @sidecoin/mobile test -- --passWithNoTests
+        run: pnpm --filter @sidecoin/mobile test
 
       - name: Run E2E Tests
         continue-on-error: ${{ matrix.platform != 'ubuntu-latest' }}

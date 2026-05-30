@@ -149,7 +149,7 @@ jobs:
 
       - name: Run Mobile Tests
         if: matrix.platform == 'ubuntu-latest'
-        run: pnpm --filter @sidecoin/mobile test -- --passWithNoTests
+        run: pnpm --filter @sidecoin/mobile test
 
       # ── Desktop — E2E ───────────────────────────────────────
 
