@@ -30,10 +30,11 @@ src-tauri/target/
 
 # Tauri generated
 src-tauri/gen/
-src-tauri/icons/icon.ico
-src-tauri/icons/icon.icns
-src-tauri/icons/*.png
-!src-tauri/icons/.gitkeep
+# NOTE: Icon files (32x32.png, 128x128.png, 128x128@2x.png, icon.icns,
+# icon.ico) are deliberately tracked in git. Tauri's generate_context!()
+# proc macro reads them at compile time. If they are missing, compilation
+# fails with "icon file not found". Only icon.png (not referenced in
+# tauri.conf.json) is excluded.
 
 # =============================================================================
 # Specta / generated bindings
