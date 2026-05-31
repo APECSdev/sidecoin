@@ -21,11 +21,12 @@ import {
 const fetchMock = vi.fn();
 
 beforeEach(() => {
+  fetchMock.mockReset();
   vi.stubGlobal("fetch", fetchMock);
 });
 
 afterEach(() => {
-  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 // ---------------------------------------------------------------------------
@@ -44,6 +45,28 @@ function mockFetchResponse(body: unknown, status = 200) {
 
 function mockFetchError(message: string) {
   fetchMock.mockRejectedValueOnce(new Error(message));
+}
+
+/**
+ * Returns the fetch call that matches the given URL substring.
+ * Useful when a function under test makes multiple fetch calls
+ * (or when prior tests leave residual calls).
+ */
+function findCall(urlFragment: string): [string, RequestInit | undefined] | undefined {
+  for (const call of fetchMock.mock.calls) {
+    if ((call[0] as string).includes(urlFragment)) {
+      return call as [string, RequestInit | undefined];
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Returns the last fetch call made (most recent).
+ */
+function lastCall(): [string, RequestInit | undefined] {
+  const calls = fetchMock.mock.calls;
+  return calls[calls.length - 1] as [string, RequestInit | undefined];
 }
 
 // ---------------------------------------------------------------------------
@@ -94,9 +117,8 @@ describe("getAvailableCurrencies", () => {
 
     await getAvailableCurrencies();
 
-    expect(fetchMock.mock.calls[0][1]?.headers).toEqual({
-      "Content-Type": "application/json",
-    });
+    const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>;
+    expect(headers["Content-Type"]).toBe("application/json");
   });
 });
 
@@ -128,7 +150,9 @@ describe("getEstimate", () => {
 
     await getEstimate(35, "ETH");
 
-    const url = fetchMock.mock.calls[0][0] as string;
+    const call = findCall("/estimate");
+    expect(call).toBeDefined();
+    const url = call![0];
     expect(url).toContain("amount=35");
     expect(url).toContain("currency_from=usd");
     expect(url).toContain("currency_to=eth");
@@ -143,8 +167,9 @@ describe("getEstimate", () => {
 
     await getEstimate(25, "USDCERC20");
 
-    const url = fetchMock.mock.calls[0][0] as string;
-    expect(url).toContain("currency_to=usdcerc20");
+    const call = findCall("/estimate");
+    expect(call).toBeDefined();
+    expect(call![0]).toContain("currency_to=usdcerc20");
   });
 
   it("should throw on HTTP error", async () => {
@@ -218,7 +243,9 @@ describe("createPayment", () => {
 
     await createPayment(testApiKey, testRequest);
 
-    const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>;
+    const call = findCall("/payment");
+    expect(call).toBeDefined();
+    const headers = call![1]?.headers as Record<string, string>;
     expect(headers["x-api-key"]).toBe(testApiKey);
   });
 
@@ -240,7 +267,9 @@ describe("createPayment", () => {
 
     await createPayment(testApiKey, testRequest);
 
-    expect(fetchMock.mock.calls[0][1]?.method).toBe("POST");
+    const call = findCall("/payment");
+    expect(call).toBeDefined();
+    expect(call![1]?.method).toBe("POST");
   });
 
   it("should stringify the request body", async () => {
@@ -261,7 +290,9 @@ describe("createPayment", () => {
 
     await createPayment(testApiKey, testRequest);
 
-    const body = fetchMock.mock.calls[0][1]?.body as string;
+    const call = findCall("/payment");
+    expect(call).toBeDefined();
+    const body = call![1]?.body as string;
     const parsed = JSON.parse(body);
     expect(parsed.price_amount).toBe(25);
     expect(parsed.pay_currency).toBe("btc");
@@ -323,7 +354,9 @@ describe("getPaymentStatus", () => {
 
     await getPaymentStatus(testApiKey, "pay-1");
 
-    const headers = fetchMock.mock.calls[0][1]?.headers as Record<string, string>;
+    const call = findCall("/payment/pay-1");
+    expect(call).toBeDefined();
+    const headers = call![1]?.headers as Record<string, string>;
     expect(headers["x-api-key"]).toBe(testApiKey);
   });
 
@@ -340,8 +373,9 @@ describe("getPaymentStatus", () => {
 
     await getPaymentStatus(testApiKey, "pay-xyz-789");
 
-    const url = fetchMock.mock.calls[0][0] as string;
-    expect(url).toContain("/payment/pay-xyz-789");
+    const call = findCall("/payment/pay-xyz-789");
+    expect(call).toBeDefined();
+    expect(call![0]).toContain("/payment/pay-xyz-789");
   });
 
   it("should throw on HTTP error", async () => {
@@ -405,7 +439,9 @@ describe("getMinimumAmount", () => {
 
     await getMinimumAmount("ETH");
 
-    const url = fetchMock.mock.calls[0][0] as string;
+    const call = findCall("/min-amount");
+    expect(call).toBeDefined();
+    const url = call![0];
     expect(url).toContain("currency_from=eth");
     expect(url).toContain("currency_to=eth");
   });
@@ -439,6 +475,8 @@ describe("getMinimumAmount", () => {
 
     await getMinimumAmount("ltc");
 
-    expect(fetchMock.mock.calls[0][1]?.method).toBe("GET");
+    const call = findCall("/min-amount");
+    expect(call).toBeDefined();
+    expect(call![1]?.method).toBe("GET");
   });
 });
