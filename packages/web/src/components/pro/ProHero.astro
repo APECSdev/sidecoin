@@ -1,0 +1,49 @@
+---
+// packages/web/src/components/pro/ProHero.astro
+//
+// Hero section for the /pro page.
+// Headline, subheadline, and primary CTA button.
+---
+
+<header class="relative overflow-hidden">
+  <!-- Background gradient — gold/amber tinted for Pro branding -->
+  <div class="absolute inset-0 bg-gradient-to-b from-amber-950/20 via-gray-950 to-gray-950"></div>
+
+  <div class="relative mx-auto max-w-5xl px-6 pb-20 pt-24 text-center md:pt-32">
+
+    <!-- Pro badge -->
+    <div class="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-800/50 bg-amber-950/30 px-4 py-1.5">
+      <span class="h-2 w-2 rounded-full bg-amber-400 animate-pulse"></span>
+      <span class="text-xs font-semibold uppercase tracking-widest text-amber-400">
+        Founding Member Pricing
+      </span>
+    </div>
+
+    <h1 class="text-5xl font-extrabold tracking-tight md:text-7xl">
+      Upgrade to
+      <span class="bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 bg-clip-text text-transparent">
+        Sidecoin Pro
+      </span>
+    </h1>
+
+    <p class="mx-auto mt-6 max-w-2xl text-lg text-gray-400 md:text-xl">
+      Reduce fees. Unlock advanced features. Become a Founding Member
+      of the Bitcoin Drivechain Financial Hub.
+    </p>
+
+    <!-- Primary CTA -->
+    <div class="mt-10">
+      <a
+        href="#pricing"
+        class="inline-block rounded-lg bg-amber-500 px-10 py-4 text-base font-bold text-gray-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 hover:shadow-amber-400/30"
+      >
+        Get Founding Access
+      </a>
+    </div>
+
+    <!-- Social proof hint -->
+    <p class="mt-6 text-sm text-gray-500">
+      Available until August 21, 2026 · Crypto payments only
+    </p>
+  </div>
+</header>

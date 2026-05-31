@@ -1,0 +1,66 @@
+---
+// packages/web/src/components/pro/FoundingMember.astro
+//
+// Explains what a Founding Member is and why it matters.
+
+const perks = [
+  "Early supporter of Sidecoin before Drivechain activation",
+  "Permanent badge and recognition across all platforms",
+  "Assigned a unique Founder number (e.g. Founder #42)",
+  "Early access to features and platform capabilities",
+  "Eligible for Alpha Circle (top 10% at activation)",
+];
+---
+
+<section class="border-t border-gray-800 bg-gray-900/30">
+  <div class="mx-auto max-w-5xl px-6 py-20">
+    <div class="grid items-center gap-12 md:grid-cols-2">
+
+      <!-- Text -->
+      <div>
+        <h2 class="text-3xl font-bold md:text-4xl">
+          What is a
+          <span class="text-amber-400">Founding Member</span>?
+        </h2>
+        <p class="mt-4 text-gray-400 leading-relaxed">
+          Founding Members are the earliest supporters of Sidecoin —
+          the people who believed in the Drivechain vision before
+          activation. Each Founder receives permanent recognition
+          and a unique number that can never be reassigned.
+        </p>
+        <ul class="mt-8 space-y-4">
+          {perks.map((p) => (
+            <li class="flex items-start gap-3 text-sm text-gray-300">
+              <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span>{p}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Visual / Badge mockup -->
+      <div class="flex items-center justify-center">
+        <div class="relative rounded-2xl border border-amber-800/40 bg-amber-950/20 px-12 py-16 text-center">
+          <!-- Glow effect -->
+          <div class="absolute inset-0 rounded-2xl bg-amber-500/5 blur-xl"></div>
+
+          <div class="relative">
+            <!-- Badge icon -->
+            <div class="mx-auto flex h-20 w-20 items-center justify-center rounded-full border-2 border-amber-500/50 bg-amber-950/40">
+              <svg class="h-10 w-10 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+              </svg>
+            </div>
+
+            <p class="mt-6 text-xl font-bold text-white">Founding Member</p>
+            <p class="mt-1 font-mono text-3xl font-extrabold text-amber-400">#042</p>
+            <p class="mt-3 text-xs text-gray-500 font-mono">sidecoin.app/founder/042</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>

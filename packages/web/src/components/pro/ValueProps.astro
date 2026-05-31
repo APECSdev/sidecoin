@@ -1,0 +1,53 @@
+---
+// packages/web/src/components/pro/ValueProps.astro
+//
+// Value proposition section — lists core Sidecoin Pro benefits.
+
+const benefits = [
+  {
+    icon: "⚡",
+    title: "Lower Fees",
+    description: "Reduced fees on swaps and bridging across all sidechains after Drivechain activation.",
+  },
+  {
+    icon: "🔑",
+    title: "Early Access",
+    description: "Be first to explore new sidechains and platform features before general availability.",
+  },
+  {
+    icon: "🛠️",
+    title: "Advanced Tools",
+    description: "Unlock advanced routing, analytics, and cross-chain tools built for power users.",
+  },
+  {
+    icon: "🏅",
+    title: "Founding Member Badge",
+    description: "Permanent on-chain recognition as a Founding Member of the Sidecoin ecosystem.",
+  },
+  {
+    icon: "🌐",
+    title: "Ecosystem Support",
+    description: "Your membership directly funds the development of the Drivechain ecosystem.",
+  },
+];
+---
+
+<section class="mx-auto max-w-5xl px-6 py-20">
+  <h2 class="text-center text-3xl font-bold md:text-4xl">
+    Why <span class="text-amber-400">Sidecoin Pro</span>?
+  </h2>
+  <p class="mx-auto mt-4 max-w-2xl text-center text-gray-400">
+    Pro members get the best of Sidecoin — lower costs, earlier access,
+    and a permanent stake in the ecosystem.
+  </p>
+
+  <div class="mt-14 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+    {benefits.map((b) => (
+      <div class="rounded-xl border border-gray-800 bg-gray-900/40 p-6 transition-colors hover:border-amber-900/60">
+        <div class="mb-3 text-3xl">{b.icon}</div>
+        <h3 class="text-lg font-semibold text-white">{b.title}</h3>
+        <p class="mt-2 text-sm leading-relaxed text-gray-400">{b.description}</p>
+      </div>
+    ))}
+  </div>
+</section>

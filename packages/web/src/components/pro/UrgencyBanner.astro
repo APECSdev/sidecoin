@@ -1,0 +1,99 @@
+---
+// packages/web/src/components/pro/UrgencyBanner.astro
+//
+// Urgency section with countdown timer to Founding Member pricing deadline.
+// Reuses the same fork date as ForkCountdown.vue.
+---
+
+<section class="border-t border-gray-800">
+  <div class="mx-auto max-w-5xl px-6 py-16 text-center">
+
+    <p class="text-sm uppercase tracking-widest text-amber-400">
+      Limited Time
+    </p>
+
+    <h2 class="mt-4 text-2xl font-bold md:text-3xl">
+      Founding Member pricing ends August 21, 2026
+    </h2>
+
+    <p class="mx-auto mt-3 max-w-xl text-gray-400">
+      After Drivechain activation, Pro pricing will increase.
+      Secure your Founder number and lock in the lowest rate.
+    </p>
+
+    <!-- Countdown timer — rendered client-side -->
+    <div class="mt-10" id="urgency-countdown">
+      <div class="flex items-center justify-center gap-4 font-mono text-4xl font-bold text-amber-400 md:text-5xl">
+        <div class="flex flex-col items-center">
+          <span id="urgency-days">--</span>
+          <span class="mt-1 text-xs font-normal uppercase tracking-wider text-gray-500">Days</span>
+        </div>
+        <span class="text-gray-700">:</span>
+        <div class="flex flex-col items-center">
+          <span id="urgency-hours">--</span>
+          <span class="mt-1 text-xs font-normal uppercase tracking-wider text-gray-500">Hours</span>
+        </div>
+        <span class="text-gray-700">:</span>
+        <div class="flex flex-col items-center">
+          <span id="urgency-mins">--</span>
+          <span class="mt-1 text-xs font-normal uppercase tracking-wider text-gray-500">Min</span>
+        </div>
+        <span class="text-gray-700">:</span>
+        <div class="flex flex-col items-center">
+          <span id="urgency-secs">--</span>
+          <span class="mt-1 text-xs font-normal uppercase tracking-wider text-gray-500">Sec</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="mt-10">
+      <a
+        href="#pricing"
+        class="inline-block rounded-lg bg-amber-500 px-10 py-4 text-base font-bold text-gray-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400"
+      >
+        Get Founding Access
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<!-- Countdown script — vanilla JS, no framework dependency -->
+<script>
+  const FORK_DATE = new Date("2026-08-21T15:00:00Z").getTime();
+
+  const $days = document.getElementById("urgency-days");
+  const $hours = document.getElementById("urgency-hours");
+  const $mins = document.getElementById("urgency-mins");
+  const $secs = document.getElementById("urgency-secs");
+
+  function pad(n: number): string {
+    return n.toString().padStart(2, "0");
+  }
+
+  function tick(): void {
+    const diff = FORK_DATE - Date.now();
+
+    if (diff <= 0) {
+      if ($days) $days.textContent = "00";
+      if ($hours) $hours.textContent = "00";
+      if ($mins) $mins.textContent = "00";
+      if ($secs) $secs.textContent = "00";
+      return;
+    }
+
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+    if ($days) $days.textContent = d.toString();
+    if ($hours) $hours.textContent = pad(h);
+    if ($mins) $mins.textContent = pad(m);
+    if ($secs) $secs.textContent = pad(s);
+  }
+
+  tick();
+  setInterval(tick, 1000);
+</script>

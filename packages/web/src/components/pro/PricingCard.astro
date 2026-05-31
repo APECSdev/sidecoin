@@ -1,0 +1,99 @@
+---
+// packages/web/src/components/pro/PricingCard.astro
+//
+// Reusable pricing card component.
+// Used in PricingSection to display individual plan options.
+
+interface Props {
+  planId: string;
+  title: string;
+  price: number;
+  period: string;
+  label?: string;
+  featured?: boolean;
+  features: string[];
+}
+
+const {
+  planId,
+  title,
+  price,
+  period,
+  label,
+  featured = false,
+  features,
+} = Astro.props;
+---
+
+<div
+  class:list={[
+    "relative flex flex-col rounded-2xl border p-8 transition-all",
+    featured
+      ? "border-amber-500/50 bg-amber-950/10 shadow-lg shadow-amber-500/5 scale-[1.02] lg:scale-105"
+      : "border-gray-800 bg-gray-900/40 hover:border-gray-700",
+  ]}
+  data-plan-id={planId}
+>
+  <!-- Badge -->
+  {label && (
+    <div
+      class:list={[
+        "absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full px-4 py-1 text-xs font-bold uppercase tracking-wider",
+        featured
+          ? "bg-amber-500 text-gray-950"
+          : "bg-gray-700 text-gray-300",
+      ]}
+    >
+      {label}
+    </div>
+  )}
+
+  <!-- Plan title -->
+  <h3 class="mt-2 text-center text-lg font-semibold text-white">
+    {title}
+  </h3>
+
+  <!-- Price -->
+  <div class="mt-6 text-center">
+    <span class="text-5xl font-extrabold text-white">
+      ${price}
+    </span>
+    <span class="ml-1 text-sm text-gray-400">
+      / {period}
+    </span>
+  </div>
+
+  <!-- Per-month breakdown -->
+  <p class="mt-2 text-center text-xs text-gray-500">
+    {price === 35
+      ? "~1.46 USD / month"
+      : "~2.08 USD / month"
+    }
+  </p>
+
+  <!-- Features -->
+  <ul class="mt-8 flex-1 space-y-3">
+    {features.map((f) => (
+      <li class="flex items-start gap-3 text-sm text-gray-300">
+        <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+        <span>{f}</span>
+      </li>
+    ))}
+  </ul>
+
+  <!-- CTA -->
+  <button
+    class:list={[
+      "mt-8 w-full rounded-lg py-3.5 text-sm font-bold transition-all",
+      featured
+        ? "bg-amber-500 text-gray-950 shadow-lg shadow-amber-500/20 hover:bg-amber-400"
+        : "border border-gray-700 bg-gray-800 text-white hover:border-amber-700 hover:bg-gray-700",
+    ]}
+    data-action="select-plan"
+    data-plan={planId}
+  >
+    Upgrade with Crypto
+  </button>
+</div>

@@ -1,0 +1,54 @@
+---
+// packages/web/src/components/pro/PricingSection.astro
+//
+// Displays both pricing plans side by side.
+// Composes PricingCard components.
+
+import PricingCard from "./PricingCard.astro";
+
+const sharedFeatures = [
+  "Lower fees on swaps & bridging",
+  "Early access to new sidechains",
+  "Advanced tools & routing",
+  "Permanent Founding Member badge",
+  "Unique Founder number",
+  "Support Drivechain development",
+];
+---
+
+<section id="pricing" class="mx-auto max-w-5xl px-6 py-20">
+  <h2 class="text-center text-3xl font-bold md:text-4xl">
+    Founding Member <span class="text-amber-400">Pricing</span>
+  </h2>
+  <p class="mx-auto mt-4 max-w-xl text-center text-gray-400">
+    Lock in Founding Member rates before Drivechain activation.
+    Available until August 21, 2026.
+  </p>
+
+  <div class="mt-14 grid items-center gap-8 md:grid-cols-2">
+    <!-- 1 Year Plan -->
+    <PricingCard
+      planId="pro-1y"
+      title="1 Year"
+      price={25}
+      period="year"
+      label="Founding Member"
+      features={sharedFeatures}
+    />
+
+    <!-- 2 Year Plan — Featured -->
+    <PricingCard
+      planId="pro-2y"
+      title="2 Years"
+      price={35}
+      period="2 years"
+      label="Best Value"
+      featured={true}
+      features={[
+        ...sharedFeatures,
+        "Eligible for Alpha Circle",
+        "Best per-month rate",
+      ]}
+    />
+  </div>
+</section>
