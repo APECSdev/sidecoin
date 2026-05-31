@@ -87,6 +87,9 @@ jobs:
       - name: Build Web
         run: pnpm --filter @sidecoin/web build
 
+      - name: Test Web
+        run: pnpm --filter @sidecoin/web test
+
       # ── Wallet ──────────────────────────────────────────────
 
       - name: Build Wallet
@@ -224,3 +227,73 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ── Cloudflare Pages — Landing Site ──────────────────────
+  #
+  # Deploys on every push to master after all CI jobs pass.
+  # PRs do NOT deploy — only merged commits to master.
+  # ─────────────────────────────────────────────────────────
+
+  deploy-web:
+    needs: guardian
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Shared
+        run: pnpm --filter @sidecoin/shared build
+
+      - name: Build Web
+        run: pnpm --filter @sidecoin/web build
+
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy packages/web/dist --project-name=sidecoin --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ── Cloudflare Pages — Wallet App ────────────────────────
+
+  deploy-wallet:
+    needs: guardian
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Shared
+        run: pnpm --filter @sidecoin/shared build
+
+      - name: Build Wallet
+        run: pnpm --filter @sidecoin/wallet build
+
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy packages/wallet/dist --project-name=sidecoin-wallet --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
