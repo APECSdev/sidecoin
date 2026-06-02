@@ -1,14 +1,13 @@
 // packages/web/vitest.config.ts
-//
-// Vitest configuration for @sidecoin/web.
-// Matches the conventions used by @sidecoin/desktop and @sidecoin/wallet.
 
 import { defineConfig } from "vitest/config";
+import { fileURLToPath, URL } from "node:url";
+import fs from "node:fs";
 
 export default defineConfig({
   resolve: {
     alias: {
-      "@/": new URL("./src/", import.meta.url).pathname,
+      "@": fileURLToPath(new URL("./src", import.meta.url)),
     },
   },
 
@@ -16,5 +15,11 @@ export default defineConfig({
     environment: "happy-dom",
     include: ["src/**/*.{test,spec}.ts"],
     globals: false,
+  },
+
+  esbuild: {
+    tsconfigRaw: JSON.parse(
+      fs.readFileSync(new URL("./tsconfig.test.json", import.meta.url), "utf-8")
+    ),
   },
 });
