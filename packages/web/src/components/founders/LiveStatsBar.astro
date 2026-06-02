@@ -1,0 +1,107 @@
+---
+// packages/web/src/components/founders/LiveStatsBar.astro
+//
+// Displays three live stats:
+//   1. Total Founders (populated client-side)
+//   2. Alpha Circle Cut Line (top 10%)
+//   3. Countdown to August 21, 2026
+//
+// Values are populated by client-side JavaScript on mount
+// and fall back to placeholder text if JS is disabled.
+---
+
+<section class="border-y border-gray-800 bg-gray-900/40">
+  <div class="mx-auto max-w-5xl px-6 py-8">
+    <div class="grid gap-6 sm:grid-cols-3">
+
+      <!-- Total Founders -->
+      <div class="text-center">
+        <p class="text-xs uppercase tracking-widest text-gray-500">
+          Total Founders
+        </p>
+        <p class="mt-2 font-mono text-3xl font-bold text-white" id="stats-total-founders">
+          —
+        </p>
+      </div>
+
+      <!-- Alpha Circle Cut Line -->
+      <div class="text-center">
+        <p class="text-xs uppercase tracking-widest text-gray-500">
+          Alpha Circle Cut Line
+        </p>
+        <p class="mt-2 font-mono text-3xl font-bold text-amber-400" id="stats-cut-line">
+          —
+        </p>
+      </div>
+
+      <!-- Countdown -->
+      <div class="text-center">
+        <p class="text-xs uppercase tracking-widest text-gray-500">
+          Positions Lock In
+        </p>
+        <p class="mt-2 font-mono text-3xl font-bold text-white" id="stats-countdown">
+          —
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- Stats bar script — vanilla JS, no framework dependency -->
+<script>
+  const FORK_DATE = new Date("2026-08-21T15:00:00Z").getTime();
+
+  const $totalFounders = document.getElementById("stats-total-founders");
+  const $cutLine = document.getElementById("stats-cut-line");
+  const $countdown = document.getElementById("stats-countdown");
+
+  // ── Countdown timer ──────────────────────────────────────
+
+  function pad(n: number): string {
+    return n.toString().padStart(2, "0");
+  }
+
+  function tickCountdown(): void {
+    const diff = FORK_DATE - Date.now();
+
+    if (diff <= 0) {
+      if ($countdown) $countdown.textContent = "LIVE";
+      return;
+    }
+
+    const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+    if ($countdown) {
+      $countdown.textContent = `${d}d ${pad(h)}:${pad(m)}:${pad(s)}`;
+    }
+  }
+
+  tickCountdown();
+  setInterval(tickCountdown, 1000);
+
+  // ── Founder stats (mock data — replace with API call) ────
+  //
+  // TODO: Replace with actual API endpoint when backend is ready.
+  // Expected endpoint: GET /api/founders/stats
+  // Response: { total: number, cutLine: number }
+
+  function updateFounderStats(total: number): void {
+    const cutLine = Math.max(1, Math.ceil(total * 0.10));
+
+    if ($totalFounders) {
+      $totalFounders.textContent = total.toLocaleString();
+    }
+
+    if ($cutLine) {
+      $cutLine.textContent = `#${cutLine.toLocaleString()}`;
+    }
+  }
+
+  // Simulated stats — remove when API is available
+  // In production this will be: fetch("/api/founders/stats").then(...)
+  updateFounderStats(1284);
+</script>

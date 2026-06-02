@@ -1,0 +1,145 @@
+---
+// packages/web/src/components/founders/AlphaCircleExplainer.astro
+//
+// Alpha Circle explainer section for the /founders page.
+// Explains what the Alpha Circle is, its benefits,
+// and how the cut line works.
+
+const benefits = [
+  {
+    title: "Upgraded Founder Badge",
+    description: "Alpha Circle members receive a distinct badge variant, permanently displayed across all Sidecoin platforms.",
+    icon: "badge",
+  },
+  {
+    title: "Nightly Build Access",
+    description: "Exclusive access to experimental features and early releases before they reach the general user base.",
+    icon: "code",
+  },
+  {
+    title: "Early Sidechain Access",
+    description: "Be the first to use new sidechains and platform capabilities as they come online.",
+    icon: "chain",
+  },
+  {
+    title: "Ecosystem Recognition",
+    description: "Permanent recognition as part of the earliest contributors to the Bitcoin Drivechain ecosystem.",
+    icon: "star",
+  },
+];
+---
+
+<section class="mx-auto max-w-5xl px-6 py-20">
+  <div class="rounded-2xl border border-amber-800/30 bg-gradient-to-br from-amber-950/20 via-gray-950 to-gray-950 p-10 md:p-14">
+
+    <!-- Header -->
+    <div class="text-center">
+      <div class="mb-4 inline-flex items-center gap-2 rounded-full border border-amber-700/40 bg-amber-950/30 px-4 py-1.5">
+        <span class="text-xs font-bold uppercase tracking-widest text-amber-400">
+          Top 10%
+        </span>
+      </div>
+
+      <h2 class="text-3xl font-bold md:text-4xl">
+        <span class="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">
+          Alpha Circle
+        </span>
+      </h2>
+
+      <p class="mx-auto mt-4 max-w-2xl text-gray-400 leading-relaxed">
+        The top 10% of Founding Members at the time of Drivechain activation
+        (August 21, 2026) will be inducted into the Alpha Circle —
+        a permanent group of early participants with exclusive access
+        and elevated status within Sidecoin.
+      </p>
+    </div>
+
+    <!-- Benefits grid -->
+    <div class="mt-12 grid gap-4 sm:grid-cols-2">
+
+      <!-- Upgraded Founder Badge -->
+      <div class="flex items-start gap-4 rounded-xl border border-gray-800 bg-gray-900/60 p-6">
+        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-amber-800/40 bg-amber-950/30">
+          <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12c0 1.268-.63 2.39-1.593 3.068a3.745 3.745 0 01-1.043 3.296 3.745 3.745 0 01-3.296 1.043A3.745 3.745 0 0112 21c-1.268 0-2.39-.63-3.068-1.593a3.746 3.746 0 01-3.296-1.043 3.745 3.745 0 01-1.043-3.296A3.745 3.745 0 013 12c0-1.268.63-2.39 1.593-3.068a3.745 3.745 0 011.043-3.296 3.746 3.746 0 013.296-1.043A3.746 3.746 0 0112 3c1.268 0 2.39.63 3.068 1.593a3.746 3.746 0 013.296 1.043 3.746 3.746 0 011.043 3.296A3.745 3.745 0 0121 12z" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-white">{benefits[0].title}</p>
+          <p class="mt-1 text-sm text-gray-400">{benefits[0].description}</p>
+        </div>
+      </div>
+
+      <!-- Nightly Build Access -->
+      <div class="flex items-start gap-4 rounded-xl border border-gray-800 bg-gray-900/60 p-6">
+        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-amber-800/40 bg-amber-950/30">
+          <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-white">{benefits[1].title}</p>
+          <p class="mt-1 text-sm text-gray-400">{benefits[1].description}</p>
+        </div>
+      </div>
+
+      <!-- Early Sidechain Access -->
+      <div class="flex items-start gap-4 rounded-xl border border-gray-800 bg-gray-900/60 p-6">
+        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-amber-800/40 bg-amber-950/30">
+          <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m9.915-3.374l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-white">{benefits[2].title}</p>
+          <p class="mt-1 text-sm text-gray-400">{benefits[2].description}</p>
+        </div>
+      </div>
+
+      <!-- Ecosystem Recognition -->
+      <div class="flex items-start gap-4 rounded-xl border border-gray-800 bg-gray-900/60 p-6">
+        <div class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg border border-amber-800/40 bg-amber-950/30">
+          <svg class="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
+          </svg>
+        </div>
+        <div>
+          <p class="font-semibold text-white">{benefits[3].title}</p>
+          <p class="mt-1 text-sm text-gray-400">{benefits[3].description}</p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- How the cut line works -->
+    <div class="mt-12 grid gap-6 sm:grid-cols-2">
+      <div class="rounded-xl border border-gray-800 bg-gray-950 p-6 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-800/40 bg-amber-950/30">
+          <svg class="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 7.5L7.5 3m0 0L12 7.5M7.5 3v13.5m13.5 0L16.5 21m0 0L12 16.5m4.5 4.5V7.5" />
+          </svg>
+        </div>
+        <p class="mt-4 text-sm font-semibold text-white">Dynamic Cut Line</p>
+        <p class="mt-2 text-xs text-gray-500 leading-relaxed">
+          The cut line moves as new members join.
+          Early members improve their relative position
+          as the total grows.
+        </p>
+      </div>
+
+      <div class="rounded-xl border border-gray-800 bg-gray-950 p-6 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-800/40 bg-amber-950/30">
+          <svg class="h-6 w-6 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+          </svg>
+        </div>
+        <p class="mt-4 text-sm font-semibold text-white">Positions Locked at Fork</p>
+        <p class="mt-2 text-xs text-gray-500 leading-relaxed">
+          On August 21, 2026, positions are permanently locked.
+          The top 10% at that moment become the Alpha Circle.
+        </p>
+      </div>
+    </div>
+
+  </div>
+</section>

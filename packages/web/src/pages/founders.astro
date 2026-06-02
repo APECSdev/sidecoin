@@ -1,0 +1,71 @@
+---
+// packages/web/src/pages/founders.astro
+//
+// Founding Members leaderboard and Alpha Circle introduction.
+// Served from: sidecoin.app/founders
+//
+// Displays:
+//   1. Hero section — headline and social proof
+//   2. Live stats bar — total founders, cut line, countdown
+//   3. Alpha Circle explainer — benefits and eligibility
+//   4. Leaderboard — scrollable, paginated list with cut line
+//   5. Footer CTA — conversion upsell with pricing
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import FoundersHero from "../components/founders/FoundersHero.astro";
+import LiveStatsBar from "../components/founders/LiveStatsBar.astro";
+import AlphaCircleExplainer from "../components/founders/AlphaCircleExplainer.astro";
+import Leaderboard from "../components/founders/Leaderboard.vue";
+import FoundersFooterCTA from "../components/founders/FoundersFooterCTA.astro";
+---
+
+<BaseLayout
+  title="Founding Members — Sidecoin Leaderboard"
+  description="See who joined early. The top 10% of Founding Members at Drivechain activation become the Alpha Circle — a permanent group with exclusive access and elevated status."
+>
+  <!-- Hero -->
+  <FoundersHero />
+
+  <!-- Live Stats Bar -->
+  <LiveStatsBar />
+
+  <!-- Alpha Circle Explainer -->
+  <AlphaCircleExplainer />
+
+  <!-- Leaderboard (Vue, client-side hydration) -->
+  <section class="mx-auto max-w-5xl px-6 py-20">
+    <h2 class="text-center text-3xl font-bold md:text-4xl">
+      Founding Members <span class="text-amber-400">Leaderboard</span>
+    </h2>
+    <p class="mx-auto mt-4 max-w-xl text-center text-gray-400">
+      Sorted by Founder number. The earlier you join, the lower your number.
+    </p>
+
+    <div class="mt-12">
+      <Leaderboard client:visible />
+    </div>
+  </section>
+
+  <!-- Footer CTA -->
+  <FoundersFooterCTA />
+
+  <!-- ─── Footer ──────────────────────────────────────────── -->
+  <footer class="border-t border-gray-800">
+    <div class="mx-auto max-w-5xl px-6 py-12">
+      <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
+        <div>
+          <p class="text-lg font-bold text-ecash-400">Sidecoin</p>
+          <p class="text-sm text-gray-500">eCash Drivechains Wallet · Open Source · MIT License</p>
+        </div>
+        <div class="flex gap-6 text-sm text-gray-400">
+          <a href="https://github.com/nyusternie/sidecoin" class="hover:text-white">GitHub</a>
+          <a href="https://ecash.com" class="hover:text-white">eCash</a>
+          <a href="https://bip300.info" class="hover:text-white">BIP-300</a>
+        </div>
+      </div>
+      <p class="mt-8 text-center text-xs text-gray-600">
+        © 2026 0xShomari. Not affiliated with eCash or Bitcoin ABC.
+      </p>
+    </div>
+  </footer>
+</BaseLayout>

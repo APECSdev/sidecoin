@@ -1,0 +1,96 @@
+---
+// packages/web/src/components/founders/FoundersFooterCTA.astro
+//
+// Bottom upsell section for the /founders page.
+// Drives conversion with pricing, dynamic cut-line messaging,
+// and urgency. Links to /pro for actual payment.
+---
+
+<section class="border-t border-gray-800 bg-gradient-to-t from-amber-950/10 to-gray-950">
+  <div class="mx-auto max-w-3xl px-6 py-20 text-center">
+
+    <h2 class="text-3xl font-bold md:text-4xl">
+      Join the
+      <span class="text-amber-400">Founding Members</span>
+    </h2>
+
+    <p class="mx-auto mt-4 max-w-xl text-gray-400">
+      Secure your position before the August 21, 2026 Drivechain activation.
+    </p>
+
+    <!-- Dynamic stats -->
+    <div class="mx-auto mt-8 flex max-w-md flex-col gap-3 rounded-xl border border-gray-800 bg-gray-900/60 p-6">
+      <div class="flex items-center justify-between">
+        <span class="text-xs uppercase tracking-wider text-gray-500">Current Cut Line</span>
+        <span class="font-mono text-sm font-bold text-amber-400" id="cta-cut-line">#—</span>
+      </div>
+      <div class="h-px bg-gray-800"></div>
+      <div class="flex items-center justify-between">
+        <span class="text-xs uppercase tracking-wider text-gray-500">Latest Member</span>
+        <span class="font-mono text-sm font-bold text-white" id="cta-latest-member">#—</span>
+      </div>
+    </div>
+
+    <p class="mx-auto mt-6 max-w-md text-sm text-gray-500">
+      Positions are filling daily. Early members secure better placement
+      and eligibility for the Alpha Circle.
+    </p>
+
+    <!-- Pricing summary -->
+    <div class="mx-auto mt-10 grid max-w-md gap-4 sm:grid-cols-2">
+      <div class="rounded-xl border border-gray-800 bg-gray-900/40 p-5 text-center">
+        <p class="text-2xl font-extrabold text-white">$25</p>
+        <p class="mt-1 text-xs text-gray-400">1 Year · Founding Member</p>
+      </div>
+      <div class="rounded-xl border border-amber-500/40 bg-amber-950/10 p-5 text-center">
+        <p class="text-2xl font-extrabold text-white">$35</p>
+        <p class="mt-1 text-xs text-amber-400">2 Years · Best Value</p>
+      </div>
+    </div>
+
+    <!-- CTAs -->
+    <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+      <a
+        href="/pro"
+        class="rounded-lg bg-amber-500 px-10 py-4 text-base font-bold text-gray-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 hover:shadow-amber-400/30"
+      >
+        Become a Founding Member
+      </a>
+      <a
+        href="/pro#pricing"
+        class="rounded-lg border border-gray-700 bg-gray-900 px-8 py-4 text-base font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
+      >
+        Get Pro with Crypto
+      </a>
+    </div>
+
+    <p class="mt-6 text-xs text-gray-600">
+      Crypto payments only · No accounts required · Instant activation
+    </p>
+  </div>
+</section>
+
+<!-- CTA stats script — vanilla JS, no framework dependency -->
+<script>
+  // TODO: Replace with actual API call when backend is ready.
+  // Expected endpoint: GET /api/founders/stats
+  // Response: { total: number, cutLine: number }
+
+  const $ctaCutLine = document.getElementById("cta-cut-line");
+  const $ctaLatestMember = document.getElementById("cta-latest-member");
+
+  function updateCTAStats(total: number): void {
+    const cutLine = Math.max(1, Math.ceil(total * 0.10));
+
+    if ($ctaCutLine) {
+      $ctaCutLine.textContent = `#${cutLine.toLocaleString()}`;
+    }
+
+    if ($ctaLatestMember) {
+      $ctaLatestMember.textContent = `#${total.toLocaleString()}`;
+    }
+  }
+
+  // Simulated stats — remove when API is available
+  updateCTAStats(1284);
+</script>
