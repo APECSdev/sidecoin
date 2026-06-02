@@ -1,0 +1,101 @@
+---
+// packages/web/src/components/chains/ChainCard.astro
+//
+// Clickable card for a sidechain on the /chains page.
+// Shows name, tagline, status badge, and slot number.
+// Clicking expands the ChainDetail inline via the
+// <details> element — no JavaScript required.
+
+interface Props {
+  slotNumber: number;
+  name: string;
+  tagline: string;
+  description: string;
+  status: "active" | "proposed";
+  features?: string[];
+}
+
+const {
+  slotNumber,
+  name,
+  tagline,
+  description,
+  status,
+  features = [],
+} = Astro.props;
+
+const isActive = status === "active";
+---
+
+<details class="group rounded-2xl border border-gray-800 bg-gray-900/40 transition-colors hover:border-gray-700 open:border-amber-800/30 open:bg-gray-900/60">
+
+  <!-- Card summary (always visible) -->
+  <summary class="cursor-pointer list-none p-6 md:p-8">
+    <div class="flex items-start justify-between gap-4">
+
+      <!-- Left: slot icon + text -->
+      <div class="flex items-start gap-4">
+        <!-- Slot number icon -->
+        <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-gray-700 bg-gray-800 font-mono text-sm font-bold text-gray-400">
+          {slotNumber}
+        </div>
+
+        <div>
+          <h3 class="text-lg font-semibold text-white group-hover:text-amber-300 transition-colors">
+            {name}
+          </h3>
+          <p class="mt-1 text-sm text-amber-400/80">
+            {tagline}
+          </p>
+        </div>
+      </div>
+
+      <!-- Right: status badge + expand indicator -->
+      <div class="flex items-center gap-3">
+        <span
+          class:list={[
+            "rounded-full px-2.5 py-0.5 text-xs font-medium",
+            isActive ? "bg-ecash-900/50 text-ecash-400" : "bg-gray-800 text-gray-500",
+          ]}
+        >
+          {isActive ? "Active" : "Proposed"}
+        </span>
+        <svg
+          class="h-5 w-5 flex-shrink-0 text-gray-500 transition-transform group-open:rotate-180"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
+
+    </div>
+  </summary>
+
+  <!-- Expanded detail -->
+  <div class="border-t border-gray-800 px-6 pb-6 pt-5 md:px-8 md:pb-8">
+    <p class="text-sm leading-relaxed text-gray-400">
+      {description}
+    </p>
+
+    {features.length > 0 && (
+      <ul class="mt-5 space-y-2">
+        {features.map((f) => (
+          <li class="flex items-start gap-3 text-sm text-gray-300">
+            <svg class="mt-0.5 h-4 w-4 flex-shrink-0 text-ecash-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+            <span>{f}</span>
+          </li>
+        ))}
+      </ul>
+    )}
+
+    <p class="mt-5 font-mono text-xs text-gray-600">
+      BIP-300 Slot {slotNumber} · Secured by Bitcoin hashrate via BIP-301
+    </p>
+  </div>
+
+</details>

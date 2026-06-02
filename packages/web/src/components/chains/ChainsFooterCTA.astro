@@ -1,0 +1,53 @@
+---
+// packages/web/src/components/chains/ChainsFooterCTA.astro
+//
+// Bottom conversion section for the /chains page.
+// Subtle CTA to drive interest into Sidecoin Pro
+// and general platform adoption.
+---
+
+<section class="border-t border-gray-800 bg-gradient-to-t from-amber-950/10 to-gray-950">
+  <div class="mx-auto max-w-3xl px-6 py-20 text-center">
+
+    <h2 class="text-3xl font-bold md:text-4xl">
+      Explore the Future of
+      <span class="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+        Bitcoin
+      </span>
+    </h2>
+
+    <p class="mx-auto mt-4 max-w-xl text-gray-400">
+      Sidecoin brings these chains together into a single, seamless
+      experience. One wallet, eight sidechains, unlimited possibilities.
+    </p>
+
+    <!-- Chain count badge -->
+    <div class="mx-auto mt-8 inline-flex items-center gap-3 rounded-xl border border-gray-800 bg-gray-900/60 px-6 py-4">
+      <span class="font-mono text-2xl font-bold text-ecash-400">8</span>
+      <span class="text-sm text-gray-400">Sidechains at Launch</span>
+      <span class="mx-2 h-4 w-px bg-gray-700"></span>
+      <span class="font-mono text-2xl font-bold text-amber-400">1</span>
+      <span class="text-sm text-gray-400">Unified Wallet</span>
+    </div>
+
+    <!-- CTAs -->
+    <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
+      <a
+        href="/"
+        class="rounded-lg bg-ecash-600 px-10 py-4 text-base font-bold text-white shadow-lg shadow-ecash-600/20 transition-all hover:bg-ecash-500"
+      >
+        Get Started
+      </a>
+      <a
+        href="/pro"
+        class="rounded-lg bg-amber-500 px-10 py-4 text-base font-bold text-gray-950 shadow-lg shadow-amber-500/20 transition-all hover:bg-amber-400 hover:shadow-amber-400/30"
+      >
+        Upgrade to Pro
+      </a>
+    </div>
+
+    <p class="mt-6 text-xs text-gray-600">
+      Open source · MIT License · Desktop, Mobile, and Web
+    </p>
+  </div>
+</section>

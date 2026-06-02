@@ -1,0 +1,67 @@
+---
+// packages/web/src/pages/chains.astro
+//
+// Bitcoin Drivechains reference page.
+// Served from: sidecoin.app/chains
+//
+// SEO-optimized educational page explaining:
+//   1. What Bitcoin Drivechains (BIP-300/301) are
+//   2. Each supported sidechain and its purpose
+//   3. How Sidecoin unifies them into a single experience
+//   4. Why Drivechains matter for Bitcoin's future
+//
+// Target keywords (used naturally):
+//   Bitcoin sidechains, Drivechains, BIP-300, BIP-301,
+//   Bitcoin smart contracts, Bitcoin DeFi, Bitcoin privacy
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ChainsHero from "../components/chains/ChainsHero.astro";
+import ChainsIntro from "../components/chains/ChainsIntro.astro";
+import ChainsGrid from "../components/chains/ChainsGrid.astro";
+import HowItWorks from "../components/chains/HowItWorks.astro";
+import WhyItMatters from "../components/chains/WhyItMatters.astro";
+import ChainsFooterCTA from "../components/chains/ChainsFooterCTA.astro";
+---
+
+<BaseLayout
+  title="Bitcoin Drivechains — Sidecoin Supported Sidechains"
+  description="Explore the 8 Bitcoin sidechains supported by Sidecoin at launch. BIP-300/301 Drivechains bring payments, privacy, smart contracts, identity, and more to Bitcoin."
+>
+  <!-- Hero -->
+  <ChainsHero />
+
+  <!-- Intro — What are Drivechains -->
+  <ChainsIntro />
+
+  <!-- Chains Grid -->
+  <ChainsGrid />
+
+  <!-- How It Works -->
+  <HowItWorks />
+
+  <!-- Why It Matters -->
+  <WhyItMatters />
+
+  <!-- Footer CTA -->
+  <ChainsFooterCTA />
+
+  <!-- ─── Footer ──────────────────────────────────────────── -->
+  <footer class="border-t border-gray-800">
+    <div class="mx-auto max-w-5xl px-6 py-12">
+      <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
+        <div>
+          <p class="text-lg font-bold text-ecash-400">Sidecoin</p>
+          <p class="text-sm text-gray-500">eCash Drivechains Wallet · Open Source · MIT License</p>
+        </div>
+        <div class="flex gap-6 text-sm text-gray-400">
+          <a href="https://github.com/nyusternie/sidecoin" class="hover:text-white">GitHub</a>
+          <a href="https://ecash.com" class="hover:text-white">eCash</a>
+          <a href="https://bip300.info" class="hover:text-white">BIP-300</a>
+        </div>
+      </div>
+      <p class="mt-8 text-center text-xs text-gray-600">
+        © 2026 0xShomari. Not affiliated with eCash or Bitcoin ABC.
+      </p>
+    </div>
+  </footer>
+</BaseLayout>

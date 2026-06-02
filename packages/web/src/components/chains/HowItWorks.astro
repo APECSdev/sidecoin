@@ -1,0 +1,80 @@
+---
+// packages/web/src/components/chains/HowItWorks.astro
+//
+// Explains how users interact with Drivechains through Sidecoin.
+// Key message: the app abstracts chain complexity.
+---
+
+<section class="border-t border-gray-800 bg-gray-900/30">
+  <div class="mx-auto max-w-5xl px-6 py-20">
+
+    <h2 class="text-center text-3xl font-bold md:text-4xl">
+      How It <span class="text-amber-400">Works</span>
+    </h2>
+    <p class="mx-auto mt-4 max-w-xl text-center text-gray-400">
+      Sidecoin handles the complexity so you don't have to.
+    </p>
+
+    <!-- Steps -->
+    <div class="mt-16 grid gap-8 md:grid-cols-3">
+
+      <!-- Step 1 -->
+      <div class="relative rounded-xl border border-gray-800 bg-gray-950 p-6 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-800/40 bg-amber-950/30 font-mono text-lg font-bold text-amber-400">
+          1
+        </div>
+        <h3 class="mt-5 text-base font-semibold text-white">
+          One Unified Platform
+        </h3>
+        <p class="mt-3 text-sm text-gray-400 leading-relaxed">
+          You interact with Sidecoin as a single wallet.
+          No manual chain switching, no separate apps,
+          no complex configuration.
+        </p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="relative rounded-xl border border-gray-800 bg-gray-950 p-6 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-800/40 bg-amber-950/30 font-mono text-lg font-bold text-amber-400">
+          2
+        </div>
+        <h3 class="mt-5 text-base font-semibold text-white">
+          Chains Operate Behind the Scenes
+        </h3>
+        <p class="mt-3 text-sm text-gray-400 leading-relaxed">
+          When you make a payment, swap an asset, or use a
+          smart contract, Sidecoin routes your action to the
+          appropriate sidechain automatically.
+        </p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="relative rounded-xl border border-gray-800 bg-gray-950 p-6 text-center">
+        <div class="mx-auto flex h-12 w-12 items-center justify-center rounded-full border border-amber-800/40 bg-amber-950/30 font-mono text-lg font-bold text-amber-400">
+          3
+        </div>
+        <h3 class="mt-5 text-base font-semibold text-white">
+          Seamless Fund Movement
+        </h3>
+        <p class="mt-3 text-sm text-gray-400 leading-relaxed">
+          Funds move between chains through BIP-300 deposits
+          and withdrawals. Sidecoin manages these transfers
+          so your assets are always where they need to be.
+        </p>
+      </div>
+
+    </div>
+
+    <!-- Technical footnote -->
+    <div class="mt-12 rounded-xl border border-gray-800 bg-gray-950 p-6 text-center">
+      <p class="text-xs text-gray-500 leading-relaxed">
+        <span class="font-semibold text-gray-400">Under the hood:</span>
+        BIP-300 Hashrate Escrows manage sidechain deposits and withdrawals
+        with a ~6 month withdrawal window (26,300 blocks). BIP-301 Blind
+        Merged Mining allows Bitcoin miners to secure all sidechains
+        simultaneously without running additional node software.
+      </p>
+    </div>
+
+  </div>
+</section>
