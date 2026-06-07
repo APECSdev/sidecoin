@@ -101,24 +101,6 @@ jobs:
       - name: Type-check Wallet
         run: pnpm --filter @sidecoin/wallet type-check
 
-      # ── API adapter + client ────────────────────────────────
-      #
-      # Pure TS/JS packages. The adapter (@sidecoin/api) is the
-      # Cloudflare Worker bridging the wallet client to SupaQt;
-      # @sidecoin/api-client is the frozen client surface.
-
-      - name: Test API client
-        run: pnpm --filter @sidecoin/api-client test
-
-      - name: Type-check API client
-        run: pnpm --filter @sidecoin/api-client typecheck
-
-      - name: Test API adapter
-        run: pnpm --filter @sidecoin/api test
-
-      - name: Type-check API adapter
-        run: pnpm --filter @sidecoin/api typecheck
-
       # ── Desktop — Placeholder Dist ──────────────────────────
       #
       # Tauri's generate_context!() proc macro validates that
@@ -246,6 +228,44 @@ jobs:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  # ── API adapter + client (standalone, labeled job) ───────
+  #
+  # Pure TS — runs once on ubuntu (no Rust/matrix needed).
+  # Appears as its own "api" entry in the Actions sidebar so
+  # a failure here is immediately distinguishable from the
+  # desktop/web/wallet legs. Each named step (Test/Type-check)
+  # pinpoints exactly which check broke.
+  # ─────────────────────────────────────────────────────────
+
+  api:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Test API client
+        run: pnpm --filter @sidecoin/api-client test
+
+      - name: Type-check API client
+        run: pnpm --filter @sidecoin/api-client typecheck
+
+      - name: Test API adapter
+        run: pnpm --filter @sidecoin/api test
+
+      - name: Type-check API adapter
+        run: pnpm --filter @sidecoin/api typecheck
+
   # ── Cloudflare Pages — Landing Site ──────────────────────
   #
   # Deploys on every push to master after all CI jobs pass.
@@ -321,11 +341,11 @@ jobs:
   # Worker deploy (wrangler deploy), NOT Pages. Gated behind a
   # GitHub Environment ("production-api") with required reviewers:
   # this job pauses for manual approval before the adapter ships.
-  # Deploys only on push to master, after the full guardian suite.
+  # Deploys only on push to master, after guardian AND api pass.
   # ─────────────────────────────────────────────────────────
 
   deploy-api:
-    needs: guardian
+    needs: [guardian, api]
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment:
