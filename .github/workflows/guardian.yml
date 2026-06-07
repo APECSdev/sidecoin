@@ -20,6 +20,14 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# Force ALL JavaScript actions (including transitive ones such as
+# actions/github-script invoked by codecov-action) onto the Node.js 24
+# runtime. This silences the "Node.js 20 actions are deprecated" warnings
+# emitted by pnpm/action-setup, cloudflare/wrangler-action, etc., ahead of
+# the June 16 2026 forced cutover. Remove once all actions ship Node 24.
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   guardian:
     name: desktop-client (${{ matrix.platform }})
