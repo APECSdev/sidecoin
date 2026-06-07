@@ -206,6 +206,8 @@ jobs:
   # emits coverage/lcov.info for the Codecov upload below. lcov
   # is NOT a default vitest reporter, so it must be requested
   # explicitly on the CLI (keeps local `pnpm test` coverage-free).
+  # The `--` separator forwards the flags to vitest rather than
+  # letting pnpm try to parse them as its own options.
   # ─────────────────────────────────────────────────────────
 
   wallet:
@@ -232,7 +234,7 @@ jobs:
         run: pnpm --filter @sidecoin/wallet build
 
       - name: Test Wallet
-        run: pnpm --filter @sidecoin/wallet test --coverage --coverage.reporter=lcov
+        run: pnpm --filter @sidecoin/wallet test -- --coverage --coverage.reporter=lcov
 
       - name: Type-check Wallet
         run: pnpm --filter @sidecoin/wallet type-check
