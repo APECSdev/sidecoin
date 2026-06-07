@@ -1,0 +1,7 @@
+name = "sidecoin-api"
+main = "src/worker.ts"
+compatibility_date = "2026-06-07"
+
+# Public base of the upstream SupaQt read API. Overridable per-env.
+[vars]
+SUPAQT_BASE_URL = "https://supaqt.com/v1"

@@ -1,0 +1,174 @@
+// packages/api/src/upstream.ts
+//
+// Thin client for the SupaQt read API (default https://supaqt.com/v1).
+// Contract verified 2026-06-07. SupaQt is READ-ONLY and UNAUTHENTICATED.
+// It returns snake_case rows and a bare-string error envelope
+// ({ "error": "<msg>", ...context }) which we classify here so the worker
+// can map upstream quirks to a clean, stable surface.
+
+export const DEFAULT_SUPAQT_BASE = "https://supaqt.com/v1";
+
+/**
+ * DepositRecord exactly as SupaQt REST returns it (snake_case, verbatim).
+ * NOTE: value_sats is a bigint decimal string and CAN exceed 2^53 — never
+ * parse with Number/parseInt. l1_confirmations is hardcoded 0 in Tier-1
+ * (means "unknown", not "zero confirmations").
+ */
+export interface UpstreamDepositRecord {
+  l1_txid: string;
+  vout: number;
+  ctip_seq: number | null;
+  address: string;
+  value_sats: string;
+  status: string;
+  l1_confirmations: number;
+  first_seen_ts: number | null;
+  l1_confirmed_ts: number | null;
+  l2_credited_ts: number | null;
+}
+
+export interface UpstreamDepositsPage {
+  chainId: string;
+  deposits: UpstreamDepositRecord[];
+  next_cursor: string | null;
+}
+
+/**
+ * Classified outcome of an upstream call. "not_provisioned" covers the
+ * biggest known risk: the 6 drivechain DBs (everything except thunder) most
+ * likely lack a `deposits` table, surfacing as a 400 "no such table" on the
+ * list route and an unhandled platform 500 on the single route.
+ */
+export type UpstreamOutcome<T> =
+  | { kind: "ok"; data: T }
+  | { kind: "not_found" }
+  | { kind: "not_provisioned" }
+  | { kind: "unknown_chain" }
+  | { kind: "error"; status: number; message: string };
+
+function isNoSuchTable(msg: string): boolean {
+  return msg.toLowerCase().includes("no such table");
+}
+
+export interface UpstreamClientOpts {
+  baseUrl?: string;
+  /** Injectable fetch for tests. */
+  fetchImpl?: typeof fetch;
+}
+
+export class UpstreamClient {
+  private readonly base: string;
+  private readonly f: typeof fetch;
+
+  constructor(opts: UpstreamClientOpts = {}) {
+    this.base = (opts.baseUrl ?? DEFAULT_SUPAQT_BASE).replace(/\/+$/, "");
+    this.f = opts.fetchImpl ?? fetch;
+  }
+
+  /** Low-level GET that always resolves to { status, body }. */
+  private async raw(u: URL): Promise<{ status: number; body: unknown }> {
+    const res = await this.f(u.toString(), {
+      headers: { accept: "application/json" },
+    });
+    let body: unknown = null;
+    const text = await res.text();
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {
+        // Platform 500s / non-JSON bodies (e.g. unhandled single-route
+        // throw) land here; preserve the text under `error`.
+        body = { error: text };
+      }
+    }
+    return { status: res.status, body };
+  }
+
+  private static errString(body: unknown): string {
+    if (body && typeof body === "object" && "error" in body) {
+      const e = (body as { error: unknown }).error;
+      if (typeof e === "string") return e;
+    }
+    return "";
+  }
+
+  /** GET /chains/:chainId/deposits (keyset paginated). */
+  async listDeposits(
+    chainId: string,
+    params: {
+      address?: string;
+      status?: string;
+      limit?: number;
+      cursor?: string;
+    } = {},
+  ): Promise<UpstreamOutcome<UpstreamDepositsPage>> {
+    const u = new URL(`${this.base}/chains/${chainId}/deposits`);
+    if (params.address) u.searchParams.set("address", params.address);
+    if (params.status) u.searchParams.set("status", params.status);
+    if (params.limit != null) {
+      u.searchParams.set("limit", String(params.limit));
+    }
+    if (params.cursor) u.searchParams.set("cursor", params.cursor);
+
+    let r: { status: number; body: unknown };
+    try {
+      r = await this.raw(u);
+    } catch (e) {
+      return {
+        kind: "error",
+        status: 502,
+        message: e instanceof Error ? e.message : "upstream fetch failed",
+      };
+    }
+
+    const { status, body } = r;
+    if (status === 200) {
+      return { kind: "ok", data: body as UpstreamDepositsPage };
+    }
+
+    const msg = UpstreamClient.errString(body);
+    // Missing deposits table: reported as 400 "no such table" (list route
+    // catches it) OR as a platform 500. Both mean "chain not provisioned".
+    if (isNoSuchTable(msg) || status === 500) {
+      return { kind: "not_provisioned" };
+    }
+    if (status === 404) return { kind: "unknown_chain" };
+    return { kind: "error", status, message: msg || `upstream ${status}` };
+  }
+
+  /** GET /chains/:chainId/deposits/:l1Txid/:vout (single, unwrapped). */
+  async getDeposit(
+    chainId: string,
+    l1Txid: string,
+    vout: number,
+  ): Promise<UpstreamOutcome<UpstreamDepositRecord>> {
+    const u = new URL(
+      `${this.base}/chains/${chainId}/deposits/${l1Txid}/${vout}`,
+    );
+
+    let r: { status: number; body: unknown };
+    try {
+      r = await this.raw(u);
+    } catch (e) {
+      return {
+        kind: "error",
+        status: 502,
+        message: e instanceof Error ? e.message : "upstream fetch failed",
+      };
+    }
+
+    const { status, body } = r;
+    if (status === 200) {
+      return { kind: "ok", data: body as UpstreamDepositRecord };
+    }
+
+    const msg = UpstreamClient.errString(body);
+    // Single route does NOT catch DB errors -> unhandled throw -> platform
+    // 500 (non-JSON). Treat 500 / "no such table" as not provisioned.
+    if (isNoSuchTable(msg) || status === 500) {
+      return { kind: "not_provisioned" };
+    }
+    if (status === 404) return { kind: "not_found" };
+    return { kind: "error", status, message: msg || `upstream ${status}` };
+  }
+}
