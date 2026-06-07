@@ -6,7 +6,6 @@ import {
   SidecoinClient,
   ApiError,
   createPoller,
-  newIdempotencyKey,
   EXPECTED_NETWORK,
   isExpectedNetwork,
   DEFAULT_BASE_URL,

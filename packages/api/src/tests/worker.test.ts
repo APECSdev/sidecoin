@@ -4,6 +4,10 @@ import { describe, it, expect, vi } from "vitest";
 
 import worker, { type Env } from "../worker";
 
+async function readJson<T = any>(res: Response): Promise<T> {
+  return (await res.json()) as T;
+}
+
 const ENV: Env = { SUPAQT_BASE_URL: "https://supaqt.test/v1" };
 
 function upstream(
@@ -53,14 +57,14 @@ describe("health & sidechains", () => {
   it("health responds ok", async () => {
     const res = await worker.fetch(req("/v1/health"), ENV);
     expect(res.status).toBe(200);
-    const body = await res.json();
+    const body = await readJson(res);
     expect(body.status).toBe("ok");
     expect(body.service).toBe("sidecoin-api");
   });
 
   it("sidechains lists active drivechains with real slots", async () => {
     const res = await worker.fetch(req("/v1/sidechains"), ENV);
-    const body = await res.json();
+    const body = await readJson(res);
     const slots = body.sidechains.map((s: { slot: number }) => s.slot).sort(
       (a: number, b: number) => a - b,
     );
@@ -72,19 +76,19 @@ describe("slot resolution", () => {
   it("rejects a non-numeric slot", async () => {
     const res = await worker.fetch(req("/v1/wallet/abc/deposits"), ENV);
     expect(res.status).toBe(400);
-    expect((await res.json()).error.code).toBe("bad_slot");
+    expect((await readJson(res)).error.code).toBe("bad_slot");
   });
 
   it("404s an unknown slot", async () => {
     const res = await worker.fetch(req("/v1/wallet/7/deposits"), ENV);
     expect(res.status).toBe(404);
-    expect((await res.json()).error.code).toBe("unknown_slot");
+    expect((await readJson(res)).error.code).toBe("unknown_slot");
   });
 
   it("404s a proposed (inactive) slot — riscy at slot 3", async () => {
     const res = await worker.fetch(req("/v1/wallet/3/deposits"), ENV);
     expect(res.status).toBe(404);
-    expect((await res.json()).error.code).toBe("sidechain_inactive");
+    expect((await readJson(res)).error.code).toBe("sidechain_inactive");
   });
 
   it("404s signet (filtered: absent from our registry)", async () => {
@@ -92,7 +96,7 @@ describe("slot resolution", () => {
     // only. There is no slot for signet, so it can never be addressed.
     const res = await worker.fetch(req("/v1/wallet/0/deposits"), ENV);
     expect(res.status).toBe(404);
-    expect((await res.json()).error.code).toBe("unknown_slot");
+    expect((await readJson(res)).error.code).toBe("unknown_slot");
   });
 });
 
@@ -111,7 +115,7 @@ describe("deposits list", () => {
     await withFetch(f, async () => {
       const res = await worker.fetch(req("/v1/wallet/9/deposits"), ENV);
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await readJson(res);
       expect(body.chainId).toBe("thunder");
       expect(body.provisioned).toBe(true);
       const d = body.deposits[0];
@@ -132,7 +136,7 @@ describe("deposits list", () => {
     await withFetch(f, async () => {
       const res = await worker.fetch(req("/v1/wallet/2/deposits"), ENV);
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await readJson(res);
       expect(body.provisioned).toBe(false);
       expect(body.deposits).toEqual([]);
     });
@@ -150,7 +154,7 @@ describe("single deposit", () => {
         ENV,
       );
       expect(res.status).toBe(200);
-      expect((await res.json()).l1Txid).toBe("ab12");
+      expect((await readJson(res)).l1Txid).toBe("ab12");
     });
   });
 
@@ -167,7 +171,7 @@ describe("single deposit", () => {
         ENV,
       );
       expect(res.status).toBe(404);
-      expect((await res.json()).error.code).toBe("deposit_not_found");
+      expect((await readJson(res)).error.code).toBe("deposit_not_found");
     });
   });
 
@@ -177,7 +181,7 @@ describe("single deposit", () => {
       ENV,
     );
     expect(res.status).toBe(400);
-    expect((await res.json()).error.code).toBe("bad_vout");
+    expect((await readJson(res)).error.code).toBe("bad_vout");
   });
 });
 
@@ -214,7 +218,7 @@ describe("derived balance", () => {
         ENV,
       );
       expect(res.status).toBe(200);
-      const body = await res.json();
+      const body = await readJson(res);
       expect(body.totalSats).toBe((BigInt(big) + 1n).toString());
       expect(body.depositCount).toBe(2);
     });
@@ -223,6 +227,6 @@ describe("derived balance", () => {
   it("requires an address", async () => {
     const res = await worker.fetch(req("/v1/wallet/9/balance"), ENV);
     expect(res.status).toBe(400);
-    expect((await res.json()).error.code).toBe("missing_address");
+    expect((await readJson(res)).error.code).toBe("missing_address");
   });
 });
