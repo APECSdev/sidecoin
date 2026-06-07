@@ -83,25 +83,6 @@ jobs:
       - name: Type-check Shared
         run: pnpm --filter @sidecoin/shared build
 
-      # ── Web ─────────────────────────────────────────────────
-
-      - name: Build Web
-        run: pnpm --filter @sidecoin/web build
-
-      - name: Test Web
-        run: pnpm --filter @sidecoin/web test
-
-      # ── Wallet ──────────────────────────────────────────────
-
-      - name: Build Wallet
-        run: pnpm --filter @sidecoin/wallet build
-
-      - name: Test Wallet
-        run: pnpm --filter @sidecoin/wallet test
-
-      - name: Type-check Wallet
-        run: pnpm --filter @sidecoin/wallet type-check
-
       # ── Desktop — Placeholder Dist ──────────────────────────
       #
       # Tauri's generate_context!() proc macro validates that
@@ -165,12 +146,6 @@ jobs:
       - name: Run Desktop Type Check
         run: pnpm --filter @sidecoin/desktop exec vue-tsc --noEmit --skipLibCheck
 
-      # ── Mobile — Tests ──────────────────────────────────────
-
-      - name: Run Mobile Tests
-        if: matrix.platform == 'ubuntu-latest'
-        run: pnpm --filter @sidecoin/mobile test
-
       # ── Desktop — E2E ───────────────────────────────────────
 
       - name: Run E2E Tests
@@ -219,8 +194,45 @@ jobs:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  # ── Wallet (standalone, labeled job) ─────────────────────
+  #
+  # Pure TS/Vite — runs once on ubuntu (no Rust/matrix needed).
+  # Appears as its own "wallet" entry in the Actions sidebar so
+  # a failure here is immediately distinguishable from the
+  # desktop/web/mobile/api legs. Builds @sidecoin/shared first
+  # (wallet depends on it). deploy-wallet gates on this job.
+  # ─────────────────────────────────────────────────────────
+
+  wallet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Shared
+        run: pnpm --filter @sidecoin/shared build
+
+      - name: Build Wallet
+        run: pnpm --filter @sidecoin/wallet build
+
+      - name: Test Wallet
+        run: pnpm --filter @sidecoin/wallet test
+
+      - name: Type-check Wallet
+        run: pnpm --filter @sidecoin/wallet type-check
+
       - name: Upload Wallet Coverage
-        if: matrix.platform == 'ubuntu-latest'
         uses: codecov/codecov-action@v4
         with:
           files: packages/wallet/coverage/lcov.info
@@ -228,6 +240,74 @@ jobs:
           fail_ci_if_error: false
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
+
+  # ── Mobile (standalone, labeled job) ─────────────────────
+  #
+  # React Native / Jest — runs once on ubuntu (no Rust/matrix
+  # needed). Appears as its own "mobile" entry in the Actions
+  # sidebar so a failure here is immediately distinguishable
+  # from the desktop/web/api legs.
+  #
+  # Builds @sidecoin/shared first: the App test imports
+  # @sidecoin/shared/chain and @sidecoin/shared/sidechains.
+  # ─────────────────────────────────────────────────────────
+
+  mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Shared
+        run: pnpm --filter @sidecoin/shared build
+
+      - name: Test Mobile
+        run: pnpm --filter @sidecoin/mobile test
+
+  # ── Web — Landing Site (standalone, labeled job) ─────────
+  #
+  # Pure TS/Vite — runs once on ubuntu. Appears as its own
+  # "web" entry in the Actions sidebar. Builds @sidecoin/shared
+  # first (web depends on it), then builds + tests the site.
+  # deploy-web gates on this job.
+  # ─────────────────────────────────────────────────────────
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Shared
+        run: pnpm --filter @sidecoin/shared build
+
+      - name: Build Web
+        run: pnpm --filter @sidecoin/web build
+
+      - name: Test Web
+        run: pnpm --filter @sidecoin/web test
 
   # ── API adapter + client (standalone, labeled job) ───────
   #
@@ -274,7 +354,7 @@ jobs:
   # ─────────────────────────────────────────────────────────
 
   deploy-web:
-    needs: guardian
+    needs: web
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
@@ -307,7 +387,7 @@ jobs:
   # ── Cloudflare Pages — Wallet App ────────────────────────
 
   deploy-wallet:
-    needs: guardian
+    needs: wallet
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
@@ -342,11 +422,11 @@ jobs:
   # Worker deploy (wrangler deploy), NOT Pages. Gated behind a
   # GitHub Environment ("production-api") with required reviewers:
   # this job pauses for manual approval before the adapter ships.
-  # Deploys only on push to master, after guardian AND api pass.
+  # Deploys only on push to master, after the api job passes.
   # ─────────────────────────────────────────────────────────
 
   deploy-api:
-    needs: [guardian, api]
+    needs: api
     if: github.event_name == 'push' && github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     environment:
