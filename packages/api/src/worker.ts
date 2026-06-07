@@ -203,16 +203,6 @@ export default {
         if (out.kind === "error") {
           return err("upstream_error", out.message, 502);
         }
-        if (out.kind !== "ok") {
-          // listDeposits never yields not_found in practice; this is a
-          // type-level exhaustiveness guard so a future variant can't leak
-          // an undefined message through .data below.
-          return err(
-            "upstream_error",
-            `unexpected upstream state "${out.kind}"`,
-            502,
-          );
-        }
 
         return json({
           slot,
@@ -288,15 +278,6 @@ export default {
           }
           if (out.kind === "error") {
             return err("upstream_error", out.message, 502);
-          }
-          if (out.kind !== "ok") {
-            // Exhaustiveness guard (see deposits list above): listDeposits
-            // never returns not_found, but the shared union allows it.
-            return err(
-              "upstream_error",
-              `unexpected upstream state "${out.kind}"`,
-              502,
-            );
           }
 
           for (const d of out.data.deposits) {

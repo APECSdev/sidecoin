@@ -211,12 +211,12 @@ describe("App", () => {
 
   it("should display Thunder Network sidechain", () => {
     render(<App />);
-    expect(screen.getByText(/#0 Thunder Network/)).toBeTruthy();
+    expect(screen.getByText(/#9 Thunder Network/)).toBeTruthy();
   });
 
   it("should display zSide sidechain", () => {
     render(<App />);
-    expect(screen.getByText(/#1 zSide/)).toBeTruthy();
+    expect(screen.getByText(/#98 zSide/)).toBeTruthy();
   });
 
   it("should display BitNames sidechain", () => {
@@ -226,27 +226,27 @@ describe("App", () => {
 
   it("should display BitAssets sidechain", () => {
     render(<App />);
-    expect(screen.getByText(/#3 BitAssets/)).toBeTruthy();
+    expect(screen.getByText(/#4 BitAssets/)).toBeTruthy();
   });
 
   it("should display Photon sidechain", () => {
     render(<App />);
-    expect(screen.getByText(/#4 Photon/)).toBeTruthy();
+    expect(screen.getByText(/#99 Photon/)).toBeTruthy();
   });
 
   it("should display Truthcoin sidechain", () => {
     render(<App />);
-    expect(screen.getByText(/#5 Truthcoin/)).toBeTruthy();
+    expect(screen.getByText(/#13 Truthcoin/)).toBeTruthy();
   });
 
   it("should display CoinShift sidechain", () => {
     render(<App />);
-    expect(screen.getByText(/#6 CoinShift/)).toBeTruthy();
+    expect(screen.getByText(/#255 CoinShift/)).toBeTruthy();
   });
 
-  it("should display reserved sidechain slot", () => {
+  it("should display the proposed RISCy sidechain slot", () => {
     render(<App />);
-    expect(screen.getByText(/#7 Sidechain #8/)).toBeTruthy();
+    expect(screen.getByText(/#3 RISCy/)).toBeTruthy();
   });
 
   it("should display workspace validation success", () => {
