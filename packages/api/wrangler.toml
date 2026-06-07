@@ -2,6 +2,18 @@ name = "sidecoin-api"
 main = "src/worker.ts"
 compatibility_date = "2026-06-07"
 
+# Bind the Worker to the public API paths on the sidecoin.app zone.
+# These routes take precedence over the Pages catch-all, so /v1, /graphql,
+# and /mcp divert to this Worker while all other paths keep serving the
+# Astro landing site from the Pages project.
+# Note: "sidecoin.app/v1*" matches the bare /v1 (Swagger UI) AND every
+# sub-path such as /v1/openapi.json and /v1/health.
+routes = [
+  { pattern = "sidecoin.app/v1*", zone_name = "sidecoin.app" },
+  { pattern = "sidecoin.app/graphql", zone_name = "sidecoin.app" },
+  { pattern = "sidecoin.app/mcp", zone_name = "sidecoin.app" },
+]
+
 # Public base of the upstream SupaQt read API. Overridable per-env.
 [vars]
 SUPAQT_BASE_URL = "https://supaqt.com/v1"

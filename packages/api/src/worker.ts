@@ -5,6 +5,8 @@
 // snake_case, bare-string-error read API.
 //
 // Public routes (all GET; /v1 prefix optional):
+//   /v1                                 (Swagger UI)
+//   /v1/openapi.json                    (OpenAPI 3.1 document)
 //   /v1/health
 //   /v1/sidechains
 //   /v1/wallet/:slot/deposits           ?address &status &limit &cursor
@@ -36,6 +38,310 @@ const CORS: Record<string, string> = {
 // Upstream caps list at 200/page; we page balance with the max page size.
 const MAX_PAGE = 200;
 const MAX_BALANCE_PAGES = 100; // safety bound for the derived sum
+
+// Pinned swagger-ui-dist bundle served from jsDelivr; keeps the Worker
+// dependency-free while still serving the canonical (default) Swagger UI.
+const SWAGGER_UI_VERSION = "5.17.14";
+
+// OpenAPI 3.1 document describing this adapter's stable surface. Served at
+// /v1/openapi.json and consumed by the Swagger UI page below.
+const OPENAPI_SPEC = {
+  openapi: "3.1.0",
+  info: {
+    title: "Sidecoin API",
+    version: "0.1.0",
+    description:
+      "Stable, slot-addressed read API for the Sidecoin wallet. Adapts " +
+      "SupaQt's chainId-addressed upstream read API into a camelCase, " +
+      "normalized-error surface.",
+  },
+  servers: [{ url: "https://sidecoin.app", description: "Production" }],
+  paths: {
+    "/v1/health": {
+      get: {
+        summary: "Health check",
+        responses: {
+          "200": {
+            description: "Service is healthy.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Health" },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/v1/sidechains": {
+      get: {
+        summary: "List active sidechains",
+        description: "Active drivechains from the Sidecoin registry.",
+        responses: {
+          "200": {
+            description: "The active sidechain descriptors.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    sidechains: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/Sidechain" },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    "/v1/wallet/{slot}/deposits": {
+      get: {
+        summary: "List deposits for a slot",
+        parameters: [
+          { $ref: "#/components/parameters/Slot" },
+          {
+            name: "address",
+            in: "query",
+            required: false,
+            schema: { type: "string" },
+          },
+          {
+            name: "status",
+            in: "query",
+            required: false,
+            schema: { type: "string" },
+          },
+          {
+            name: "limit",
+            in: "query",
+            required: false,
+            schema: { type: "integer", minimum: 1, maximum: 200 },
+          },
+          {
+            name: "cursor",
+            in: "query",
+            required: false,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "A page of deposits.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    slot: { type: "integer" },
+                    chainId: { type: "string" },
+                    provisioned: { type: "boolean" },
+                    deposits: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/Deposit" },
+                    },
+                    nextCursor: { type: ["string", "null"] },
+                  },
+                },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/Error" },
+          "404": { $ref: "#/components/responses/Error" },
+          "502": { $ref: "#/components/responses/Error" },
+        },
+      },
+    },
+    "/v1/wallet/{slot}/deposits/{l1Txid}/{vout}": {
+      get: {
+        summary: "Get a single deposit",
+        parameters: [
+          { $ref: "#/components/parameters/Slot" },
+          {
+            name: "l1Txid",
+            in: "path",
+            required: true,
+            schema: { type: "string", pattern: "^[0-9a-fA-F]+$" },
+          },
+          {
+            name: "vout",
+            in: "path",
+            required: true,
+            schema: { type: "integer", minimum: 0 },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "The deposit.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Deposit" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/Error" },
+          "404": { $ref: "#/components/responses/Error" },
+          "502": { $ref: "#/components/responses/Error" },
+        },
+      },
+    },
+    "/v1/wallet/{slot}/balance": {
+      get: {
+        summary: "Derived balance for an address",
+        description:
+          "Sum of credited deposit inflow for an address. NOT spendable L2 " +
+          "balance — SupaQt exposes no balance route today.",
+        parameters: [
+          { $ref: "#/components/parameters/Slot" },
+          {
+            name: "address",
+            in: "query",
+            required: true,
+            schema: { type: "string" },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "The derived balance.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/Balance" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/Error" },
+          "404": { $ref: "#/components/responses/Error" },
+          "502": { $ref: "#/components/responses/Error" },
+        },
+      },
+    },
+  },
+  components: {
+    parameters: {
+      Slot: {
+        name: "slot",
+        in: "path",
+        required: true,
+        description: "Active sidechain slot number.",
+        schema: { type: "integer", minimum: 0 },
+      },
+    },
+    responses: {
+      Error: {
+        description: "Normalized error envelope.",
+        content: {
+          "application/json": {
+            schema: { $ref: "#/components/schemas/Error" },
+          },
+        },
+      },
+    },
+    schemas: {
+      Health: {
+        type: "object",
+        properties: {
+          status: { type: "string", example: "ok" },
+          service: { type: "string", example: "sidecoin-api" },
+          time: { type: "string", format: "date-time" },
+        },
+        required: ["status", "service"],
+      },
+      Sidechain: {
+        type: "object",
+        properties: {
+          slot: { type: "integer" },
+          id: { type: "string" },
+          displayName: { type: "string" },
+          description: { type: "string" },
+          status: { type: "string" },
+        },
+      },
+      Deposit: {
+        type: "object",
+        properties: {
+          slot: { type: "integer" },
+          chainId: { type: "string" },
+          l1Txid: { type: "string" },
+          vout: { type: "integer" },
+          ctipSeq: { type: "integer" },
+          address: { type: "string" },
+          valueSats: {
+            type: "string",
+            description: "bigint value in sats, as a decimal string.",
+          },
+          status: { type: "string" },
+          confirmations: {
+            type: ["integer", "null"],
+            description: "null when upstream confirmations are unknown.",
+          },
+          firstSeenTs: { type: ["integer", "null"] },
+          l1ConfirmedTs: { type: ["integer", "null"] },
+          l2CreditedTs: { type: ["integer", "null"] },
+        },
+      },
+      Balance: {
+        type: "object",
+        properties: {
+          slot: { type: "integer" },
+          chainId: { type: "string" },
+          address: { type: "string" },
+          provisioned: { type: "boolean" },
+          totalSats: { type: "string" },
+          depositCount: { type: "integer" },
+          truncated: { type: "boolean" },
+          note: { type: "string" },
+        },
+      },
+      Error: {
+        type: "object",
+        properties: {
+          error: {
+            type: "object",
+            properties: {
+              code: { type: "string" },
+              message: { type: "string" },
+              details: {},
+            },
+            required: ["code", "message"],
+          },
+        },
+      },
+    },
+  },
+};
+
+// Self-contained default Swagger UI page; loads the spec from
+// /v1/openapi.json so the document and the UI stay in sync.
+const SWAGGER_UI_HTML = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sidecoin API — Swagger UI</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@${SWAGGER_UI_VERSION}/swagger-ui.css"
+    />
+  </head>
+  <body>
+    <div id="swagger-ui"></div>
+    <script
+      src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@${SWAGGER_UI_VERSION}/swagger-ui-bundle.js"
+      crossorigin
+    ></script>
+    <script>
+      window.onload = function () {
+        window.ui = SwaggerUIBundle({
+          url: "/v1/openapi.json",
+          dom_id: "#swagger-ui",
+          deepLinking: true,
+          presets: [SwaggerUIBundle.presets.apis],
+        });
+      };
+    </script>
+  </body>
+</html>`;
 
 function json(
   data: unknown,
@@ -131,6 +437,20 @@ export default {
     }
 
     const url = new URL(req.url);
+
+    // GET /v1 (bare) -> default Swagger UI page.
+    if (url.pathname === "/v1" || url.pathname === "/v1/") {
+      return new Response(SWAGGER_UI_HTML, {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8", ...CORS },
+      });
+    }
+
+    // GET /v1/openapi.json -> the OpenAPI document consumed by Swagger UI.
+    if (url.pathname === "/v1/openapi.json") {
+      return json(OPENAPI_SPEC);
+    }
+
     const path = url.pathname.replace(/^\/v1(?=\/|$)/, "");
     const parts = path.split("/").filter(Boolean);
     const client = new UpstreamClient({ baseUrl: env.SUPAQT_BASE_URL });
