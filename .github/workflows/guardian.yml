@@ -20,11 +20,13 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# Force ALL JavaScript actions (including transitive ones such as
-# actions/github-script invoked by codecov-action) onto the Node.js 24
-# runtime. This silences the "Node.js 20 actions are deprecated" warnings
-# emitted by pnpm/action-setup, cloudflare/wrangler-action, etc., ahead of
-# the June 16 2026 forced cutover. Remove once all actions ship Node 24.
+# Force any remaining JavaScript actions onto the Node.js 24 runtime.
+# After replacing pnpm/action-setup (corepack) and wrangler-action
+# (npx wrangler) below, the only Node-20 action left is the transitive
+# actions/github-script pulled in by codecov-action — which we cannot
+# version-pin directly. This flag keeps it running on Node 24 so it does
+# not break after the Sept 16 2026 Node-20 removal. Drop once codecov
+# ships a Node 24 release.
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
 
@@ -47,8 +49,8 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -223,8 +225,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -272,8 +274,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -303,8 +305,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -338,8 +340,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -375,8 +377,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -408,8 +410,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -450,8 +452,8 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
+      - name: Enable Corepack
+        run: corepack enable
 
       - name: Setup Node.js
         uses: actions/setup-node@v5
@@ -466,9 +468,8 @@ jobs:
         run: pnpm --filter @sidecoin/shared build
 
       - name: Deploy Worker
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: packages/api
-          command: deploy
+        run: npx wrangler deploy
+        working-directory: packages/api
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
