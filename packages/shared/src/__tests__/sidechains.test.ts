@@ -13,7 +13,7 @@ import {
   SIDECHAIN_PHOTON,
   SIDECHAIN_TRUTHCOIN,
   SIDECHAIN_COINSHIFT,
-  SIDECHAIN_RESERVED_7,
+  SIDECHAIN_RISCY,
   getSidechainBySlot,
   getSidechainById,
   getSidechainBySlotOrThrow,
@@ -26,13 +26,21 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("Sidechain Registry", () => {
-  it("has exactly 8 sidechains at launch", () => {
+  it("has 8 known sidechains (7 active drivechains + 1 proposed)", () => {
     expect(LAUNCH_SIDECHAINS).toHaveLength(8);
   });
 
-  it("slots are unique and sequential 0-7", () => {
+  it("slots are unique and match the authoritative BIP-300 assignments", () => {
     const slots = LAUNCH_SIDECHAINS.map((sc) => sc.slot);
-    expect(slots).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
+    const uniqueSlots = new Set(slots);
+    expect(uniqueSlots.size).toBe(slots.length);
+    // Authoritative slots (dev.txt ports table), sorted ascending:
+    expect([...slots].sort((a, b) => a - b)).toEqual([2, 3, 4, 9, 13, 98, 99, 255]);
+  });
+
+  it("slots are NOT sequential (sparse BIP-300 assignment)", () => {
+    const slots = LAUNCH_SIDECHAINS.map((sc) => sc.slot);
+    expect(slots).not.toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
   });
 
   it("IDs are unique", () => {
@@ -41,19 +49,19 @@ describe("Sidechain Registry", () => {
     expect(uniqueIds.size).toBe(ids.length);
   });
 
-  it("all launch sidechains support BMM", () => {
+  it("all sidechains support BMM", () => {
     LAUNCH_SIDECHAINS.forEach((sc) => {
       expect(sc.supportsBmm).toBe(true);
     });
   });
 
-  it("all launch sidechains have non-empty display names", () => {
+  it("all sidechains have non-empty display names", () => {
     LAUNCH_SIDECHAINS.forEach((sc) => {
       expect(sc.displayName.length).toBeGreaterThan(0);
     });
   });
 
-  it("all launch sidechains have non-empty descriptions", () => {
+  it("all sidechains have non-empty descriptions", () => {
     LAUNCH_SIDECHAINS.forEach((sc) => {
       expect(sc.description.length).toBeGreaterThan(0);
     });
@@ -69,13 +77,13 @@ describe("Sidechain Registry", () => {
 // ---------------------------------------------------------------------------
 
 describe("Individual Sidechains", () => {
-  it("Thunder is slot 0", () => {
-    expect(SIDECHAIN_THUNDER.slot).toBe(0);
+  it("Thunder is slot 9", () => {
+    expect(SIDECHAIN_THUNDER.slot).toBe(9);
     expect(SIDECHAIN_THUNDER.id).toBe("thunder");
   });
 
-  it("zSide is slot 1", () => {
-    expect(SIDECHAIN_ZSIDE.slot).toBe(1);
+  it("zSide is slot 98", () => {
+    expect(SIDECHAIN_ZSIDE.slot).toBe(98);
     expect(SIDECHAIN_ZSIDE.id).toBe("zside");
   });
 
@@ -84,29 +92,30 @@ describe("Individual Sidechains", () => {
     expect(SIDECHAIN_BITNAMES.id).toBe("bitnames");
   });
 
-  it("BitAssets is slot 3", () => {
-    expect(SIDECHAIN_BITASSETS.slot).toBe(3);
+  it("BitAssets is slot 4", () => {
+    expect(SIDECHAIN_BITASSETS.slot).toBe(4);
     expect(SIDECHAIN_BITASSETS.id).toBe("bitassets");
   });
 
-  it("Photon is slot 4", () => {
-    expect(SIDECHAIN_PHOTON.slot).toBe(4);
+  it("Photon is slot 99", () => {
+    expect(SIDECHAIN_PHOTON.slot).toBe(99);
     expect(SIDECHAIN_PHOTON.id).toBe("photon");
   });
 
-  it("Truthcoin is slot 5", () => {
-    expect(SIDECHAIN_TRUTHCOIN.slot).toBe(5);
+  it("Truthcoin is slot 13", () => {
+    expect(SIDECHAIN_TRUTHCOIN.slot).toBe(13);
     expect(SIDECHAIN_TRUTHCOIN.id).toBe("truthcoin");
   });
 
-  it("CoinShift is slot 6", () => {
-    expect(SIDECHAIN_COINSHIFT.slot).toBe(6);
+  it("CoinShift is slot 255", () => {
+    expect(SIDECHAIN_COINSHIFT.slot).toBe(255);
     expect(SIDECHAIN_COINSHIFT.id).toBe("coinshift");
   });
 
-  it("Reserved slot 7 is proposed", () => {
-    expect(SIDECHAIN_RESERVED_7.slot).toBe(7);
-    expect(SIDECHAIN_RESERVED_7.status).toBe("proposed");
+  it("RISCy is slot 3 and proposed", () => {
+    expect(SIDECHAIN_RISCY.slot).toBe(3);
+    expect(SIDECHAIN_RISCY.id).toBe("riscy");
+    expect(SIDECHAIN_RISCY.status).toBe("proposed");
   });
 });
 
@@ -116,14 +125,16 @@ describe("Individual Sidechains", () => {
 
 describe("Sidechain Lookups", () => {
   it("getSidechainBySlot finds registered slots", () => {
-    expect(getSidechainBySlot(0)).toBe(SIDECHAIN_THUNDER);
-    expect(getSidechainBySlot(5)).toBe(SIDECHAIN_TRUTHCOIN);
-    expect(getSidechainBySlot(7)).toBe(SIDECHAIN_RESERVED_7);
+    expect(getSidechainBySlot(9)).toBe(SIDECHAIN_THUNDER);
+    expect(getSidechainBySlot(13)).toBe(SIDECHAIN_TRUTHCOIN);
+    expect(getSidechainBySlot(255)).toBe(SIDECHAIN_COINSHIFT);
+    expect(getSidechainBySlot(3)).toBe(SIDECHAIN_RISCY);
   });
 
   it("getSidechainBySlot returns undefined for unregistered slots", () => {
-    expect(getSidechainBySlot(8)).toBeUndefined();
-    expect(getSidechainBySlot(255)).toBeUndefined();
+    expect(getSidechainBySlot(0)).toBeUndefined();
+    expect(getSidechainBySlot(1)).toBeUndefined();
+    expect(getSidechainBySlot(5)).toBeUndefined();
     expect(getSidechainBySlot(-1)).toBeUndefined();
   });
 
@@ -139,14 +150,14 @@ describe("Sidechain Lookups", () => {
   });
 
   it("getSidechainBySlotOrThrow returns for valid slot", () => {
-    expect(getSidechainBySlotOrThrow(0)).toBe(SIDECHAIN_THUNDER);
+    expect(getSidechainBySlotOrThrow(9)).toBe(SIDECHAIN_THUNDER);
   });
 
   it("getSidechainBySlotOrThrow throws for invalid slot", () => {
-    expect(() => getSidechainBySlotOrThrow(99)).toThrow("Unknown sidechain slot 99");
+    expect(() => getSidechainBySlotOrThrow(0)).toThrow("Unknown sidechain slot 0");
   });
 
-  it("getActiveSidechains returns 7 active sidechains (slot 7 is proposed)", () => {
+  it("getActiveSidechains returns 7 active sidechains (riscy is proposed)", () => {
     const active = getActiveSidechains();
     expect(active).toHaveLength(7);
     active.forEach((sc) => {
@@ -154,9 +165,9 @@ describe("Sidechain Lookups", () => {
     });
   });
 
-  it("getActiveSidechains does not include the reserved slot", () => {
+  it("getActiveSidechains does not include the proposed riscy chain", () => {
     const active = getActiveSidechains();
     const ids = active.map((sc) => sc.id);
-    expect(ids).not.toContain("reserved-7");
+    expect(ids).not.toContain("riscy");
   });
 });

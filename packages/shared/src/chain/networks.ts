@@ -11,6 +11,7 @@ import {
   ECASH_TESTNET,
   ECASH_SIGNET,
   ECASH_REGTEST,
+  ECASH_L2L_SIGNET,
 } from "./config";
 
 // ---------------------------------------------------------------------------
@@ -29,6 +30,7 @@ export const NETWORKS: Readonly<Record<NetworkId, ChainConfig>> = {
   testnet: ECASH_TESTNET,
   signet: ECASH_SIGNET,
   regtest: ECASH_REGTEST,
+  "l2l-signet": ECASH_L2L_SIGNET,
 } as const;
 
 /**
@@ -40,6 +42,7 @@ export const NETWORK_IDS: readonly NetworkId[] = [
   "testnet",
   "signet",
   "regtest",
+  "l2l-signet",
 ] as const;
 
 // ---------------------------------------------------------------------------

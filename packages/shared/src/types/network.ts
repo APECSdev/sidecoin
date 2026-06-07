@@ -11,8 +11,10 @@
  * - testnet: Public test network for pre-fork integration testing
  * - signet: The signet instance referenced on ecash.com ("signet live")
  * - regtest: Local regression testing (single-node, instant blocks)
+ * - l2l-signet: Layer-2-Labs signet environment for drivechain integration
+ *               (the network the wallet clients target against the live indexer)
  */
-export type NetworkId = "mainnet" | "testnet" | "signet" | "regtest";
+export type NetworkId = "mainnet" | "testnet" | "signet" | "regtest" | "l2l-signet";
 
 /**
  * Human-readable network metadata used for display in the UI
@@ -169,7 +171,7 @@ export interface ForkParams {
 
   /**
    * The number of sidechains expected to be available at launch.
-   * From ecash.com: 8 sidechains at launch.
+   * L2L-signet slot truth: 7 sidechains at launch.
    */
   readonly sidechainsAtLaunch: number;
 }

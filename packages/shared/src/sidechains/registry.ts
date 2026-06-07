@@ -1,14 +1,28 @@
 // packages/shared/src/sidechains/registry.ts
 //
-// Static registry of the 8 sidechains launching with the eCash hard fork.
+// Static registry of the drivechain (BIP-300) sidechains for the eCash
+// hard fork.
 //
-// Source: https://ecash.com — the landing page lists all 8 by name:
-//   thunder · zside · bitnames · bitassets · photon · truthcoin · coinshift
-//   (plus one unnamed 8th slot, likely BIP-300's own hashrate escrow chain)
+// SLOT ASSIGNMENTS ARE AUTHORITATIVE — sourced from the official
+// drivechain.info dev.txt ports table (Sztorc, 2026-02-19) and verified
+// against the live indexer's chain registry:
 //
-// Slot assignments are provisional until the eCash node publishes
-// the final sidechain proposal transactions. The key hashes below
-// are placeholders.
+//   slot   chain        (rpc port)
+//   ----   ----------   ----------
+//    2     bitnames     6002
+//    3     riscy        (proposed — no port until activation)
+//    4     bitassets    6004
+//    9     thunder      6009
+//    13    truthcoin    6013
+//    98    zside        6098
+//    99    photon       6099
+//    255   coinshift    6255
+//
+// These are NOT sequential — BIP-300 slots are sparse, assigned per
+// proposal. Do not assume slot === array index.
+//
+// The keyHash values below are placeholders, populated from the
+// sidechain proposal transactions pre-fork.
 
 import type { SidechainDescriptor, SidechainSlot } from "../types/sidechain";
 
@@ -17,10 +31,10 @@ import type { SidechainDescriptor, SidechainSlot } from "../types/sidechain";
 // ---------------------------------------------------------------------------
 
 export const SIDECHAIN_THUNDER: SidechainDescriptor = {
-  slot: 0,
+  slot: 9,
   id: "thunder",
   displayName: "Thunder Network",
-  description: "Payment channel network for instant, low-fee transactions. Lightning-compatible layer for everyday payments.",
+  description: "High-throughput scaling sidechain with a large, growing blocksize and fraud proofs. Fast, low-fee everyday payments.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK: populate from sidechain proposal TX
   supportsBmm: true,
@@ -28,7 +42,7 @@ export const SIDECHAIN_THUNDER: SidechainDescriptor = {
 };
 
 export const SIDECHAIN_ZSIDE: SidechainDescriptor = {
-  slot: 1,
+  slot: 98,
   id: "zside",
   displayName: "zSide",
   description: "Privacy-focused sidechain with shielded transactions. Zcash-style zero-knowledge proofs on a Bitcoin-secured chain.",
@@ -50,10 +64,10 @@ export const SIDECHAIN_BITNAMES: SidechainDescriptor = {
 };
 
 export const SIDECHAIN_BITASSETS: SidechainDescriptor = {
-  slot: 3,
+  slot: 4,
   id: "bitassets",
   displayName: "BitAssets",
-  description: "Tokenized assets and prediction markets. Issue and trade synthetic assets secured by Bitcoin hashrate.",
+  description: "Tokenized assets — issue and trade ERC-20-style tokens, NFTs, and ICOs secured by Bitcoin hashrate.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK
   supportsBmm: true,
@@ -61,10 +75,10 @@ export const SIDECHAIN_BITASSETS: SidechainDescriptor = {
 };
 
 export const SIDECHAIN_PHOTON: SidechainDescriptor = {
-  slot: 4,
+  slot: 99,
   id: "photon",
   displayName: "Photon",
-  description: "EVM-compatible smart contract sidechain. Run Solidity contracts with Bitcoin-grade security via merged mining.",
+  description: "Post-quantum cryptography sidechain. Quantum-resistant signatures securing value against future quantum attacks.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK
   supportsBmm: true,
@@ -72,7 +86,7 @@ export const SIDECHAIN_PHOTON: SidechainDescriptor = {
 };
 
 export const SIDECHAIN_TRUTHCOIN: SidechainDescriptor = {
-  slot: 5,
+  slot: 13,
   id: "truthcoin",
   displayName: "Truthcoin",
   description: "Paul Sztorc's prediction market sidechain. Decentralized oracle system using peer-to-peer outcome resolution.",
@@ -83,7 +97,7 @@ export const SIDECHAIN_TRUTHCOIN: SidechainDescriptor = {
 };
 
 export const SIDECHAIN_COINSHIFT: SidechainDescriptor = {
-  slot: 6,
+  slot: 255,
   id: "coinshift",
   displayName: "CoinShift",
   description: "Cross-chain atomic swap sidechain. Trustless exchange between eCash and other cryptocurrency networks.",
@@ -94,16 +108,17 @@ export const SIDECHAIN_COINSHIFT: SidechainDescriptor = {
 };
 
 //
-// The 8th sidechain slot.
+// RISCy — a PROPOSED drivechain at slot 3.
 //
-// ecash.com lists "8 sidechains at launch" but only names 7 explicitly.
-// This placeholder reserves the slot. Update once the 8th chain is announced.
+// Listed in the live indexer registry as status "proposed", enabled:false,
+// with no RPC port until activation, and NOT yet ingested. Reserved here
+// so slot 3 resolves to a known descriptor rather than undefined.
 //
-export const SIDECHAIN_RESERVED_7: SidechainDescriptor = {
-  slot: 7,
-  id: "reserved-7",
-  displayName: "Sidechain #8 (TBA)",
-  description: "Reserved sidechain slot. Details to be announced before the August 2026 hard fork.",
+export const SIDECHAIN_RISCY: SidechainDescriptor = {
+  slot: 3,
+  id: "riscy",
+  displayName: "RISCy",
+  description: "Proposed RISC-V-based sidechain. Reserved at slot 3; not yet activated and not accepting deposits.",
   status: "proposed",
   keyHash: "",
   supportsBmm: true,
@@ -115,7 +130,13 @@ export const SIDECHAIN_RESERVED_7: SidechainDescriptor = {
 // ---------------------------------------------------------------------------
 
 /**
- * Complete list of all sidechains available at launch, ordered by slot.
+ * Complete list of all known drivechain sidechains.
+ *
+ * Contains the 7 ACTIVE drivechains plus the 1 PROPOSED chain (riscy).
+ * Use getActiveSidechains() for the 7 that are live at launch.
+ *
+ * NOTE: ordered by launch prominence, NOT by slot. Slots are sparse
+ * (2, 98, 2, 4, 99, 13, 255, 3) — never use array index as a slot.
  *
  * Usage:
  *   import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
@@ -129,7 +150,7 @@ export const LAUNCH_SIDECHAINS: readonly SidechainDescriptor[] = [
   SIDECHAIN_PHOTON,
   SIDECHAIN_TRUTHCOIN,
   SIDECHAIN_COINSHIFT,
-  SIDECHAIN_RESERVED_7,
+  SIDECHAIN_RISCY,
 ] as const;
 
 /**

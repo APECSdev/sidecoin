@@ -84,7 +84,7 @@ export const ECASH_MAINNET: ChainConfig = {
     activationTimestampUtc: "2026-08-21T15:00:00Z",
     bip300Active: true,
     bip301Active: true,
-    sidechainsAtLaunch: 8,
+    sidechainsAtLaunch: 7,
   },
 };
 
@@ -133,7 +133,7 @@ export const ECASH_TESTNET: ChainConfig = {
     activationTimestampUtc: "2026-08-21T15:00:00Z",
     bip300Active: true,
     bip301Active: true,
-    sidechainsAtLaunch: 8,
+    sidechainsAtLaunch: 7,
   },
 };
 
@@ -185,7 +185,7 @@ export const ECASH_SIGNET: ChainConfig = {
     activationTimestampUtc: "2026-08-21T15:00:00Z",
     bip300Active: true,
     bip301Active: true,
-    sidechainsAtLaunch: 8,
+    sidechainsAtLaunch: 7,
   },
 };
 
@@ -237,6 +237,66 @@ export const ECASH_REGTEST: ChainConfig = {
     activationTimestampUtc: "2024-01-01T00:00:00Z",
     bip300Active: true,
     bip301Active: true,
-    sidechainsAtLaunch: 8,
+    sidechainsAtLaunch: 7,
+  },
+};
+
+// ---------------------------------------------------------------------------
+// eCash L2L Signet
+//
+// Layer-2-Labs signet environment — the network our wallet clients target
+// today for drivechain (BIP-300) integration against the live indexer.
+//
+// The L1 withdrawal leg uses signet bech32, so we reuse the "tb" HRP.
+// (Verified: a real withdrawal destination
+// tb1qv4dnq23g8n0elcrn3yjjnp8e96yhu3r54tz7lf decodes as witness_v0_keyhash,
+// confirming tb1 is the correct prefix.)
+//
+// This is NOT a production network (isProduction: false) and is NOT the
+// default — DEFAULT_NETWORK_ID remains "signet" (see chain/networks.ts).
+// ---------------------------------------------------------------------------
+
+export const ECASH_L2L_SIGNET: ChainConfig = {
+  network: {
+    id: "l2l-signet",
+    displayName: "eCash L2L Signet",
+    shortName: "l2l",
+    isProduction: false,
+  },
+
+  addressVersions: {
+    p2pkh: 0x6f,
+    p2sh: 0xc4,
+    xpub: 0x043587cf,
+    xprv: 0x04358394,
+  },
+
+  bech32: {
+    hrp: "tb",  // L1 withdrawal leg uses signet bech32 (tb1...)
+  },
+
+  networkParams: {
+    magic: "0a03cf40",  // Shares signet magic placeholder
+    defaultPort: 38333,
+    rpcPort: 38332,
+    dnsSeeds: [],
+  },
+
+  consensus: {
+    powAlgorithm: "sha256d",
+    targetBlockTimeSeconds: 600,
+    difficultyAdjustmentInterval: 2016,
+    initialSubsidySatoshis: BigInt("312500000"),
+    halvingInterval: 210_000,
+    maxBlockWeight: 4_000_000,
+    coinbaseMaturity: 100,
+  },
+
+  fork: {
+    activationBlockHeight: 964_000,
+    activationTimestampUtc: "2026-08-21T15:00:00Z",
+    bip300Active: true,
+    bip301Active: true,
+    sidechainsAtLaunch: 7,
   },
 };
