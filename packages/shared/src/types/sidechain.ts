@@ -1,7 +1,8 @@
 // packages/shared/src/types/sidechain.ts
 //
 // Type definitions for BIP-300/301 sidechains (Drivechains).
-// The eCash fork launches with 8 sidechains.
+// The eCash fork launches with 7 active drivechains plus 1 proposed
+// (riscy, slot 3). Slots are sparse per BIP-300 — not sequential.
 
 /**
  * Unique sidechain slot number (0–255 per BIP-300).
@@ -22,7 +23,7 @@ export type SidechainStatus =
  * Descriptor for a single sidechain registered on the mainchain.
  */
 export interface SidechainDescriptor {
-  /** BIP-300 slot number (0-based) */
+  /** BIP-300 slot number (sparse, 0–255; not sequential) */
   readonly slot: SidechainSlot;
 
   /** Machine-readable identifier, e.g. "thunder", "zside" */
@@ -48,7 +49,7 @@ export interface SidechainDescriptor {
 
   /**
    * Whether this sidechain supports Blind Merged Mining (BIP-301).
-   * All 8 launch sidechains are expected to support BMM.
+   * All launch sidechains are expected to support BMM.
    */
   readonly supportsBmm: boolean;
 
