@@ -253,22 +253,6 @@ export class SidecoinClient {
 }
 
 // ---------------------------------------------------------------------------
-// Idempotency key (for future write paths; read API has none today)
-// ---------------------------------------------------------------------------
-
-/**
- * Generate a fresh idempotency key. Uses crypto.randomUUID when available,
- * falling back to a timestamp+random composite.
- */
-export function newIdempotencyKey(): string {
-  const g = globalThis as { crypto?: { randomUUID?: () => string } };
-  if (g.crypto?.randomUUID) return g.crypto.randomUUID();
-  return `idk-${Date.now().toString(36)}-${Math.random()
-    .toString(36)
-    .slice(2, 10)}`;
-}
-
-// ---------------------------------------------------------------------------
 // Poller (exponential backoff + jitter)
 // ---------------------------------------------------------------------------
 

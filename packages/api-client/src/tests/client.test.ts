@@ -150,15 +150,6 @@ describe("transport failures", () => {
   });
 });
 
-describe("newIdempotencyKey", () => {
-  it("returns unique non-empty strings", () => {
-    const a = newIdempotencyKey();
-    const b = newIdempotencyKey();
-    expect(a).not.toBe(b);
-    expect(a.length).toBeGreaterThan(0);
-  });
-});
-
 describe("createPoller", () => {
   it("resolves when done is satisfied, no sleep on success", async () => {
     let n = 0;

@@ -101,6 +101,24 @@ jobs:
       - name: Type-check Wallet
         run: pnpm --filter @sidecoin/wallet type-check
 
+      # ── API adapter + client ────────────────────────────────
+      #
+      # Pure TS/JS packages. The adapter (@sidecoin/api) is the
+      # Cloudflare Worker bridging the wallet client to SupaQt;
+      # @sidecoin/api-client is the frozen client surface.
+
+      - name: Test API client
+        run: pnpm --filter @sidecoin/api-client test
+
+      - name: Type-check API client
+        run: pnpm --filter @sidecoin/api-client typecheck
+
+      - name: Test API adapter
+        run: pnpm --filter @sidecoin/api test
+
+      - name: Type-check API adapter
+        run: pnpm --filter @sidecoin/api typecheck
+
       # ── Desktop — Placeholder Dist ──────────────────────────
       #
       # Tauri's generate_context!() proc macro validates that
@@ -297,3 +315,44 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ── Cloudflare Workers — API Adapter (GATED) ─────────────
+  #
+  # Worker deploy (wrangler deploy), NOT Pages. Gated behind a
+  # GitHub Environment ("production-api") with required reviewers:
+  # this job pauses for manual approval before the adapter ships.
+  # Deploys only on push to master, after the full guardian suite.
+  # ─────────────────────────────────────────────────────────
+
+  deploy-api:
+    needs: guardian
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment:
+      name: production-api
+      url: https://sidecoin.app
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Shared
+        run: pnpm --filter @sidecoin/shared build
+
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: packages/api
+          command: deploy
