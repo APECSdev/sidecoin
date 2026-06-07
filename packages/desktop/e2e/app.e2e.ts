@@ -15,7 +15,43 @@
 
 import { browser, $, $$, expect } from "@wdio/globals";
 
-describe("Sidecoin Desktop — App Shell", () => {
+// ────────────────────────────────────────────────────────────
+// WebDriver gate
+//
+// The suite below drives the native WebKitGTK webview via
+// tauri-driver. As the file header documents, this is
+// unreliable on headless Linux CI, so it must run ONLY when
+// TAURI_WEBDRIVER=1 is explicitly set (local dev with a real
+// display). When the flag is absent we skip the entire suite
+// rather than letting it fail against a blank/headless webview
+// — which previously required `continue-on-error: true` in CI
+// to mask a guaranteed failure.
+// ────────────────────────────────────────────────────────────
+
+const webdriverEnabled = process.env.TAURI_WEBDRIVER === "1";
+
+const describeWebDriver = webdriverEnabled ? describe : describe.skip;
+
+describeWebDriver("Sidecoin Desktop — App Shell", () => {
+  // ────────────────────────────────────────────────────────
+  // Diagnostic — capture what the webview actually loaded.
+  //
+  // If the body is near-empty (just <div id="app"></div> with
+  // no injected /assets/*.js) → a stale/placeholder dist was
+  // embedded into the binary at compile time. If the hashed
+  // <script> tags are present but #app is empty → a runtime or
+  // CSP failure prevented Vue from mounting. This log makes the
+  // root cause visible instead of only seeing "element wasn't
+  // found" cascades.
+  // ────────────────────────────────────────────────────────
+
+  before(async () => {
+    const source = await browser.getPageSource();
+    console.log("[e2e:diag] ===== EMBEDDED PAGE SOURCE =====");
+    console.log(source.slice(0, 2000));
+    console.log("[e2e:diag] ===== END PAGE SOURCE =====");
+  });
+
   // ────────────────────────────────────────────────────────
   // Sidebar branding
   // ────────────────────────────────────────────────────────
