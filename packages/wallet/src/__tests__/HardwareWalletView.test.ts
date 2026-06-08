@@ -1,5 +1,5 @@
 // packages/wallet/src/__tests__/HardwareWalletView.test.ts
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import HardwareWalletView from "../views/HardwareWalletView.vue";
 import type { HardwareWallet } from "../hardware/types";

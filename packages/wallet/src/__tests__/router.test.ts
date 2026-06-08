@@ -8,9 +8,9 @@ import { describe, it, expect } from "vitest";
 import router from "../router";
 
 describe("Router Configuration", () => {
-  it("should have exactly 5 routes", () => {
+  it("should have exactly 7 routes", () => {
     const routes = router.getRoutes();
-    expect(routes).toHaveLength(5);
+    expect(routes).toHaveLength(7);
   });
 
   it("should have a dashboard route at /", () => {

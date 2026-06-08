@@ -36,7 +36,7 @@ export class OneKeyHardwareWallet implements HardwareWallet {
 
     // Authorization MUST be inside a user gesture (Chrome requirement).
     const { ONEKEY_WEBUSB_FILTER } = await import("@onekeyfe/hd-shared");
-    await navigator.usb.requestDevice({ filters: ONEKEY_WEBUSB_FILTER });
+    await (navigator as any).usb.requestDevice({ filters: ONEKEY_WEBUSB_FILTER });
 
     const search = await HardwareSDK.searchDevices();
     if (!search.success) throw new Error(search.payload.error);

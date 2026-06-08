@@ -171,13 +171,13 @@ export const BIP300_ACK_THRESHOLD = 13_150;
  * given the current ACK/NACK counts and elapsed voting blocks.
  *
  * @param ackCount - Current number of miner ACKs
- * @param nackCount - Current number of miner NACKs (abstentions count as NACKs)
+ * @param _nackCount - Current number of miner NACKs (abstentions count as NACKs)
  * @param votingBlocksElapsed - How many blocks of the voting window have passed
  * @returns Analysis of the bundle's voting status
  */
 export function analyzeWithdrawalVoting(
   ackCount: number,
-  nackCount: number,
+  _nackCount: number,
   votingBlocksElapsed: number
 ): {
   isSucceeded: boolean;
