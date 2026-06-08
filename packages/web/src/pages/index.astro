@@ -6,44 +6,30 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ForkCountdown from "../components/ForkCountdown.vue";
 import SidechainCard from "../components/SidechainCard.astro";
-
-const sidechains = [
-  { slot: 0, name: "Thunder Network", description: "Payment channel network for instant, low-fee transactions. Lightning-compatible layer for everyday payments.", status: "active" },
-  { slot: 1, name: "zSide", description: "Privacy-focused sidechain with shielded transactions. Zcash-style zero-knowledge proofs on a Bitcoin-secured chain.", status: "active" },
-  { slot: 2, name: "BitNames", description: "Decentralized naming and identity system. Register human-readable names anchored to the Bitcoin-secured mainchain.", status: "active" },
-  { slot: 3, name: "BitAssets", description: "Tokenized assets and prediction markets. Issue and trade synthetic assets secured by Bitcoin hashrate.", status: "active" },
-  { slot: 4, name: "Photon", description: "EVM-compatible smart contract sidechain. Run Solidity contracts with Bitcoin-grade security via merged mining.", status: "active" },
-  { slot: 5, name: "Truthcoin", description: "Paul Sztorc's prediction market sidechain. Decentralized oracle system using peer-to-peer outcome resolution.", status: "active" },
-  { slot: 6, name: "CoinShift", description: "Cross-chain atomic swap sidechain. Trustless exchange between eCash and other cryptocurrency networks.", status: "active" },
-  { slot: 7, name: "Sidechain #8 (TBA)", description: "Reserved sidechain slot. Details to be announced before the August 2026 hard fork.", status: "proposed" },
-];
+import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
 ---
 
 <BaseLayout>
   <!-- ─── Hero ──────────────────────────────────────────────── -->
   <header class="relative overflow-hidden">
-    <!-- Background gradient -->
     <div class="absolute inset-0 bg-gradient-to-b from-ecash-950/20 via-gray-950 to-gray-950"></div>
 
     <div class="relative mx-auto max-w-5xl px-6 pb-20 pt-24 text-center md:pt-32">
-      <!-- Logo / Brand -->
       <h1 class="text-5xl font-extrabold tracking-tight md:text-7xl">
         <span class="text-ecash-400">Sidecoin</span>
       </h1>
       <p class="mx-auto mt-4 max-w-2xl text-lg text-gray-400 md:text-xl">
         Open-source wallet for the eCash hard fork.<br />
-        BIP-300 / BIP-301 Drivechains · 8 sidechains at launch.
+        BIP-300 / BIP-301 Drivechains · {ACTIVE_SIDECHAIN_COUNT} sidechains live at launch.
       </p>
 
-      <!-- Countdown -->
       <div class="mt-12">
         <ForkCountdown client:load />
       </div>
 
-      <!-- CTA buttons -->
       <div class="mt-12 flex flex-wrap items-center justify-center gap-4">
         <a
-          href="https://github.com/nicholasgasior/sidecoin/releases"
+          href="https://github.com/APECSdev/sidecoin/releases"
           class="rounded-lg bg-ecash-600 px-8 py-3 text-sm font-semibold text-white shadow-lg shadow-ecash-600/20 transition-colors hover:bg-ecash-500"
         >
           Download Desktop
@@ -55,7 +41,7 @@ const sidechains = [
           F-Droid (Android)
         </a>
         <a
-          href="https://github.com/nicholasgasior/sidecoin"
+          href="https://github.com/APECSdev/sidecoin"
           class="rounded-lg border border-gray-700 bg-gray-900 px-8 py-3 text-sm font-semibold text-gray-300 transition-colors hover:border-gray-600 hover:text-white"
         >
           View Source
@@ -77,7 +63,6 @@ const sidechains = [
     </p>
 
     <div class="mt-16 grid gap-8 md:grid-cols-3">
-      <!-- Feature cards -->
       <div class="rounded-xl border border-gray-800 bg-gray-900/40 p-6">
         <div class="mb-3 text-3xl">🖥️</div>
         <h3 class="text-lg font-semibold text-white">Desktop</h3>
@@ -110,18 +95,19 @@ const sidechains = [
   <!-- ─── Sidechains ────────────────────────────────────────── -->
   <section class="mx-auto max-w-5xl px-6 py-20">
     <h2 class="text-center text-3xl font-bold md:text-4xl">
-      8 Sidechains at Launch
+      {ACTIVE_SIDECHAIN_COUNT} Sidechains at Launch
     </h2>
     <p class="mx-auto mt-4 max-w-2xl text-center text-gray-400">
-      Each sidechain occupies a BIP-300 slot and is secured by Bitcoin's
-      full hashrate via Blind Merged Mining (BIP-301).
+      Each sidechain occupies a (sparse) BIP-300 slot and is secured by Bitcoin's
+      full hashrate via Blind Merged Mining (BIP-301). RISCy is reserved at
+      slot 3 and not yet activated.
     </p>
 
     <div class="mt-12 grid gap-4 md:grid-cols-2">
-      {sidechains.map((sc) => (
+      {SIDECHAINS.map((sc) => (
         <SidechainCard
           slotNumber={sc.slot}
-          name={sc.name}
+          name={sc.displayName}
           description={sc.description}
           status={sc.status}
         />
@@ -151,7 +137,7 @@ const sidechains = [
           <p class="text-gray-400">Timestamp: <span class="text-white">2026-08-21 15:00 UTC</span></p>
           <p class="text-gray-400">BIP-300: <span class="text-ecash-400">Active</span></p>
           <p class="text-gray-400">BIP-301: <span class="text-ecash-400">Active</span></p>
-          <p class="text-gray-400">Sidechains: <span class="text-white">8 at launch</span></p>
+          <p class="text-gray-400">Sidechains: <span class="text-white">7 active (+1 proposed)</span></p>
           <p class="text-gray-400">Withdrawal Window: <span class="text-white">26,300 blocks (~6 mo)</span></p>
         </div>
       </div>
@@ -167,7 +153,7 @@ const sidechains = [
           <p class="text-sm text-gray-500">eCash Drivechains Wallet · Open Source · MIT License</p>
         </div>
         <div class="flex gap-6 text-sm text-gray-400">
-          <a href="https://github.com/nyusternie/sidecoin" class="hover:text-white">GitHub</a>
+          <a href="https://github.com/APECSdev/sidecoin" class="hover:text-white">GitHub</a>
           <a href="https://ecash.com" class="hover:text-white">eCash</a>
           <a href="https://bip300.info" class="hover:text-white">BIP-300</a>
         </div>

@@ -1,130 +1,17 @@
 ---
 // packages/web/src/components/chains/ChainsGrid.astro
 //
-// Primary section: displays all 8 sidechains as expandable cards.
-// Data is defined inline — matches the index.astro sidechain data
-// but with extended fields (tagline, features).
+// Primary section: displays all sidechains as expandable cards.
+// Data comes from ../../data/sidechains (single source of truth,
+// derived from @sidecoin/shared registry). Slots are SPARSE.
 
 import ChainCard from "./ChainCard.astro";
-
-const chains = [
-  {
-    slot: 0,
-    name: "Thunder Network",
-    tagline: "Instant, low-fee Bitcoin payments",
-    description:
-      "A payment channel network enabling fast, everyday transactions. Designed for speed and scalability, Thunder Network provides Lightning-compatible payment routing with sub-second confirmation times and near-zero fees. Ideal for point-of-sale, micropayments, and streaming payments.",
-    status: "active" as const,
-    features: [
-      "Sub-second payment confirmation",
-      "Near-zero transaction fees",
-      "Lightning-compatible payment routing",
-      "Streaming and micropayment support",
-    ],
-  },
-  {
-    slot: 1,
-    name: "zSide",
-    tagline: "Private Bitcoin transactions",
-    description:
-      "A privacy-focused sidechain using zero-knowledge proofs to enable shielded transactions and financial confidentiality. zSide brings Zcash-style privacy to the Bitcoin ecosystem, allowing users to transact without exposing amounts or addresses on the public ledger.",
-    status: "active" as const,
-    features: [
-      "Zero-knowledge shielded transactions",
-      "Confidential amounts and addresses",
-      "Selective disclosure for compliance",
-      "Zcash-grade cryptographic privacy",
-    ],
-  },
-  {
-    slot: 2,
-    name: "BitNames",
-    tagline: "Decentralized identity and naming",
-    description:
-      "Register human-readable names that map to addresses and identities across the Sidecoin ecosystem. BitNames provides a Namecoin-style naming system secured by Bitcoin's hashrate, enabling DNS-like functionality and portable digital identity.",
-    status: "active" as const,
-    features: [
-      "Human-readable address mapping",
-      "Decentralized DNS functionality",
-      "Portable digital identity",
-      "Cross-chain name resolution",
-    ],
-  },
-  {
-    slot: 3,
-    name: "BitAssets",
-    tagline: "Synthetic assets and markets",
-    description:
-      "Create and trade tokenized assets, including synthetic stocks, commodities, and prediction markets. BitAssets enables a permissionless financial market layer on Bitcoin where anyone can issue, trade, and settle synthetic instruments.",
-    status: "active" as const,
-    features: [
-      "Synthetic stocks and commodities",
-      "Permissionless asset issuance",
-      "On-chain settlement and clearing",
-      "Prediction market primitives",
-    ],
-  },
-  {
-    slot: 4,
-    name: "Photon",
-    tagline: "Smart contracts on Bitcoin",
-    description:
-      "An EVM-compatible sidechain enabling Solidity smart contracts, DeFi protocols, and decentralized applications — all secured by Bitcoin's hashrate. Photon brings the full Ethereum developer ecosystem to Bitcoin without compromising on security.",
-    status: "active" as const,
-    features: [
-      "Full EVM compatibility",
-      "Solidity smart contract support",
-      "DeFi protocol deployment",
-      "Ethereum tooling compatibility (Hardhat, Foundry)",
-    ],
-  },
-  {
-    slot: 5,
-    name: "Truthcoin",
-    tagline: "Decentralized prediction markets",
-    description:
-      "Paul Sztorc's prediction market sidechain. A peer-to-peer oracle and prediction system for resolving real-world outcomes without central authorities. Truthcoin enables trustless betting markets, information aggregation, and decentralized decision-making.",
-    status: "active" as const,
-    features: [
-      "Peer-to-peer outcome resolution",
-      "Trustless prediction markets",
-      "Decentralized oracle system",
-      "Information aggregation incentives",
-    ],
-  },
-  {
-    slot: 6,
-    name: "CoinShift",
-    tagline: "Cross-chain atomic swaps",
-    description:
-      "Enable trustless exchange between Bitcoin and other cryptocurrencies using atomic swap technology. CoinShift provides native cross-chain liquidity without centralized exchanges, enabling seamless movement between Bitcoin and external networks.",
-    status: "active" as const,
-    features: [
-      "Trustless atomic swap execution",
-      "Cross-chain liquidity pools",
-      "No centralized exchange dependency",
-      "Multi-network bridge support",
-    ],
-  },
-  {
-    slot: 7,
-    name: "Sidechain #8",
-    tagline: "Coming soon",
-    description:
-      "A reserved BIP-300 slot for a future Drivechain to be announced prior to activation. This slot ensures the ecosystem can expand with community-driven proposals for new Bitcoin sidechain capabilities.",
-    status: "proposed" as const,
-    features: [
-      "Reserved for community proposal",
-      "Details announced before activation",
-      "BIP-300 slot pre-allocated",
-    ],
-  },
-];
+import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../../data/sidechains";
 ---
 
 <section id="chains" class="mx-auto max-w-5xl px-6 py-20">
   <h2 class="text-center text-3xl font-bold md:text-4xl">
-    8 Sidechains at
+    {ACTIVE_SIDECHAIN_COUNT} Sidechains at
     <span class="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
       Launch
     </span>
@@ -136,10 +23,10 @@ const chains = [
   </p>
 
   <div class="mt-12 grid gap-4 md:grid-cols-2">
-    {chains.map((chain) => (
+    {SIDECHAINS.map((chain) => (
       <ChainCard
         slotNumber={chain.slot}
-        name={chain.name}
+        name={chain.displayName}
         tagline={chain.tagline}
         description={chain.description}
         status={chain.status}
