@@ -3,9 +3,9 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { getSidechains } from "../api";
-import type { Sidechain } from "../api";
+import type { SidechainSummary } from "../api";
 
-const sidechains = ref<Sidechain[]>([]);
+const sidechains = ref<SidechainSummary[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
@@ -42,12 +42,12 @@ onMounted(async () => {
         class="rounded-lg border border-gray-800 bg-gray-900 p-4"
       >
         <div class="flex items-center justify-between">
-          <h3 class="font-semibold text-white">{{ sc.name }}</h3>
+          <h3 class="font-semibold text-white">{{ sc.displayName }}</h3>
           <span
             class="rounded-full px-2 py-0.5 text-xs font-medium"
-            :class="sc.active ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-500'"
+            :class="sc.status === 'active' ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-500'"
           >
-            {{ sc.active ? "Active" : "Pending" }}
+            {{ sc.status === "active" ? "Active" : "Pending" }}
           </span>
         </div>
         <p class="mt-1 text-sm text-gray-400">{{ sc.description }}</p>

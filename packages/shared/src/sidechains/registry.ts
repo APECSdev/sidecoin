@@ -136,7 +136,7 @@ export const SIDECHAIN_RISCY: SidechainDescriptor = {
  * Use getActiveSidechains() for the 7 that are live at launch.
  *
  * NOTE: ordered by launch prominence, NOT by slot. Slots are sparse
- * (2, 98, 2, 4, 99, 13, 255, 3) — never use array index as a slot.
+ * (9, 98, 2, 4, 99, 13, 255, 3) — never use array index as a slot.
  *
  * Usage:
  *   import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";

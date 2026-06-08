@@ -26,18 +26,21 @@ const mockGetDeposits = vi.mocked(getDeposits);
 
 // ---------------------------------------------------------------------------
 // Fixtures
+//
+// Slots match the authoritative registry (sparse, per-proposal):
+// thunder=9, zside=98. Never sequential, never the array index.
 // ---------------------------------------------------------------------------
 
 const SUMMARIES = [
   {
-    slot: 0,
+    slot: 9,
     id: "thunder",
     displayName: "Thunder Network",
     description: "Payment channels",
     status: "active",
   },
   {
-    slot: 1,
+    slot: 98,
     id: "zside",
     displayName: "zSide",
     description: "Shielded txs",
@@ -99,7 +102,7 @@ describe("DashboardView.vue", () => {
     mockGetDeposits.mockImplementation(async (slot: number) => ({
       slot,
       chainId: `chain-${slot}`,
-      provisioned: slot === 0,
+      provisioned: slot === 9,
       deposits: [deposit(100000000n, slot)],
       nextCursor: null,
     }));
@@ -122,8 +125,8 @@ describe("DashboardView.vue", () => {
   it("should call getDeposits once per sidechain slot", async () => {
     await mountDashboard();
     expect(mockGetDeposits).toHaveBeenCalledTimes(SUMMARIES.length);
-    expect(mockGetDeposits).toHaveBeenCalledWith(0);
-    expect(mockGetDeposits).toHaveBeenCalledWith(1);
+    expect(mockGetDeposits).toHaveBeenCalledWith(9);
+    expect(mockGetDeposits).toHaveBeenCalledWith(98);
   });
 
   it("should display the aggregate inflow label", async () => {
@@ -165,8 +168,8 @@ describe("DashboardView.vue", () => {
 
   it("should display per-chain deposit counts and slots", async () => {
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("1 deposits · slot 0");
-    expect(wrapper.text()).toContain("1 deposits · slot 1");
+    expect(wrapper.text()).toContain("1 deposits · slot 9");
+    expect(wrapper.text()).toContain("1 deposits · slot 98");
   });
 
   it("should render the fork countdown banner", async () => {

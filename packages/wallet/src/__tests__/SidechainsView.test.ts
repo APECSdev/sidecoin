@@ -22,17 +22,23 @@ const mockGetSidechains = vi.mocked(getSidechains);
 
 // ---------------------------------------------------------------------------
 // Helpers
+//
+// Slots MUST match the authoritative registry in
+// packages/shared/src/sidechains/registry.ts. BIP-300 slots are SPARSE and
+// assigned per proposal — never sequential, never the array index.
+//   thunder=9 zside=98 bitnames=2 bitassets=4 photon=99 truthcoin=13
+//   coinshift=255 riscy=3 (proposed)
 // ---------------------------------------------------------------------------
 
 const MOCK_SIDECHAINS = [
-  { slot: 0, name: "Thunder Network", description: "Payment channels.", active: true },
-  { slot: 1, name: "zSide", description: "Privacy sidechain.", active: true },
-  { slot: 2, name: "BitNames", description: "Naming system.", active: true },
-  { slot: 3, name: "BitAssets", description: "Tokenized assets.", active: true },
-  { slot: 4, name: "Photon", description: "EVM-compatible.", active: true },
-  { slot: 5, name: "Truthcoin", description: "Prediction markets.", active: true },
-  { slot: 6, name: "CoinShift", description: "Atomic swaps.", active: true },
-  { slot: 7, name: "Sidechain #8 (TBA)", description: "Reserved.", active: false },
+  { slot: 9, id: "thunder", displayName: "Thunder Network", description: "Payment channels.", status: "active" },
+  { slot: 98, id: "zside", displayName: "zSide", description: "Privacy sidechain.", status: "active" },
+  { slot: 2, id: "bitnames", displayName: "BitNames", description: "Naming system.", status: "active" },
+  { slot: 4, id: "bitassets", displayName: "BitAssets", description: "Tokenized assets.", status: "active" },
+  { slot: 99, id: "photon", displayName: "Photon", description: "Post-quantum crypto.", status: "active" },
+  { slot: 13, id: "truthcoin", displayName: "Truthcoin", description: "Prediction markets.", status: "active" },
+  { slot: 255, id: "coinshift", displayName: "CoinShift", description: "Atomic swaps.", status: "active" },
+  { slot: 3, id: "riscy", displayName: "RISCy", description: "Reserved — not activated.", status: "proposed" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -66,7 +72,7 @@ describe("SidechainsView.vue", () => {
     const wrapper = mount(SidechainsView);
     await flushPromises();
     for (const sc of MOCK_SIDECHAINS) {
-      expect(wrapper.text()).toContain(sc.name);
+      expect(wrapper.text()).toContain(sc.displayName);
     }
   });
 
@@ -136,6 +142,6 @@ describe("SidechainsView.vue", () => {
     await flushPromises();
     // Should still show heading and subtitle but no cards
     expect(wrapper.find("h2").text()).toBe("Sidechains");
-    expect(wrapper.text()).not.toContain("Slot 0");
+    expect(wrapper.text()).not.toContain("Slot 9");
   });
 });
