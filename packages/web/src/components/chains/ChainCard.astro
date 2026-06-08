@@ -2,9 +2,10 @@
 // packages/web/src/components/chains/ChainCard.astro
 //
 // Clickable card for a sidechain. Status type comes from the shared
-// registry so it can't drift from the canonical SidechainStatus union.
+// registry (via the local data module) so it can't drift from the
+// canonical SidechainStatus union.
 
-import type { SidechainStatus } from "@sidecoin/shared/types/sidechain";
+import type { SidechainStatus } from "../../data/sidechains";
 
 interface Props {
   slotNumber: number;

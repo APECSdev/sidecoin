@@ -14,6 +14,11 @@ import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
 
 type SidechainDescriptor = (typeof LAUNCH_SIDECHAINS)[number];
 
+// Derived from the registry's own data — avoids a deep subpath import
+// of @sidecoin/shared/types/sidechain (which isn't exported). Tracks the
+// canonical SidechainStatus union automatically.
+export type SidechainStatus = SidechainDescriptor["status"];
+
 interface Presentation {
   tagline: string;
   features: string[];

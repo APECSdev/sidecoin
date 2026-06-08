@@ -10,7 +10,7 @@ interface Props {
 
 const {
   title = "Sidecoin — eCash Drivechains Wallet",
-  description = "Open-source wallet for the eCash hard fork. BIP-300/301 Drivechains with 8 sidechains at launch. Desktop, Mobile, and Web.",
+  description = "Open-source wallet for the eCash hard fork. BIP-300/301 Drivechains with 7 sidechains live at launch. Desktop, Mobile, and Web.",
 } = Astro.props;
 
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
@@ -55,7 +55,7 @@ const ogImage = new URL("/og-image.png", Astro.site);
     </style>
 
     <!-- Analytics -->
-    <script async defer src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
+    <script is:inline async defer src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
     <noscript><img src="https://queue.simpleanalyticscdn.com/noscript.gif" alt="" referrerpolicy="no-referrer-when-downgrade" /></noscript>
   </head>
   <body class="min-h-screen bg-gray-950 text-gray-100 antialiased">
