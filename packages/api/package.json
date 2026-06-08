@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@sidecoin/shared": "workspace:*"
+    "@sidecoin/shared": "workspace:*",
+    "graphql": "^16.14.1"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "4.20260607.1",
