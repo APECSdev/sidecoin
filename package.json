@@ -19,5 +19,18 @@
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check"
+  },
+  "pnpm": {
+    "overrides": {
+      "@noble/hashes": "1.8.0",
+      "@noble/curves": "1.9.7",
+      "@scure/bip32": "1.7.0",
+      "@scure/bip39": "1.6.0",
+      "bip39": "3.1.0",
+      "bitcoinjs-lib": "7.0.1",
+      "bs58check": "4.0.0",
+      "@onekeyfe/hd-common-connect-sdk": "1.1.26",
+      "@onekeyfe/hd-core": "1.1.26"
+    }
   }
 }

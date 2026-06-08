@@ -15,6 +15,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@onekeyfe/hd-common-connect-sdk": "^1.1.26",
+    "@onekeyfe/hd-core": "^1.1.26",
+    "@onekeyfe/hd-shared": "^1.1.26",
     "@sidecoin/api-client": "workspace:^",
     "@sidecoin/shared": "workspace:*",
     "@vitejs/plugin-vue": "6.0.1",

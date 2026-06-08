@@ -7,16 +7,30 @@ import SendView from "../views/SendView.vue";
 import ReceiveView from "../views/ReceiveView.vue";
 import SidechainsView from "../views/SidechainsView.vue";
 import SettingsView from "../views/SettingsView.vue";
+import OnboardingView from "../views/OnboardingView.vue";
+import HardwareWalletView from "../views/HardwareWalletView.vue";
+
+import { hasWallet } from "../keystore";
 
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
+    { path: "/onboarding", name: "onboarding", component: OnboardingView },
     { path: "/", name: "dashboard", component: DashboardView },
     { path: "/send", name: "send", component: SendView },
     { path: "/receive", name: "receive", component: ReceiveView },
     { path: "/sidechains", name: "sidechains", component: SidechainsView },
+    { path: "/hardware", name: "hardware", component: HardwareWalletView },
     { path: "/settings", name: "settings", component: SettingsView },
   ],
+});
+
+// Gate: no wallet → force onboarding. Onboarding itself is always reachable
+// (also serves as the "reset / re-import" entry point).
+router.beforeEach((to) => {
+  if (to.name === "onboarding") return true;
+  if (!hasWallet()) return { name: "onboarding" };
+  return true;
 });
 
 export default router;
