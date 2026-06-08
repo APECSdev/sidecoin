@@ -30,21 +30,23 @@ sidechains secured by Bitcoin's full SHA-256d hashrate.
 | 📱 **Mobile** | React Native (Android via F-Droid, iOS) | QR scanning, biometric auth, lightweight SPV mode |
 | 🌐 **Web** | Astro + Vue (coming soon) | No install — connect to your node and manage sidechains from any device |
 
-## Sidechains at Launch
+## Sidechains
 
 Each sidechain occupies a BIP-300 slot and is secured by Bitcoin's full
-hashrate via Blind Merged Mining (BIP-301).
+hashrate via Blind Merged Mining (BIP-301). **Slots are sparse** — assigned
+per proposal, not sequentially — so never assume slot number equals list
+position.
 
 | Slot | Sidechain | Status | Description |
 |------|-----------|--------|-------------|
-| 0 | **Thunder Network** | Active | Lightning-compatible payment channel network for instant, low-fee payments |
-| 1 | **zSide** | Active | Privacy sidechain with Zcash-style zero-knowledge shielded transactions |
-| 2 | **BitNames** | Active | Decentralized naming and identity — human-readable names anchored to mainchain |
-| 3 | **BitAssets** | Active | Tokenized assets and prediction markets secured by Bitcoin hashrate |
-| 4 | **Photon** | Active | EVM-compatible smart contract sidechain (Solidity via merged mining) |
-| 5 | **Truthcoin** | Active | Paul Sztorc's peer-to-peer prediction market and oracle system |
-| 6 | **CoinShift** | Active | Cross-chain atomic swap sidechain for trustless exchange |
-| 7 | **TBA** | Proposed | Reserved slot — details announced before the August 2026 fork |
+| 2 | **BitNames** | Active | Decentralized naming and identity system. Register human-readable names anchored to the Bitcoin-secured mainchain |
+| 3 | **RISCy** | Proposed | Proposed RISC-V-based sidechain. Reserved at slot 3; not yet activated and not accepting deposits |
+| 4 | **BitAssets** | Active | Tokenized assets — issue and trade ERC-20-style tokens, NFTs, and ICOs secured by Bitcoin hashrate |
+| 9 | **Thunder Network** | Active | High-throughput scaling sidechain with a large, growing blocksize and fraud proofs. Fast, low-fee everyday payments |
+| 13 | **Truthcoin** | Active | Paul Sztorc's prediction market sidechain. Decentralized oracle system using peer-to-peer outcome resolution |
+| 98 | **zSide** | Active | Privacy-focused sidechain with shielded transactions. Zcash-style zero-knowledge proofs on a Bitcoin-secured chain |
+| 99 | **Photon** | Active | Post-quantum cryptography sidechain. Quantum-resistant signatures securing value against future quantum attacks |
+| 255 | **CoinShift** | Active | Cross-chain atomic swap sidechain. Trustless exchange between eCash and other cryptocurrency networks |
 
 ## Chain Parameters
 
@@ -65,7 +67,7 @@ hashrate via Blind Merged Mining (BIP-301).
 | Timestamp | 2026-08-21 15:00 UTC |
 | BIP-300 | Active |
 | BIP-301 | Active |
-| Sidechains | 8 at launch |
+| Sidechains | 7 active at launch (+1 proposed) |
 | Withdrawal Window | 26,300 blocks (~6 months) |
 
 ## Repository Structure
