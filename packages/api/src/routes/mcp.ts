@@ -7,6 +7,11 @@
 // Tools expose the SAME operations as /v1 and /graphql, calling the shared
 // slot resolver and upstream operations. Domain failures are returned as MCP
 // tool results with isError:true carrying the same `code` strings as REST.
+//
+// A GET to /mcp returns a human-readable landing page (a "SKILL.md for
+// humans") explaining what the service does and how to wire it into an
+// AI agent. The tool table is generated from the TOOLS array below so the
+// docs can never drift from the actual exposed tools.
 
 import type { Env } from "../lib/shared.js";
 import {
@@ -103,6 +108,137 @@ function rpcError(
     id,
     error: { code, message, ...(data != null ? { data } : {}) },
   };
+}
+
+/**
+ * Human-readable landing page for /mcp. Explains the service to operators
+ * and shows how to integrate it into an AI agent. The tool list is rendered
+ * from TOOLS so it always matches what tools/list returns.
+ */
+function mcpLandingPage(): string {
+  const toolRows = TOOLS.map(
+    (t) =>
+      `          <tr><td><code>${t.name}</code></td><td>${t.description}</td></tr>`,
+  ).join("\n");
+
+  return `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sidecoin MCP Server</title>
+    <style>
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, sans-serif;
+        line-height: 1.55;
+        max-width: 820px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+        color: #1a1a1a;
+      }
+      h1 { margin-bottom: 0.25rem; }
+      .sub { color: #666; margin-top: 0; }
+      code {
+        background: #f4f4f5;
+        padding: 0.1rem 0.35rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+      }
+      pre {
+        background: #1e1e1e;
+        color: #f8f8f2;
+        padding: 1rem;
+        border-radius: 8px;
+        overflow-x: auto;
+      }
+      pre code { background: none; color: inherit; padding: 0; }
+      table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+      th, td {
+        text-align: left;
+        padding: 0.5rem 0.75rem;
+        border-bottom: 1px solid #e4e4e7;
+        vertical-align: top;
+      }
+      th { background: #fafafa; }
+      .note {
+        background: #fff7ed;
+        border-left: 4px solid #fb923c;
+        padding: 0.75rem 1rem;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Sidecoin MCP Server</h1>
+    <p class="sub">
+      Model Context Protocol server (<code>${SERVER_INFO.name}</code> v${SERVER_INFO.version}) —
+      read-only access to Sidecoin drivechain deposit data for AI agents.
+    </p>
+
+    <h2>What it does</h2>
+    <p>
+      This endpoint exposes Sidecoin's slot-addressed deposit data as MCP
+      tools so an AI agent can look up sidechains, list and fetch L1→L2
+      deposits, and compute a derived deposit-inflow balance for an address.
+      It is the same data served by the REST (<code>/v1</code>) and GraphQL
+      (<code>/graphql</code>) endpoints, exposed through MCP tools.
+    </p>
+
+    <h2>Transport</h2>
+    <p>
+      JSON-RPC 2.0 over HTTP. Send <code>POST</code> requests to this URL
+      (<code>https://sidecoin.app/mcp</code>). Protocol version
+      <code>${PROTOCOL_VERSION}</code>. Supported methods:
+      <code>initialize</code>, <code>ping</code>, <code>tools/list</code>,
+      <code>tools/call</code>.
+    </p>
+
+    <h2>Integrating with an AI agent</h2>
+    <p>
+      Point any MCP client that supports a streamable-HTTP / remote server at
+      this URL. For clients configured via JSON, that looks like:
+    </p>
+    <pre><code>{
+  "mcpServers": {
+    "sidecoin": {
+      "url": "https://sidecoin.app/mcp"
+    }
+  }
+}</code></pre>
+    <p>
+      No authentication is required — the underlying data source is public
+      and read-only.
+    </p>
+
+    <h2>Available tools</h2>
+    <table>
+      <thead>
+        <tr><th>Tool</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+${toolRows}
+      </tbody>
+    </table>
+
+    <h2>Example: list the tools directly</h2>
+    <pre><code>curl -s https://sidecoin.app/mcp \\
+  -H 'content-type: application/json' \\
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'</code></pre>
+
+    <h2>Example: call a tool</h2>
+    <pre><code>curl -s https://sidecoin.app/mcp \\
+  -H 'content-type: application/json' \\
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/call",
+       "params":{"name":"list_sidechains","arguments":{}}}'</code></pre>
+
+    <div class="note">
+      <strong>Note on balance:</strong> <code>get_balance</code> returns a
+      value derived from the sum of credited deposit inflow for an address.
+      It is <em>not</em> a spendable L2 balance — the upstream source exposes
+      no balance route today.
+    </div>
+  </body>
+</html>`;
 }
 
 interface ToolResult {
@@ -234,6 +370,13 @@ async function callTool(
 }
 
 export async function handleMcp(req: Request, env: Env): Promise<Response> {
+  // GET /mcp -> human-readable landing page (docs for operators / agents).
+  if (req.method === "GET") {
+    return new Response(mcpLandingPage(), {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8", ...CORS },
+    });
+  }
   if (req.method !== "POST") {
     return err("method_not_allowed", "POST only", 405);
   }

@@ -4,11 +4,15 @@
 // calling the shared slot resolver and upstream operations. Bigints (sats)
 // are String. Domain failures surface as GraphQL errors carrying the same
 // `code` the REST surface uses, via error `extensions`.
+//
+// A GET to /graphql returns the GraphiQL IDE (served from a pinned CDN, the
+// same dependency-free pattern as the /v1 Swagger UI page).
 
 import { buildSchema, graphql } from "graphql";
 
 import type { Env } from "../lib/shared.js";
 import {
+  CORS,
   MAX_PAGE,
   json,
   err,
@@ -20,6 +24,54 @@ import {
   opDeriveBalance,
 } from "../lib/shared.js";
 import { UpstreamClient } from "../upstream.js";
+
+// Pinned GraphiQL bundle served from unpkg; keeps the Worker dependency-free
+// (for the GUI) while serving the canonical GraphiQL IDE against /graphql.
+const GRAPHIQL_VERSION = "3";
+
+// Self-contained GraphiQL page; points its fetcher at /graphql so the IDE
+// and the live schema stay in sync.
+const GRAPHIQL_HTML = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sidecoin API — GraphiQL</title>
+    <style>
+      body {
+        margin: 0;
+        height: 100dvh;
+      }
+      #graphiql {
+        height: 100dvh;
+      }
+    </style>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/graphiql@${GRAPHIQL_VERSION}/graphiql.min.css"
+    />
+  </head>
+  <body>
+    <div id="graphiql">Loading GraphiQL…</div>
+    <script
+      crossorigin
+      src="https://unpkg.com/react@18/umd/react.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"
+    ></script>
+    <script
+      crossorigin
+      src="https://unpkg.com/graphiql@${GRAPHIQL_VERSION}/graphiql.min.js"
+    ></script>
+    <script>
+      const root = ReactDOM.createRoot(document.getElementById("graphiql"));
+      const fetcher = GraphiQL.createFetcher({ url: "/graphql" });
+      root.render(React.createElement(GraphiQL, { fetcher }));
+    </script>
+  </body>
+</html>`;
 
 const schema = buildSchema(/* GraphQL */ `
   type Health {
@@ -199,6 +251,13 @@ const root = {
 };
 
 export async function handleGraphql(req: Request, env: Env): Promise<Response> {
+  // GET /graphql -> GraphiQL IDE (browser-facing landing page).
+  if (req.method === "GET") {
+    return new Response(GRAPHIQL_HTML, {
+      status: 200,
+      headers: { "content-type": "text/html; charset=utf-8", ...CORS },
+    });
+  }
   if (req.method !== "POST") {
     return err("method_not_allowed", "POST only", 405);
   }
