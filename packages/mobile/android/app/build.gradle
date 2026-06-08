@@ -101,3 +101,23 @@ dependencies {
     // Sentry — playstore builds only (excluded from F-Droid)
     playstoreImplementation 'io.sentry:sentry-android:7.14.0'
 }
+
+/**
+ * Once Gradle has evaluated every project, the `installDebug` shorthand
+ * would be ambiguous because the `fdroid` and `playstore` product flavors
+ * each generate their own install task. Tools like the React Native CLI
+ * (`react-native run-android`) still invoke `./gradlew installDebug`,
+ * so we register a non-ambiguous alias that forwards to the F-Droid
+ * flavor — the default development build. The Play Store flavor can
+ * still be installed directly with `./gradlew installPlaystoreDebug`.
+ */
+gradle.projectsEvaluated {
+    def fdroidInstallDebug = tasks.findByName('installFdroidDebug')
+    if (fdroidInstallDebug != null && tasks.findByName('installDebug') == null) {
+        tasks.register('installDebug') {
+            dependsOn fdroidInstallDebug
+            description = 'Alias for installFdroidDebug (default development flavor)'
+            group = 'install'
+        }
+    }
+}
