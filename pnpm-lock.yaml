@@ -4,17 +4,6 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-overrides:
-  '@noble/hashes': 1.8.0
-  '@noble/curves': 1.9.7
-  '@scure/bip32': 1.7.0
-  '@scure/bip39': 1.6.0
-  bip39: 3.1.0
-  bitcoinjs-lib: 7.0.1
-  bs58check: 4.0.0
-  '@onekeyfe/hd-common-connect-sdk': 1.1.26
-  '@onekeyfe/hd-core': 1.1.26
-
 importers:
 
   .: {}
@@ -25,7 +14,7 @@ importers:
         specifier: workspace:*
         version: link:../shared
       graphql:
-        specifier: ^16.14.1
+        specifier: 16.14.1
         version: 16.14.1
     devDependencies:
       '@cloudflare/workers-types':
@@ -460,17 +449,20 @@ importers:
 
   packages/wallet:
     dependencies:
+      '@noble/hashes':
+        specifier: 1.8.0
+        version: 1.8.0
       '@onekeyfe/hd-common-connect-sdk':
         specifier: 1.1.26
-        version: 1.1.26(@noble/hashes@2.2.0)
+        version: 1.1.26(@noble/hashes@1.8.0)
       '@onekeyfe/hd-core':
         specifier: 1.1.26
-        version: 1.1.26(@noble/hashes@2.2.0)
+        version: 1.1.26(@noble/hashes@1.8.0)
       '@onekeyfe/hd-shared':
-        specifier: ^1.1.26
+        specifier: 1.1.26
         version: 1.1.26
       '@sidecoin/api-client':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../api-client
       '@sidecoin/shared':
         specifier: workspace:*
@@ -519,7 +511,7 @@ importers:
         specifier: 5.6.3
         version: 5.6.3
       vite-plugin-pwa:
-        specifier: ^1.3.0
+        specifier: 1.3.0
         version: 1.3.0(vite@7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))(workbox-build@7.4.1(@types/babel__core@7.20.5))(workbox-window@7.4.1)
       vitest:
         specifier: 4.0.18
@@ -2708,10 +2700,6 @@ packages:
     resolution: {integrity: sha512-jCs9ldd7NwzpgXDIf6P3+NrHh9/sD6CQdxHyjQI+h/6rDNo88ypBxxz45UDuZHz9r3tNz7N/VInSVoVdtXEI4A==}
     engines: {node: ^14.21.3 || >=16}
 
-  '@noble/hashes@2.2.0':
-    resolution: {integrity: sha512-IYqDGiTXab6FniAgnSdZwgWbomxpy9FtYvLKs7wCUs2a8RkITG+DFGO1DM9cr+E3/RgADRpFjrKVaJ1z6sjtEg==}
-    engines: {node: '>= 20.19.0'}
-
   '@nodable/entities@2.1.0':
     resolution: {integrity: sha512-nyT7T3nbMyBI/lvr6L5TyWbFJAI9FTgVRakNoBqCD+PmID8DzFrrNdLLtHMwMszOtqZa8PAOV24ZqDnQrhQINA==}
 
@@ -2736,7 +2724,7 @@ packages:
   '@onekeyfe/hd-core@1.1.26':
     resolution: {integrity: sha512-I4g1fgEUosmBUvjtXtDPr09TzI2N6KW2AGBUi7mKXESRi68RI3QAzfuupDHl0gpzArUdiH4LO4LrYrT/Do7F1A==}
     peerDependencies:
-      '@noble/hashes': 1.8.0
+      '@noble/hashes': ^1.1.3
 
   '@onekeyfe/hd-shared@1.1.26':
     resolution: {integrity: sha512-OHS4ICFwG6a9qLSV3qVN+JDMT08Dk9E6a7ro9yhhSpgIb74jk43BGkpAuoZFuHAwFjjGYlL+IPSbR621EJm5Tg==}
@@ -13105,8 +13093,6 @@ snapshots:
 
   '@noble/hashes@1.8.0': {}
 
-  '@noble/hashes@2.2.0': {}
-
   '@nodable/entities@2.1.0': {}
 
   '@nodelib/fs.scandir@2.1.5':
@@ -13123,9 +13109,9 @@ snapshots:
 
   '@one-ini/wasm@0.1.1': {}
 
-  '@onekeyfe/hd-common-connect-sdk@1.1.26(@noble/hashes@2.2.0)':
+  '@onekeyfe/hd-common-connect-sdk@1.1.26(@noble/hashes@1.8.0)':
     dependencies:
-      '@onekeyfe/hd-core': 1.1.26(@noble/hashes@2.2.0)
+      '@onekeyfe/hd-core': 1.1.26(@noble/hashes@1.8.0)
       '@onekeyfe/hd-shared': 1.1.26
       '@onekeyfe/hd-transport-emulator': 1.1.26
       '@onekeyfe/hd-transport-http': 1.1.26
@@ -13136,9 +13122,9 @@ snapshots:
       - '@noble/hashes'
       - debug
 
-  '@onekeyfe/hd-core@1.1.26(@noble/hashes@2.2.0)':
+  '@onekeyfe/hd-core@1.1.26(@noble/hashes@1.8.0)':
     dependencies:
-      '@noble/hashes': 2.2.0
+      '@noble/hashes': 1.8.0
       '@onekeyfe/hd-shared': 1.1.26
       '@onekeyfe/hd-transport': 1.1.26
       axios: 1.15.2
