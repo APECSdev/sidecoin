@@ -1,17 +1,17 @@
 ---
 // packages/web/src/components/chains/ChainCard.astro
 //
-// Clickable card for a sidechain on the /chains page.
-// Shows name, tagline, status badge, and slot number.
-// Clicking expands the ChainDetail inline via the
-// <details> element — no JavaScript required.
+// Clickable card for a sidechain. Status type comes from the shared
+// registry so it can't drift from the canonical SidechainStatus union.
+
+import type { SidechainStatus } from "@sidecoin/shared/types/sidechain";
 
 interface Props {
   slotNumber: number;
   name: string;
   tagline: string;
   description: string;
-  status: "active" | "proposed";
+  status: SidechainStatus;
   features?: string[];
 }
 
