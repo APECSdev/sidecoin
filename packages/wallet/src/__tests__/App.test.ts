@@ -1,8 +1,8 @@
 // packages/wallet/src/__tests__/App.test.ts
 //
 // Tests for the root App.vue component.
-// Verifies the navigation sidebar, branding, route links,
-// and main content area render correctly.
+// Verifies the navigation (desktop sidebar + mobile bottom bar), branding,
+// route links, and main content area render correctly.
 
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
@@ -101,10 +101,10 @@ describe("App.vue", () => {
   it("should render navigation link text for all routes", async () => {
     const wrapper = await mountApp();
     const nav = wrapper.find("nav");
-    expect(nav.text()).toContain("Dashboard");
+    expect(nav.text()).toContain("Home");
     expect(nav.text()).toContain("Send");
     expect(nav.text()).toContain("Receive");
-    expect(nav.text()).toContain("Sidechains");
+    expect(nav.text()).toContain("Chains");
     expect(nav.text()).toContain("Settings");
   });
 

@@ -1,12 +1,13 @@
 // packages/wallet/src/__tests__/SettingsView.test.ts
 //
 // Tests for SettingsView.vue.
-// Covers form rendering, save functionality, mock/live mode banners,
-// debug info section, and API integration.
+// Covers form rendering, save flow, default/custom adapter banners,
+// the debug info section, and API integration.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import SettingsView from "../views/SettingsView.vue";
+import { DEFAULT_BASE_URL } from "@sidecoin/api-client";
 
 // ---------------------------------------------------------------------------
 // Mock the API module
@@ -15,14 +16,12 @@ import SettingsView from "../views/SettingsView.vue";
 vi.mock("../api", () => ({
   getApiBaseUrl: vi.fn(),
   setApiBaseUrl: vi.fn(),
-  isMockMode: vi.fn(),
 }));
 
-import { getApiBaseUrl, setApiBaseUrl, isMockMode } from "../api";
+import { getApiBaseUrl, setApiBaseUrl } from "../api";
 
 const mockGetApiBaseUrl = vi.mocked(getApiBaseUrl);
 const mockSetApiBaseUrl = vi.mocked(setApiBaseUrl);
-const mockIsMockMode = vi.mocked(isMockMode);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -33,7 +32,6 @@ describe("SettingsView.vue", () => {
     vi.clearAllMocks();
     vi.useFakeTimers();
     mockGetApiBaseUrl.mockReturnValue("");
-    mockIsMockMode.mockReturnValue(true);
   });
 
   afterEach(() => {
@@ -46,60 +44,62 @@ describe("SettingsView.vue", () => {
     expect(wrapper.find("h2").text()).toBe("Settings");
   });
 
-  it("should show Demo Mode banner when in mock mode", () => {
-    mockIsMockMode.mockReturnValue(true);
+  it("should show the default adapter banner when no custom URL is set", () => {
+    mockGetApiBaseUrl.mockReturnValue("");
     const wrapper = mount(SettingsView);
-    expect(wrapper.text()).toContain("Demo Mode Active");
-    expect(wrapper.text()).toContain("Configure a node URL below");
+    expect(wrapper.text()).toContain("Using Default Adapter");
+    expect(wrapper.text()).toContain(DEFAULT_BASE_URL);
   });
 
-  it("should show Connected banner when not in mock mode", async () => {
-    mockIsMockMode.mockReturnValue(false);
-    mockGetApiBaseUrl.mockReturnValue("http://127.0.0.1:8332");
+  it("should show the custom adapter banner when a URL is configured", async () => {
+    mockGetApiBaseUrl.mockReturnValue("http://127.0.0.1:8332/v1");
     const wrapper = mount(SettingsView);
     await flushPromises();
-    expect(wrapper.text()).toContain("Connected");
-    expect(wrapper.text()).toContain("http://127.0.0.1:8332");
+    expect(wrapper.text()).toContain("Custom Adapter");
+    expect(wrapper.text()).toContain("http://127.0.0.1:8332/v1");
   });
 
-  it("should render Node RPC URL input", () => {
+  it("should render the Adapter Base URL input", () => {
     const wrapper = mount(SettingsView);
-    expect(wrapper.text()).toContain("Node RPC URL");
+    expect(wrapper.text()).toContain("Adapter Base URL");
     const inputs = wrapper.findAll("input");
     expect(inputs.length).toBeGreaterThanOrEqual(1);
   });
 
-  it("should render Electrum Server URL input", () => {
+  it("should render the Electrum Server URL input", () => {
     const wrapper = mount(SettingsView);
     expect(wrapper.text()).toContain("Electrum Server URL");
     const inputs = wrapper.findAll("input");
     expect(inputs.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("should have default Node URL of http://127.0.0.1:8332", () => {
+  it("should have an empty Adapter URL by default (uses client default)", () => {
     const wrapper = mount(SettingsView);
     const inputs = wrapper.findAll("input");
-    expect((inputs[0].element as HTMLInputElement).value).toBe(
-      "http://127.0.0.1:8332"
-    );
+    expect((inputs[0].element as HTMLInputElement).value).toBe("");
+  });
+
+  it("should use DEFAULT_BASE_URL as the Adapter URL placeholder", () => {
+    const wrapper = mount(SettingsView);
+    const inputs = wrapper.findAll("input");
+    expect(inputs[0].attributes("placeholder")).toBe(DEFAULT_BASE_URL);
   });
 
   it("should have default Electrum URL of tcp://127.0.0.1:50001", () => {
     const wrapper = mount(SettingsView);
     const inputs = wrapper.findAll("input");
     expect((inputs[1].element as HTMLInputElement).value).toBe(
-      "tcp://127.0.0.1:50001"
+      "tcp://127.0.0.1:50001",
     );
   });
 
-  it("should populate Node URL from existing API config", async () => {
-    mockGetApiBaseUrl.mockReturnValue("http://mynode:8332");
-    mockIsMockMode.mockReturnValue(false);
+  it("should populate Adapter URL from existing API config", async () => {
+    mockGetApiBaseUrl.mockReturnValue("http://mynode:8332/v1");
     const wrapper = mount(SettingsView);
     await flushPromises();
     const inputs = wrapper.findAll("input");
     expect((inputs[0].element as HTMLInputElement).value).toBe(
-      "http://mynode:8332"
+      "http://mynode:8332/v1",
     );
   });
 
@@ -110,11 +110,13 @@ describe("SettingsView.vue", () => {
     expect(button.text()).toBe("Save Settings");
   });
 
-  it("should call setApiBaseUrl on save", async () => {
+  it("should call setApiBaseUrl with the entered URL on save", async () => {
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const wrapper = mount(SettingsView);
+    const inputs = wrapper.findAll("input");
+    await inputs[0].setValue("http://127.0.0.1:8332/v1");
     await wrapper.find("form").trigger("submit.prevent");
-    expect(mockSetApiBaseUrl).toHaveBeenCalledWith("http://127.0.0.1:8332");
+    expect(mockSetApiBaseUrl).toHaveBeenCalledWith("http://127.0.0.1:8332/v1");
     consoleSpy.mockRestore();
   });
 
@@ -143,14 +145,13 @@ describe("SettingsView.vue", () => {
   it("should log settings on save", async () => {
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     const wrapper = mount(SettingsView);
+    const inputs = wrapper.findAll("input");
+    await inputs[0].setValue("http://127.0.0.1:8332/v1");
     await wrapper.find("form").trigger("submit.prevent");
-    expect(consoleSpy).toHaveBeenCalledWith(
-      "[SettingsView] Saving settings:",
-      {
-        nodeUrl: "http://127.0.0.1:8332",
-        electrumUrl: "tcp://127.0.0.1:50001",
-      }
-    );
+    expect(consoleSpy).toHaveBeenCalledWith("[SettingsView] Saving settings:", {
+      nodeUrl: "http://127.0.0.1:8332/v1",
+      electrumUrl: "tcp://127.0.0.1:50001",
+    });
     consoleSpy.mockRestore();
   });
 
@@ -171,23 +172,21 @@ describe("SettingsView.vue", () => {
     expect(wrapper.text()).toContain("Platform: Web");
   });
 
-  it("should display Demo mode in debug info when in mock mode", () => {
-    mockIsMockMode.mockReturnValue(true);
+  it("should display 'Adapter: Default' in debug info when using default", () => {
+    mockGetApiBaseUrl.mockReturnValue("");
     const wrapper = mount(SettingsView);
-    expect(wrapper.text()).toContain("Mode: Demo (mock)");
+    expect(wrapper.text()).toContain("Adapter: Default");
   });
 
-  it("should display Live mode in debug info when connected", async () => {
-    mockIsMockMode.mockReturnValue(false);
-    mockGetApiBaseUrl.mockReturnValue("http://127.0.0.1:8332");
+  it("should display 'Adapter: Custom' in debug info after a custom save", async () => {
+    mockGetApiBaseUrl.mockReturnValue("http://127.0.0.1:8332/v1");
     const wrapper = mount(SettingsView);
 
-    // Trigger save to update mockMode ref after isMockMode returns false
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     await wrapper.find("form").trigger("submit.prevent");
     await flushPromises();
 
-    expect(wrapper.text()).toContain("Mode: Live");
+    expect(wrapper.text()).toContain("Adapter: Custom");
     consoleSpy.mockRestore();
   });
 

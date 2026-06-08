@@ -1,9 +1,9 @@
 // packages/wallet/src/__tests__/DashboardView.test.ts
 //
 // Tests for DashboardView.vue.
-// Covers loading state, mock mode banner, balance display,
-// block info display, fork countdown banner, error state,
-// and the formatSats helper logic.
+// Covers loading/error states, the multi-sidechain deposit fan-out,
+// aggregate inflow, per-chain breakdown, the fork banner, and the
+// bigint formatSats helper.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
@@ -15,16 +15,52 @@ import DashboardView from "../views/DashboardView.vue";
 // ---------------------------------------------------------------------------
 
 vi.mock("../api", () => ({
-  getBalance: vi.fn(),
-  getLatestBlock: vi.fn(),
-  isMockMode: vi.fn(),
+  getSidechains: vi.fn(),
+  getDeposits: vi.fn(),
 }));
 
-import { getBalance, getLatestBlock, isMockMode } from "../api";
+import { getSidechains, getDeposits } from "../api";
 
-const mockGetBalance = vi.mocked(getBalance);
-const mockGetLatestBlock = vi.mocked(getLatestBlock);
-const mockIsMockMode = vi.mocked(isMockMode);
+const mockGetSidechains = vi.mocked(getSidechains);
+const mockGetDeposits = vi.mocked(getDeposits);
+
+// ---------------------------------------------------------------------------
+// Fixtures
+// ---------------------------------------------------------------------------
+
+const SUMMARIES = [
+  {
+    slot: 0,
+    id: "thunder",
+    displayName: "Thunder Network",
+    description: "Payment channels",
+    status: "active",
+  },
+  {
+    slot: 1,
+    id: "zside",
+    displayName: "zSide",
+    description: "Shielded txs",
+    status: "active",
+  },
+];
+
+function deposit(valueSats: bigint, slot: number) {
+  return {
+    slot,
+    chainId: `chain-${slot}`,
+    l1Txid: "a".repeat(64),
+    vout: 0,
+    ctipSeq: 1,
+    address: "tb1qexample",
+    valueSats,
+    status: "credited",
+    confirmations: 6,
+    firstSeenTs: 1787320000,
+    l1ConfirmedTs: 1787320600,
+    l2CreditedTs: 1787321200,
+  };
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,9 +69,7 @@ const mockIsMockMode = vi.mocked(isMockMode);
 function createTestRouter() {
   return createRouter({
     history: createWebHashHistory(),
-    routes: [
-      { path: "/", name: "dashboard", component: DashboardView },
-    ],
+    routes: [{ path: "/", name: "dashboard", component: DashboardView }],
   });
 }
 
@@ -61,17 +95,14 @@ async function mountDashboard() {
 describe("DashboardView.vue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockIsMockMode.mockReturnValue(true);
-    mockGetBalance.mockResolvedValue({
-      confirmed: 0,
-      unconfirmed: 0,
-      total: 0,
-    });
-    mockGetLatestBlock.mockResolvedValue({
-      height: 0,
-      hash: "0000000000000000000000000000000000000000000000000000000000000000",
-      timestamp: 0,
-    });
+    mockGetSidechains.mockResolvedValue(SUMMARIES);
+    mockGetDeposits.mockImplementation(async (slot: number) => ({
+      slot,
+      chainId: `chain-${slot}`,
+      provisioned: slot === 0,
+      deposits: [deposit(100000000n, slot)],
+      nextCursor: null,
+    }));
   });
 
   afterEach(() => {
@@ -83,71 +114,59 @@ describe("DashboardView.vue", () => {
     expect(wrapper.find("h2").text()).toBe("Dashboard");
   });
 
-  it("should show mock mode banner when in demo mode", async () => {
-    mockIsMockMode.mockReturnValue(true);
-    const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("Demo Mode");
-    expect(wrapper.text()).toContain("No backend configured");
-    expect(wrapper.text()).toContain("Connect a node in Settings");
+  it("should call getSidechains once on mount", async () => {
+    await mountDashboard();
+    expect(mockGetSidechains).toHaveBeenCalledTimes(1);
   });
 
-  it("should NOT show mock mode banner when connected to backend", async () => {
-    mockIsMockMode.mockReturnValue(false);
-    const wrapper = await mountDashboard();
-    expect(wrapper.text()).not.toContain("Demo Mode");
+  it("should call getDeposits once per sidechain slot", async () => {
+    await mountDashboard();
+    expect(mockGetDeposits).toHaveBeenCalledTimes(SUMMARIES.length);
+    expect(mockGetDeposits).toHaveBeenCalledWith(0);
+    expect(mockGetDeposits).toHaveBeenCalledWith(1);
   });
 
-  it("should display total balance formatted as coin", async () => {
-    mockGetBalance.mockResolvedValue({
-      confirmed: 100000000,
-      unconfirmed: 0,
-      total: 100000000,
-    });
+  it("should display the aggregate inflow label", async () => {
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("1.00000000");
+    expect(wrapper.text()).toContain("Total Deposit Inflow (all chains)");
   });
 
-  it("should display zero balance correctly", async () => {
+  it("should sum inflow across chains and format it", async () => {
+    // 100000000 + 100000000 = 200000000 sats = 2.00000000
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("0.00000000");
+    expect(wrapper.text()).toContain("2.00000000");
   });
 
-  it("should display confirmed and unconfirmed labels", async () => {
+  it("should display the aggregate deposit and chain counts", async () => {
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("Confirmed:");
-    expect(wrapper.text()).toContain("Unconfirmed:");
+    expect(wrapper.text()).toContain("2 deposits across 2 sidechains");
   });
 
-  it("should display 'eCash' currency label", async () => {
+  it("should clarify this is derived inflow, not spendable balance", async () => {
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("eCash");
+    expect(wrapper.text()).toContain("not spendable balance");
   });
 
-  it("should display block height", async () => {
-    mockGetLatestBlock.mockResolvedValue({
-      height: 964001,
-      hash: "000000000000000000abcdef1234567890abcdef1234567890abcdef12345678",
-      timestamp: 1787320800,
-    });
+  it("should render each sidechain displayName", async () => {
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("964,001");
+    expect(wrapper.text()).toContain("Thunder Network");
+    expect(wrapper.text()).toContain("zSide");
   });
 
-  it("should display block hash", async () => {
-    const testHash = "000000000000000000abcdef1234567890abcdef1234567890abcdef12345678";
-    mockGetLatestBlock.mockResolvedValue({
-      height: 964001,
-      hash: testHash,
-      timestamp: 1787320800,
-    });
+  it("should show a Provisioned badge for provisioned chains", async () => {
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain(testHash);
+    expect(wrapper.text()).toContain("Provisioned");
   });
 
-  it("should display 'Height:' and 'Hash:' labels", async () => {
+  it("should show a Pending badge for unprovisioned chains", async () => {
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("Height:");
-    expect(wrapper.text()).toContain("Hash:");
+    expect(wrapper.text()).toContain("Pending");
+  });
+
+  it("should display per-chain deposit counts and slots", async () => {
+    const wrapper = await mountDashboard();
+    expect(wrapper.text()).toContain("1 deposits · slot 0");
+    expect(wrapper.text()).toContain("1 deposits · slot 1");
   });
 
   it("should render the fork countdown banner", async () => {
@@ -163,53 +182,43 @@ describe("DashboardView.vue", () => {
     expect(wrapper.text()).toContain("7 sidechains at launch");
   });
 
-  it("should show error state when API fails", async () => {
-    mockGetBalance.mockRejectedValue(new Error("Connection refused"));
+  it("should show error state when getSidechains fails", async () => {
+    mockGetSidechains.mockRejectedValue(new Error("Connection refused"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("Error loading wallet data");
+    expect(wrapper.text()).toContain("Error loading dashboard");
     expect(wrapper.text()).toContain("Connection refused");
     consoleSpy.mockRestore();
   });
 
-  it("should log error to console when API fails", async () => {
+  it("should show error state when a getDeposits call fails", async () => {
+    mockGetDeposits.mockRejectedValue(new Error("Slot unavailable"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    mockGetBalance.mockRejectedValue(new Error("Timeout"));
+    const wrapper = await mountDashboard();
+    expect(wrapper.text()).toContain("Error loading dashboard");
+    consoleSpy.mockRestore();
+  });
+
+  it("should log error to console when loading fails", async () => {
+    const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    mockGetSidechains.mockRejectedValue(new Error("Timeout"));
     await mountDashboard();
     expect(consoleSpy).toHaveBeenCalledWith(
       "[DashboardView] Failed to load data:",
-      expect.any(Error)
+      expect.any(Error),
     );
     consoleSpy.mockRestore();
   });
 
-  it("should call getBalance and getLatestBlock on mount", async () => {
-    await mountDashboard();
-    expect(mockGetBalance).toHaveBeenCalledTimes(1);
-    expect(mockGetLatestBlock).toHaveBeenCalledTimes(1);
-  });
-
-  it("should call isMockMode on mount", async () => {
-    await mountDashboard();
-    expect(mockIsMockMode).toHaveBeenCalled();
-  });
-
-  it("should display 'Total Balance' label", async () => {
-    const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("Total Balance");
-  });
-
-  it("should display 'Latest Block' label", async () => {
-    const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("Latest Block");
-  });
-
-  it("should format large satoshi amounts correctly", async () => {
-    mockGetBalance.mockResolvedValue({
-      confirmed: 2100000000000000,
-      unconfirmed: 0,
-      total: 2100000000000000,
-    });
+  it("should format large satoshi sums correctly", async () => {
+    mockGetSidechains.mockResolvedValue([SUMMARIES[0]]);
+    mockGetDeposits.mockImplementation(async (slot: number) => ({
+      slot,
+      chainId: `chain-${slot}`,
+      provisioned: true,
+      deposits: [deposit(2100000000000000n, slot)],
+      nextCursor: null,
+    }));
     const wrapper = await mountDashboard();
     expect(wrapper.text()).toContain("21000000.00000000");
   });
