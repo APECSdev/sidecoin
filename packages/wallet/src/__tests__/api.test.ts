@@ -1,19 +1,20 @@
 // packages/wallet/src/__tests__/api.test.ts
 //
-// Comprehensive tests for the wallet API abstraction layer.
-// Covers mock mode, live mode (fetch), configuration, and error handling.
+// Tests for the wallet API layer, which wraps the frozen @sidecoin/api-client.
+// Covers client configuration, the delegated data calls, bigint coercion of
+// satoshi amounts, and the normalized ApiError envelope.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
-  getBalance,
-  getLatestBlock,
   getSidechains,
-  getReceiveAddress,
+  getDeposits,
+  getWalletBalance,
   setApiBaseUrl,
   getApiBaseUrl,
-  isMockMode,
+  getClient,
+  ApiError,
 } from "../api";
-import type { WalletBalance, BlockInfo, Sidechain } from "../api";
+import { DEFAULT_BASE_URL, SidecoinClient } from "@sidecoin/api-client";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -21,6 +22,17 @@ import type { WalletBalance, BlockInfo, Sidechain } from "../api";
 
 function resetApiState() {
   setApiBaseUrl("");
+}
+
+/** Build a Response-like stub for the injected fetch. */
+function jsonResponse(body: unknown, init?: { ok?: boolean; status?: number }) {
+  const status = init?.status ?? 200;
+  const ok = init?.ok ?? (status >= 200 && status < 300);
+  return {
+    ok,
+    status,
+    text: () => Promise.resolve(JSON.stringify(body)),
+  } as Response;
 }
 
 // ---------------------------------------------------------------------------
@@ -36,185 +48,55 @@ describe("API Configuration", () => {
     resetApiState();
   });
 
-  it("should start in mock mode with empty base URL", () => {
-    expect(isMockMode()).toBe(true);
+  it("should default to an empty configured base URL", () => {
     expect(getApiBaseUrl()).toBe("");
   });
 
+  it("should expose a SidecoinClient instance", () => {
+    expect(getClient()).toBeInstanceOf(SidecoinClient);
+  });
+
   it("should set and get the API base URL", () => {
-    setApiBaseUrl("http://127.0.0.1:8332");
-    expect(getApiBaseUrl()).toBe("http://127.0.0.1:8332");
-    expect(isMockMode()).toBe(false);
+    setApiBaseUrl("http://127.0.0.1:8332/v1");
+    expect(getApiBaseUrl()).toBe("http://127.0.0.1:8332/v1");
   });
 
   it("should strip trailing slashes from the base URL", () => {
-    setApiBaseUrl("http://127.0.0.1:8332///");
-    expect(getApiBaseUrl()).toBe("http://127.0.0.1:8332");
+    setApiBaseUrl("http://127.0.0.1:8332/v1///");
+    expect(getApiBaseUrl()).toBe("http://127.0.0.1:8332/v1");
   });
 
-  it("should return to mock mode when URL is set to empty string", () => {
-    setApiBaseUrl("http://127.0.0.1:8332");
-    expect(isMockMode()).toBe(false);
-    setApiBaseUrl("");
-    expect(isMockMode()).toBe(true);
+  it("should rebuild the client when the URL changes", () => {
+    const before = getClient();
+    setApiBaseUrl("http://127.0.0.1:8332/v1");
+    const after = getClient();
+    expect(after).not.toBe(before);
+    expect(after).toBeInstanceOf(SidecoinClient);
   });
 
   it("should log the base URL change", () => {
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    setApiBaseUrl("http://localhost:9000");
+    setApiBaseUrl("http://localhost:9000/v1");
     expect(consoleSpy).toHaveBeenCalledWith(
       "[api] Base URL set to:",
-      "http://localhost:9000"
+      "http://localhost:9000/v1",
     );
     consoleSpy.mockRestore();
   });
 
-  it("should log '(mock mode)' when URL is cleared", () => {
+  it("should log '(default)' when the URL is cleared", () => {
     const consoleSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     setApiBaseUrl("");
     expect(consoleSpy).toHaveBeenCalledWith(
       "[api] Base URL set to:",
-      "(mock mode)"
+      "(default)",
     );
     consoleSpy.mockRestore();
   });
 });
 
 // ---------------------------------------------------------------------------
-// Mock Mode — getBalance
-// ---------------------------------------------------------------------------
-
-describe("getBalance", () => {
-  beforeEach(() => {
-    resetApiState();
-  });
-
-  afterEach(() => {
-    resetApiState();
-    vi.restoreAllMocks();
-  });
-
-  it("should return mock balance when in mock mode", async () => {
-    const balance = await getBalance();
-    expect(balance).toEqual({
-      confirmed: 0,
-      unconfirmed: 0,
-      total: 0,
-    });
-  });
-
-  it("should return all balance fields as numbers", async () => {
-    const balance = await getBalance();
-    expect(typeof balance.confirmed).toBe("number");
-    expect(typeof balance.unconfirmed).toBe("number");
-    expect(typeof balance.total).toBe("number");
-  });
-
-  it("should fetch balance from API when not in mock mode", async () => {
-    const mockBalance: WalletBalance = {
-      confirmed: 100000000,
-      unconfirmed: 50000000,
-      total: 150000000,
-    };
-
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockBalance),
-    } as Response);
-
-    setApiBaseUrl("http://127.0.0.1:8332");
-    const balance = await getBalance();
-
-    expect(fetchSpy).toHaveBeenCalledWith("http://127.0.0.1:8332/api/balance");
-    expect(balance).toEqual(mockBalance);
-  });
-
-  it("should throw on non-OK response", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: false,
-      status: 500,
-    } as Response);
-
-    setApiBaseUrl("http://127.0.0.1:8332");
-    await expect(getBalance()).rejects.toThrow("Failed to fetch balance: 500");
-  });
-
-  it("should throw on network error", async () => {
-    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("Network error"));
-
-    setApiBaseUrl("http://127.0.0.1:8332");
-    await expect(getBalance()).rejects.toThrow("Network error");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Mock Mode — getLatestBlock
-// ---------------------------------------------------------------------------
-
-describe("getLatestBlock", () => {
-  beforeEach(() => {
-    resetApiState();
-  });
-
-  afterEach(() => {
-    resetApiState();
-    vi.restoreAllMocks();
-  });
-
-  it("should return mock block when in mock mode", async () => {
-    const block = await getLatestBlock();
-    expect(block).toEqual({
-      height: 0,
-      hash: "0000000000000000000000000000000000000000000000000000000000000000",
-      timestamp: 0,
-    });
-  });
-
-  it("should return block with correct field types", async () => {
-    const block = await getLatestBlock();
-    expect(typeof block.height).toBe("number");
-    expect(typeof block.hash).toBe("string");
-    expect(typeof block.timestamp).toBe("number");
-  });
-
-  it("should have a 64-character hex hash in mock mode", async () => {
-    const block = await getLatestBlock();
-    expect(block.hash).toHaveLength(64);
-    expect(block.hash).toMatch(/^[0-9a-f]{64}$/);
-  });
-
-  it("should fetch block from API when not in mock mode", async () => {
-    const mockBlock: BlockInfo = {
-      height: 964001,
-      hash: "000000000000000000abcdef1234567890abcdef1234567890abcdef12345678",
-      timestamp: 1787320800,
-    };
-
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockBlock),
-    } as Response);
-
-    setApiBaseUrl("http://127.0.0.1:8332");
-    const block = await getLatestBlock();
-
-    expect(fetchSpy).toHaveBeenCalledWith("http://127.0.0.1:8332/api/block/latest");
-    expect(block).toEqual(mockBlock);
-  });
-
-  it("should throw on non-OK response", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: false,
-      status: 404,
-    } as Response);
-
-    setApiBaseUrl("http://127.0.0.1:8332");
-    await expect(getLatestBlock()).rejects.toThrow("Failed to fetch block: 404");
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Mock Mode — getSidechains
+// getSidechains
 // ---------------------------------------------------------------------------
 
 describe("getSidechains", () => {
@@ -227,92 +109,81 @@ describe("getSidechains", () => {
     vi.restoreAllMocks();
   });
 
-  it("should return mock sidechains when in mock mode", async () => {
-    const sidechains = await getSidechains();
-    expect(sidechains).toHaveLength(8);
+  it("should hit the default base URL when none is configured", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ sidechains: [] }));
+
+    await getSidechains();
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `${DEFAULT_BASE_URL}/sidechains`,
+      expect.objectContaining({ headers: { accept: "application/json" } }),
+    );
   });
 
-  it("should have correct structure for each sidechain", async () => {
-    const sidechains = await getSidechains();
-    for (const sc of sidechains) {
-      expect(sc).toHaveProperty("slot");
-      expect(sc).toHaveProperty("name");
-      expect(sc).toHaveProperty("description");
-      expect(sc).toHaveProperty("active");
-      expect(typeof sc.slot).toBe("number");
-      expect(typeof sc.name).toBe("string");
-      expect(typeof sc.description).toBe("string");
-      expect(typeof sc.active).toBe("boolean");
-    }
-  });
-
-  it("should have sequential slot numbers 0-7", async () => {
-    const sidechains = await getSidechains();
-    const slots = sidechains.map((sc) => sc.slot);
-    expect(slots).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
-  });
-
-  it("should have 7 active sidechains and 1 inactive", async () => {
-    const sidechains = await getSidechains();
-    const active = sidechains.filter((sc) => sc.active);
-    const inactive = sidechains.filter((sc) => !sc.active);
-    expect(active).toHaveLength(7);
-    expect(inactive).toHaveLength(1);
-    expect(inactive[0].slot).toBe(7);
-  });
-
-  it("should include Thunder Network as slot 0", async () => {
-    const sidechains = await getSidechains();
-    expect(sidechains[0].name).toBe("Thunder Network");
-    expect(sidechains[0].slot).toBe(0);
-    expect(sidechains[0].active).toBe(true);
-  });
-
-  it("should include all named sidechains", async () => {
-    const sidechains = await getSidechains();
-    const names = sidechains.map((sc) => sc.name);
-    expect(names).toContain("Thunder Network");
-    expect(names).toContain("zSide");
-    expect(names).toContain("BitNames");
-    expect(names).toContain("BitAssets");
-    expect(names).toContain("Photon");
-    expect(names).toContain("Truthcoin");
-    expect(names).toContain("CoinShift");
-  });
-
-  it("should fetch sidechains from API when not in mock mode", async () => {
-    const mockSidechains: Sidechain[] = [
-      { slot: 0, name: "Thunder", description: "Test", active: true },
+  it("should unwrap the { sidechains } envelope", async () => {
+    const summaries = [
+      {
+        slot: 0,
+        id: "thunder",
+        displayName: "Thunder Network",
+        description: "Payment channels",
+        status: "active",
+      },
     ];
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({ sidechains: summaries }),
+    );
 
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve(mockSidechains),
-    } as Response);
-
-    setApiBaseUrl("http://127.0.0.1:8332");
-    const sidechains = await getSidechains();
-
-    expect(fetchSpy).toHaveBeenCalledWith("http://127.0.0.1:8332/api/sidechains");
-    expect(sidechains).toEqual(mockSidechains);
+    const result = await getSidechains();
+    expect(result).toEqual(summaries);
   });
 
-  it("should throw on non-OK response", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: false,
-      status: 503,
-    } as Response);
+  it("should hit the configured base URL", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse({ sidechains: [] }));
 
-    setApiBaseUrl("http://127.0.0.1:8332");
-    await expect(getSidechains()).rejects.toThrow("Failed to fetch sidechains: 503");
+    setApiBaseUrl("http://127.0.0.1:8332/v1");
+    await getSidechains();
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      "http://127.0.0.1:8332/v1/sidechains",
+      expect.anything(),
+    );
+  });
+
+  it("should throw ApiError on a normalized error envelope", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(
+        { error: { code: "unavailable", message: "service down" } },
+        { ok: false, status: 503 },
+      ),
+    );
+
+    await expect(getSidechains()).rejects.toMatchObject({
+      name: "ApiError",
+      code: "unavailable",
+      httpStatus: 503,
+    });
+  });
+
+  it("should throw ApiError 'network_error' on transport failure", async () => {
+    vi.spyOn(globalThis, "fetch").mockRejectedValue(new Error("boom"));
+
+    const err = await getSidechains().catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe("network_error");
+    expect(err.httpStatus).toBe(0);
   });
 });
 
 // ---------------------------------------------------------------------------
-// Mock Mode — getReceiveAddress
+// getDeposits
 // ---------------------------------------------------------------------------
 
-describe("getReceiveAddress", () => {
+describe("getDeposits", () => {
   beforeEach(() => {
     resetApiState();
   });
@@ -322,36 +193,187 @@ describe("getReceiveAddress", () => {
     vi.restoreAllMocks();
   });
 
-  it("should return mock address when in mock mode", async () => {
-    const address = await getReceiveAddress();
-    expect(address).toBe("bc1q0000000000000000000000000000000000000000");
+  function wireDeposit(valueSats: string) {
+    return {
+      slot: 3,
+      chainId: "bitassets",
+      l1Txid: "a".repeat(64),
+      vout: 0,
+      ctipSeq: 1,
+      address: "tb1qexample",
+      valueSats,
+      status: "credited",
+      confirmations: 6,
+      firstSeenTs: 1787320000,
+      l1ConfirmedTs: 1787320600,
+      l2CreditedTs: 1787321200,
+    };
+  }
+
+  it("should request the per-slot deposits path", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        slot: 3,
+        chainId: "bitassets",
+        provisioned: true,
+        deposits: [],
+        nextCursor: null,
+      }),
+    );
+
+    await getDeposits(3);
+
+    const calledUrl = fetchSpy.mock.calls[0][0] as string;
+    expect(calledUrl).toBe(`${DEFAULT_BASE_URL}/wallet/3/deposits`);
   });
 
-  it("should return a string starting with 'bc1q'", async () => {
-    const address = await getReceiveAddress();
-    expect(address.startsWith("bc1q")).toBe(true);
+  it("should forward query params (address, status, limit, cursor)", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        slot: 3,
+        chainId: "bitassets",
+        provisioned: true,
+        deposits: [],
+        nextCursor: null,
+      }),
+    );
+
+    await getDeposits(3, {
+      address: "tb1qexample",
+      status: "credited",
+      limit: 25,
+      cursor: "abc",
+    });
+
+    const calledUrl = fetchSpy.mock.calls[0][0] as string;
+    expect(calledUrl).toContain("address=tb1qexample");
+    expect(calledUrl).toContain("status=credited");
+    expect(calledUrl).toContain("limit=25");
+    expect(calledUrl).toContain("cursor=abc");
   });
 
-  it("should fetch address from API when not in mock mode", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: true,
-      text: () => Promise.resolve("bc1qrealaddress123456"),
-    } as Response);
+  it("should coerce valueSats decimal strings to bigint", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        slot: 3,
+        chainId: "bitassets",
+        provisioned: true,
+        deposits: [wireDeposit("100000000")],
+        nextCursor: null,
+      }),
+    );
 
-    setApiBaseUrl("http://127.0.0.1:8332");
-    const address = await getReceiveAddress();
-
-    expect(fetchSpy).toHaveBeenCalledWith("http://127.0.0.1:8332/api/address/new");
-    expect(address).toBe("bc1qrealaddress123456");
+    const page = await getDeposits(3);
+    expect(page.deposits[0].valueSats).toBe(100000000n);
+    expect(typeof page.deposits[0].valueSats).toBe("bigint");
   });
 
-  it("should throw on non-OK response", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue({
-      ok: false,
-      status: 401,
-    } as Response);
+  it("should safely handle amounts exceeding 2^53", async () => {
+    const huge = "90071992547409910"; // > Number.MAX_SAFE_INTEGER
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        slot: 3,
+        chainId: "bitassets",
+        provisioned: true,
+        deposits: [wireDeposit(huge)],
+        nextCursor: null,
+      }),
+    );
 
-    setApiBaseUrl("http://127.0.0.1:8332");
-    await expect(getReceiveAddress()).rejects.toThrow("Failed to get address: 401");
+    const page = await getDeposits(3);
+    expect(page.deposits[0].valueSats).toBe(BigInt(huge));
+  });
+
+  it("should reject non-integer valueSats with ApiError 'bad_amount'", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        slot: 3,
+        chainId: "bitassets",
+        provisioned: true,
+        deposits: [wireDeposit("1.5")],
+        nextCursor: null,
+      }),
+    );
+
+    const err = await getDeposits(3).catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe("bad_amount");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getWalletBalance
+// ---------------------------------------------------------------------------
+
+describe("getWalletBalance", () => {
+  beforeEach(() => {
+    resetApiState();
+  });
+
+  afterEach(() => {
+    resetApiState();
+    vi.restoreAllMocks();
+  });
+
+  function wireBalance(totalSats: string) {
+    return {
+      slot: 0,
+      chainId: "thunder",
+      address: "tb1qexample",
+      provisioned: true,
+      totalSats,
+      depositCount: 2,
+      truncated: false,
+      note: "derived inflow",
+    };
+  }
+
+  it("should request the balance path with the address query", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(jsonResponse(wireBalance("0")));
+
+    await getWalletBalance(0, "tb1qexample");
+
+    const calledUrl = fetchSpy.mock.calls[0][0] as string;
+    expect(calledUrl).toContain(`${DEFAULT_BASE_URL}/wallet/0/balance`);
+    expect(calledUrl).toContain("address=tb1qexample");
+  });
+
+  it("should coerce totalSats to bigint", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(wireBalance("150000000")),
+    );
+
+    const balance = await getWalletBalance(0, "tb1qexample");
+    expect(balance.totalSats).toBe(150000000n);
+    expect(typeof balance.totalSats).toBe("bigint");
+  });
+
+  it("should preserve the remaining balance fields", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(wireBalance("42")),
+    );
+
+    const balance = await getWalletBalance(0, "tb1qexample");
+    expect(balance).toMatchObject({
+      slot: 0,
+      chainId: "thunder",
+      address: "tb1qexample",
+      provisioned: true,
+      depositCount: 2,
+      truncated: false,
+      note: "derived inflow",
+    });
+  });
+
+  it("should reject a non-integer totalSats with ApiError 'bad_amount'", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(wireBalance("not-a-number")),
+    );
+
+    const err = await getWalletBalance(0, "tb1qexample").catch((e) => e);
+    expect(err).toBeInstanceOf(ApiError);
+    expect(err.code).toBe("bad_amount");
   });
 });

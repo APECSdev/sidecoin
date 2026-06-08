@@ -1,160 +1,92 @@
 // packages/wallet/src/api/index.ts
 //
-// Abstraction layer that replaces Tauri's `invoke()` for the web edition.
+// Wallet data layer for the web edition. Thin wrapper over the FROZEN
+// @sidecoin/api-client (SidecoinClient), which talks only to the adapter
+// REST surface (default https://sidecoin.app/v1).
 //
-// In the desktop app, views call `invoke<T>("command_name")` to talk to
-// the Rust backend over IPC. In the webapp, this module provides the same
-// function signatures backed by:
-//
-//   1. A configurable REST/JSON-RPC endpoint (for connecting to a remote node)
-//   2. Mock data (for demo/offline mode)
-//
-// The views import from this module instead of `@tauri-apps/api/core`,
-// making them portable across desktop and web.
+// Views import from this module so the client is configured in one place
+// (Settings calls setApiBaseUrl) and so tests can stub a single fetch.
+
+import {
+  SidecoinClient,
+  type SidechainSummary,
+  type DepositsPage,
+  type WalletBalance,
+  type ListDepositsParams,
+} from "@sidecoin/api-client";
+
+export type {
+  SidechainSummary,
+  DepositsPage,
+  WalletBalance,
+  ListDepositsParams,
+} from "@sidecoin/api-client";
+export { ApiError } from "@sidecoin/api-client";
 
 // ---------------------------------------------------------------------------
-// Types (mirroring the Tauri command return types)
+// Client configuration (single source of truth)
 // ---------------------------------------------------------------------------
 
-export interface WalletBalance {
-  confirmed: number;
-  unconfirmed: number;
-  total: number;
-}
-
-export interface BlockInfo {
-  height: number;
-  hash: string;
-  timestamp: number;
-}
-
-export interface Sidechain {
-  slot: number;
-  name: string;
-  description: string;
-  active: boolean;
-}
-
-// ---------------------------------------------------------------------------
-// Configuration
-// ---------------------------------------------------------------------------
-
-/**
- * Base URL for the wallet backend API.
- * When empty, mock data is used (demo mode).
- */
 let _apiBaseUrl = "";
+let _client = makeClient(_apiBaseUrl);
 
 /**
- * Set the backend API base URL.
- * Call this from Settings when the user configures their node.
- *
- * @param url - The base URL, e.g. "http://127.0.0.1:8332"
+ * Build a SidecoinClient. The fetchImpl is a live delegate to globalThis.fetch
+ * (rather than the captured reference) so spies/mocks installed after
+ * construction are still honored.
+ */
+function makeClient(baseUrl: string): SidecoinClient {
+  return new SidecoinClient({
+    baseUrl: baseUrl || undefined,
+    fetchImpl: (input: RequestInfo | URL, init?: RequestInit) =>
+      globalThis.fetch(input, init),
+  });
+}
+
+/**
+ * Point the wallet at a specific adapter base URL. Empty string resets to the
+ * client's built-in default (DEFAULT_BASE_URL). Call from Settings.
  */
 export function setApiBaseUrl(url: string): void {
   _apiBaseUrl = url.replace(/\/+$/, "");
-  console.log("[api] Base URL set to:", _apiBaseUrl || "(mock mode)");
+  _client = makeClient(_apiBaseUrl);
+  console.log("[api] Base URL set to:", _apiBaseUrl || "(default)");
 }
 
-/**
- * Get the current backend API base URL.
- */
+/** The configured base URL, or "" when using the client default. */
 export function getApiBaseUrl(): string {
   return _apiBaseUrl;
 }
 
-/**
- * Returns true if we're in mock/demo mode (no backend configured).
- */
-export function isMockMode(): boolean {
-  return _apiBaseUrl === "";
+/** Escape hatch for views that need the raw client (e.g. the poller). */
+export function getClient(): SidecoinClient {
+  return _client;
 }
 
 // ---------------------------------------------------------------------------
-// Mock Data
+// Data functions (delegating to the frozen client)
 // ---------------------------------------------------------------------------
 
-const MOCK_BALANCE: WalletBalance = {
-  confirmed: 0,
-  unconfirmed: 0,
-  total: 0,
-};
+/** GET /sidechains — active drivechains known to the adapter. */
+export async function getSidechains(): Promise<SidechainSummary[]> {
+  return _client.getSidechains();
+}
 
-const MOCK_BLOCK: BlockInfo = {
-  height: 0,
-  hash: "0000000000000000000000000000000000000000000000000000000000000000",
-  timestamp: 0,
-};
-
-const MOCK_SIDECHAINS: Sidechain[] = [
-  { slot: 0, name: "Thunder Network", description: "Payment channel network for instant, low-fee transactions.", active: true },
-  { slot: 1, name: "zSide", description: "Privacy-focused sidechain with shielded transactions.", active: true },
-  { slot: 2, name: "BitNames", description: "Decentralized naming and identity system.", active: true },
-  { slot: 3, name: "BitAssets", description: "Tokenized assets and prediction markets.", active: true },
-  { slot: 4, name: "Photon", description: "EVM-compatible smart contract sidechain.", active: true },
-  { slot: 5, name: "Truthcoin", description: "Prediction market sidechain with peer-to-peer oracle.", active: true },
-  { slot: 6, name: "CoinShift", description: "Cross-chain atomic swap sidechain.", active: true },
-  { slot: 7, name: "Sidechain #8 (TBA)", description: "Reserved sidechain slot.", active: false },
-];
-
-const MOCK_RECEIVE_ADDRESS = "bc1q0000000000000000000000000000000000000000";
-
-// ---------------------------------------------------------------------------
-// API Functions (drop-in replacements for Tauri invoke())
-// ---------------------------------------------------------------------------
-
-/**
- * Fetch wallet balance.
- * Replaces: invoke<WalletBalance>("get_balance")
- */
-export async function getBalance(): Promise<WalletBalance> {
-  if (isMockMode()) {
-    return MOCK_BALANCE;
-  }
-
-  const res = await fetch(`${_apiBaseUrl}/api/balance`);
-  if (!res.ok) throw new Error(`Failed to fetch balance: ${res.status}`);
-  return res.json();
+/** GET /wallet/:slot/deposits */
+export async function getDeposits(
+  slot: number,
+  params: ListDepositsParams = {},
+): Promise<DepositsPage> {
+  return _client.getDeposits(slot, params);
 }
 
 /**
- * Fetch latest block info.
- * Replaces: invoke<BlockInfo>("get_latest_block")
+ * GET /wallet/:slot/balance — DERIVED inflow for an address, not a spendable
+ * balance. Requires an address (available once a key exists in Phase 3).
  */
-export async function getLatestBlock(): Promise<BlockInfo> {
-  if (isMockMode()) {
-    return MOCK_BLOCK;
-  }
-
-  const res = await fetch(`${_apiBaseUrl}/api/block/latest`);
-  if (!res.ok) throw new Error(`Failed to fetch block: ${res.status}`);
-  return res.json();
-}
-
-/**
- * Fetch list of sidechains.
- * Replaces: invoke<Sidechain[]>("get_sidechains")
- */
-export async function getSidechains(): Promise<Sidechain[]> {
-  if (isMockMode()) {
-    return MOCK_SIDECHAINS;
-  }
-
-  const res = await fetch(`${_apiBaseUrl}/api/sidechains`);
-  if (!res.ok) throw new Error(`Failed to fetch sidechains: ${res.status}`);
-  return res.json();
-}
-
-/**
- * Get a receive address.
- * Replaces: invoke<string>("get_receive_address")
- */
-export async function getReceiveAddress(): Promise<string> {
-  if (isMockMode()) {
-    return MOCK_RECEIVE_ADDRESS;
-  }
-
-  const res = await fetch(`${_apiBaseUrl}/api/address/new`);
-  if (!res.ok) throw new Error(`Failed to get address: ${res.status}`);
-  return res.text();
+export async function getWalletBalance(
+  slot: number,
+  address: string,
+): Promise<WalletBalance> {
+  return _client.getWalletBalance(slot, address);
 }
