@@ -1,26 +1,16 @@
 <!-- packages/wallet/src/views/ReceiveView.vue -->
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { getReceiveAddress } from "../api";
+import { ref } from "vue";
 
+// Address issuance is derived from the wallet key (Phase 3 — key setup).
+// There is no adapter endpoint that hands out addresses, so until a key
+// exists this view shows a pending state rather than a placeholder address.
 const address = ref("");
-const loading = ref(true);
-const error = ref<string | null>(null);
 const copied = ref(false);
 
-onMounted(async () => {
-  try {
-    address.value = await getReceiveAddress();
-  } catch (e) {
-    error.value = String(e);
-    console.error("[ReceiveView] Failed to get address:", e);
-  } finally {
-    loading.value = false;
-  }
-});
-
 async function copyAddress() {
+  if (!address.value) return;
   try {
     await navigator.clipboard.writeText(address.value);
     copied.value = true;
@@ -37,11 +27,13 @@ async function copyAddress() {
   <div>
     <h2 class="mb-6 text-2xl font-bold">Receive eCash</h2>
 
-    <div v-if="loading" class="text-gray-400">Generating address…</div>
-
-    <div v-else-if="error" class="rounded bg-red-900/30 p-4 text-red-400">
-      <p class="font-semibold">Error generating address</p>
-      <p class="mt-1 text-sm">{{ error }}</p>
+    <!-- No key yet: address derivation comes with wallet setup -->
+    <div v-if="!address" class="max-w-lg rounded-lg border border-yellow-800 bg-yellow-950/30 p-4 text-sm text-yellow-400">
+      <p class="font-semibold">Wallet setup required</p>
+      <p class="mt-1 text-xs text-yellow-600">
+        Receive addresses are derived from your wallet key. Address generation
+        becomes available once key setup is complete.
+      </p>
     </div>
 
     <div v-else class="max-w-lg">
