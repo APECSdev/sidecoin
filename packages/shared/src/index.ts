@@ -6,3 +6,4 @@
 export * from "./chain";
 export * from "./sidechains";
 export * from "./types";
+export * from "./wallet";

@@ -21,6 +21,12 @@ android/local.properties
 android/captures/
 android/*.apk
 
+# Kotlin build artifacts (generated on first build)
+android/.kotlin/
+android/**/.kotlin/
+*.kotlin_module
+*.kotlin_metadata
+
 # ──────────────────────────────────────────────────────
 # iOS
 # ──────────────────────────────────────────────────────
