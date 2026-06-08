@@ -443,6 +443,9 @@ importers:
 
   packages/wallet:
     dependencies:
+      '@sidecoin/api-client':
+        specifier: workspace:^
+        version: link:../api-client
       '@sidecoin/shared':
         specifier: workspace:*
         version: link:../shared
