@@ -437,7 +437,7 @@ importers:
         specifier: 3.1.0
         version: 3.1.0
       micro-key-producer:
-        specifier: ^0.8.6
+        specifier: 0.8.6
         version: 0.8.6
       uuid:
         specifier: 13.0.0
