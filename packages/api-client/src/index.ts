@@ -139,7 +139,11 @@ export class SidecoinClient {
 
   constructor(opts: ClientOptions = {}) {
     this.base = (opts.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
-    this.f = opts.fetchImpl ?? fetch;
+    // Bind the default global fetch to globalThis. Stored as an instance
+    // property and later called as `this.f(...)`, an unbound native fetch
+    // would receive the client as its `this` and throw "Illegal invocation"
+    // on Cloudflare Workers (and some browsers). Injected impls are used as-is.
+    this.f = opts.fetchImpl ?? fetch.bind(globalThis);
   }
 
   private async get<T>(path: string, query?: URLSearchParams): Promise<T> {

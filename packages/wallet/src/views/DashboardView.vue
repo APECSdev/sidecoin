@@ -18,7 +18,9 @@ const totalDeposits = ref(0);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
-onMounted(async () => {
+async function load() {
+  loading.value = true;
+  error.value = null;
   try {
     const sidechains = await getSidechains();
 
@@ -42,12 +44,17 @@ onMounted(async () => {
     totalSats.value = built.reduce((acc, r) => acc + r.totalSats, 0n);
     totalDeposits.value = built.reduce((acc, r) => acc + r.depositCount, 0);
   } catch (e) {
-    error.value = String(e);
+    // Keep the real error (ApiError code, message, stack) for developers.
     console.error("[DashboardView] Failed to load data:", e);
+    // Show users a friendly, actionable message instead of a raw stack string.
+    error.value =
+      "We couldn't load your dashboard. Please check your connection and try again.";
   } finally {
     loading.value = false;
   }
-});
+}
+
+onMounted(load);
 
 function formatSats(sats: bigint): string {
   const neg = sats < 0n;
@@ -69,6 +76,12 @@ function formatSats(sats: bigint): string {
     <div v-else-if="error" class="rounded bg-red-900/30 p-4 text-red-400">
       <p class="font-semibold">Error loading dashboard</p>
       <p class="mt-1 text-sm">{{ error }}</p>
+      <button
+        class="mt-3 rounded-lg bg-red-800/40 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-800/60"
+        @click="load"
+      >
+        Retry
+      </button>
     </div>
 
     <!-- Loaded state -->

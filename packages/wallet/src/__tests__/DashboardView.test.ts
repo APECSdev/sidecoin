@@ -185,12 +185,22 @@ describe("DashboardView.vue", () => {
     expect(wrapper.text()).toContain("7 sidechains at launch");
   });
 
-  it("should show error state when getSidechains fails", async () => {
+  it("should show a friendly error (not the raw error) when getSidechains fails", async () => {
+    // The raw transport string must NOT leak to the user — it goes to the
+    // console only. The UI shows a friendly, actionable message instead.
     mockGetSidechains.mockRejectedValue(new Error("Connection refused"));
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const wrapper = await mountDashboard();
     expect(wrapper.text()).toContain("Error loading dashboard");
-    expect(wrapper.text()).toContain("Connection refused");
+    expect(wrapper.text()).toContain(
+      "We couldn't load your dashboard. Please check your connection and try again.",
+    );
+    // The raw error string is logged for developers, never rendered.
+    expect(wrapper.text()).not.toContain("Connection refused");
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[DashboardView] Failed to load data:",
+      expect.any(Error),
+    );
     consoleSpy.mockRestore();
   });
 
