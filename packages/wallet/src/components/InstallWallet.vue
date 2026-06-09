@@ -1,3 +1,5 @@
+<!-- packages/wallet/src/components/InstallWallet.vue -->
+
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount } from "vue";
 

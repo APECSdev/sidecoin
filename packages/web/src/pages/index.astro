@@ -6,7 +6,6 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ForkCountdown from "../components/ForkCountdown.vue";
 import SidechainCard from "../components/SidechainCard.astro";
-import InstallWallet from "../components/InstallWallet.vue";
 import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
 ---
 
@@ -164,7 +163,4 @@ import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
       </p>
     </div>
   </footer>
-
-  <!-- ─── Install-the-wallet prompt (mobile) ────────────────── -->
-  <InstallWallet client:load />
 </BaseLayout>
