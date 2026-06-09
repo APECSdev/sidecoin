@@ -2,14 +2,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { invoke } from "@tauri-apps/api/core";
-
-interface Sidechain {
-  slot: number;
-  name: string;
-  description: string;
-  active: boolean;
-}
+import { commands, type Sidechain } from "../bindings";
 
 const sidechains = ref<Sidechain[]>([]);
 const loading = ref(true);
@@ -17,7 +10,16 @@ const error = ref<string | null>(null);
 
 onMounted(async () => {
   try {
-    sidechains.value = await invoke<Sidechain[]>("get_sidechains");
+    const result = await commands.getSidechains();
+    if (result.status === "ok") {
+      sidechains.value = result.data;
+    } else {
+      error.value = String(result.error);
+      console.error(
+        "[SidechainsView] Failed to load sidechains:",
+        result.error,
+      );
+    }
   } catch (e) {
     error.value = String(e);
     console.error("[SidechainsView] Failed to load sidechains:", e);
