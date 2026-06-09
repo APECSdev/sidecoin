@@ -164,9 +164,9 @@ describe("App", () => {
     expect(toJSON()).not.toBeNull();
   });
 
-  it("should display the app title 'Sidecoin'", () => {
+  it("should display the app title 'SidΞcoin'", () => {
     render(<App />);
-    expect(screen.getByText("Sidecoin")).toBeTruthy();
+    expect(screen.getByText("SidΞcoin")).toBeTruthy();
   });
 
   it("should display the subtitle 'eCash Drivechain Wallet'", () => {

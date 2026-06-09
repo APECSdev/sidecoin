@@ -20,7 +20,10 @@ const links = [
       class="sticky top-0 z-20 flex items-center justify-between border-b border-gray-800 bg-gray-950/95 px-4 py-3 backdrop-blur md:hidden"
     >
       <div>
-        <h1 class="text-lg font-bold text-ecash-400">Sidecoin</h1>
+        <h1 class="text-lg font-bold text-ecash-400">
+          <span aria-hidden="true">SidΞcoin</span>
+          <span class="sr-only">Sidecoin</span>
+        </h1>
         <p class="text-[10px] uppercase tracking-wider text-gray-600">
           eCash Drivechains
         </p>
@@ -33,7 +36,10 @@ const links = [
       class="fixed left-0 top-0 hidden h-full w-56 flex-col border-r border-gray-800 bg-gray-950 p-4 md:flex"
     >
       <div class="mb-8">
-        <h1 class="text-xl font-bold text-ecash-400">Sidecoin</h1>
+        <h1 class="text-xl font-bold text-ecash-400">
+          <span aria-hidden="true">SidΞcoin</span>
+          <span class="sr-only">Sidecoin</span>
+        </h1>
         <p class="text-xs text-gray-500">eCash Drivechains Wallet</p>
         <p class="mt-1 text-[10px] uppercase tracking-wider text-gray-600">
           Web Edition

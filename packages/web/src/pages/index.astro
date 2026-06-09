@@ -16,7 +16,12 @@ import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
 
     <div class="relative mx-auto max-w-5xl px-6 pb-20 pt-24 text-center md:pt-32">
       <h1 class="text-5xl font-extrabold tracking-tight md:text-7xl">
-        <span class="text-ecash-400">Sidecoin</span>
+        <!-- Stylized brand mark (visual only) + accessible/SEO text -->
+        <span
+          class="bg-gradient-to-br from-ecash-400 via-ecash-500 to-ecash-600 bg-clip-text text-transparent"
+          aria-hidden="true"
+        >SidΞcoin</span>
+        <span class="sr-only">Sidecoin</span>
       </h1>
       <p class="mx-auto mt-4 max-w-2xl text-lg text-gray-400 md:text-xl">
         Open-source wallet for the eCash hard fork.<br />
@@ -53,7 +58,7 @@ import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
   <!-- ─── What is Sidecoin ──────────────────────────────────── -->
   <section id="platforms" class="mx-auto max-w-5xl px-6 py-20">
     <h2 class="text-center text-3xl font-bold md:text-4xl">
-      What is <span class="text-ecash-400">Sidecoin</span>?
+      What is <span class="text-ecash-400" aria-hidden="true">SidΞcoin</span><span class="sr-only">Sidecoin</span>?
     </h2>
     <p class="mx-auto mt-6 max-w-3xl text-center text-lg leading-relaxed text-gray-400">
       Sidecoin is a multi-platform wallet built for the upcoming eCash hard fork
@@ -149,7 +154,9 @@ import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
     <div class="mx-auto max-w-5xl px-6 py-12">
       <div class="flex flex-col items-center justify-between gap-6 md:flex-row">
         <div>
-          <p class="text-lg font-bold text-ecash-400">Sidecoin</p>
+          <p class="text-lg font-bold text-ecash-400">
+            <span aria-hidden="true">SidΞcoin</span><span class="sr-only">Sidecoin</span>
+          </p>
           <p class="text-sm text-gray-500">eCash Drivechains Wallet · Open Source · MIT License</p>
         </div>
         <div class="flex gap-6 text-sm text-gray-400">

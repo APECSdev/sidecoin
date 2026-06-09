@@ -90,7 +90,7 @@ onBeforeUnmount(() => {
       <div class="flex-1">
         <!-- Android / Chromium install -->
         <template v-if="state === 'install'">
-          <p class="text-sm font-semibold text-white">Install the Sidecoin Wallet app</p>
+          <p class="text-sm font-semibold text-white">Install the <span aria-hidden="true">SidΞcoin</span><span class="sr-only">Sidecoin</span> Wallet app</p>
           <p class="mt-1 text-xs text-gray-400">
             Add the wallet to your home screen for offline access and a native feel.
           </p>

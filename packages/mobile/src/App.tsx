@@ -68,7 +68,7 @@ function PlaceholderHome(): React.JSX.Element {
       <View style={styles.content}>
 
         {/* ── App Title ── */}
-        <Text style={styles.title}>Sidecoin</Text>
+        <Text style={styles.title} accessibilityLabel="Sidecoin">SidΞcoin</Text>
         <Text style={styles.subtitle}>eCash Drivechain Wallet</Text>
 
         {/* ── Fork Countdown ── */}
