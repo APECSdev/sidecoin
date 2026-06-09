@@ -100,7 +100,12 @@ export class UpstreamClient {
 
   constructor(opts: UpstreamClientOpts = {}) {
     this.base = (opts.baseUrl ?? DEFAULT_SUPAQT_BASE).replace(/\/+$/, "");
-    this.f = opts.fetchImpl ?? fetch;
+    // Bind the default global fetch to globalThis. Stored as an instance
+    // property and later called as `this.f(...)`, an unbound native fetch
+    // would receive the UpstreamClient as its `this` and throw "Illegal
+    // invocation" on Cloudflare Workers, surfacing as a 502 upstream_error.
+    // Injected impls (tests) are used as-is.
+    this.f = opts.fetchImpl ?? fetch.bind(globalThis);
   }
 
   /** Low-level GET that always resolves to { status, body }. */
