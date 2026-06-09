@@ -1,0 +1,107 @@
+---
+// packages/web/src/components/Header.astro
+//
+// Sticky, responsive primary navigation. Desktop shows inline links;
+// mobile collapses to an accessible hamburger menu (toggled via a small
+// inline script with aria-expanded state).
+
+const WALLET_URL = "https://wallet.sidecoin.app/";
+
+const links = [
+  { href: "/#platforms", label: "Platforms" },
+  { href: "/#chains", label: "Sidechains" },
+  { href: "/#tech", label: "Technical" },
+  { href: "https://github.com/APECSdev/sidecoin", label: "GitHub", external: true },
+];
+---
+
+<header class="sticky top-0 z-50 border-b border-gray-800 bg-gray-950/80 backdrop-blur">
+  <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4" aria-label="Primary">
+    <a href="/" class="text-lg font-bold text-ecash-400">Sidecoin</a>
+
+    <!-- Desktop links -->
+    <div class="hidden items-center gap-8 md:flex">
+      {links.map((l) => (
+        <a
+          href={l.href}
+          class="text-sm text-gray-300 transition-colors hover:text-white"
+          {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
+        >
+          {l.label}
+        </a>
+      ))}
+      <a
+        href={WALLET_URL}
+        class="rounded-lg bg-ecash-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ecash-500"
+      >
+        Launch Wallet
+      </a>
+    </div>
+
+    <!-- Mobile toggle -->
+    <button
+      id="nav-toggle"
+      type="button"
+      class="inline-flex items-center justify-center rounded-lg p-2 text-gray-300 transition-colors hover:bg-gray-800 hover:text-white md:hidden"
+      aria-controls="mobile-menu"
+      aria-expanded="false"
+      aria-label="Toggle navigation menu"
+    >
+      <svg id="nav-icon-open" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+      </svg>
+      <svg id="nav-icon-close" class="hidden h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </nav>
+
+  <!-- Mobile menu -->
+  <div id="mobile-menu" class="hidden border-t border-gray-800 md:hidden">
+    <div class="space-y-1 px-6 py-4">
+      {links.map((l) => (
+        <a
+          href={l.href}
+          class="block rounded-lg px-3 py-2 text-base text-gray-300 transition-colors hover:bg-gray-800 hover:text-white"
+          {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
+        >
+          {l.label}
+        </a>
+      ))}
+      <a
+        href={WALLET_URL}
+        class="mt-2 block rounded-lg bg-ecash-600 px-3 py-2 text-center text-base font-semibold text-white transition-colors hover:bg-ecash-500"
+      >
+        Launch Wallet
+      </a>
+    </div>
+  </div>
+
+  <script is:inline>
+    const btn = document.getElementById("nav-toggle");
+    const menu = document.getElementById("mobile-menu");
+    const iconOpen = document.getElementById("nav-icon-open");
+    const iconClose = document.getElementById("nav-icon-close");
+
+    function setOpen(open) {
+      btn?.setAttribute("aria-expanded", String(open));
+      menu?.classList.toggle("hidden", !open);
+      iconOpen?.classList.toggle("hidden", open);
+      iconClose?.classList.toggle("hidden", !open);
+    }
+
+    btn?.addEventListener("click", () => {
+      setOpen(btn.getAttribute("aria-expanded") !== "true");
+    });
+
+    // Close the menu after tapping any link.
+    menu?.querySelectorAll("a").forEach((a) =>
+      a.addEventListener("click", () => setOpen(false))
+    );
+
+    // Close on Escape.
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") setOpen(false);
+    });
+  </script>
+</header>

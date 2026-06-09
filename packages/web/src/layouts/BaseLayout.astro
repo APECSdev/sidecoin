@@ -3,6 +3,8 @@
 //
 // Root layout shared by all pages on sidecoin.app.
 
+import Header from "../components/Header.astro";
+
 interface Props {
   title?: string;
   description?: string;
@@ -59,6 +61,7 @@ const ogImage = new URL("/og-image.png", Astro.site);
     <noscript><img src="https://queue.simpleanalyticscdn.com/noscript.gif" alt="" referrerpolicy="no-referrer-when-downgrade" /></noscript>
   </head>
   <body class="min-h-screen bg-gray-950 text-gray-100 antialiased">
+    <Header />
     <slot />
   </body>
 </html>

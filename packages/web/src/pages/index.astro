@@ -6,6 +6,7 @@
 import BaseLayout from "../layouts/BaseLayout.astro";
 import ForkCountdown from "../components/ForkCountdown.vue";
 import SidechainCard from "../components/SidechainCard.astro";
+import InstallWallet from "../components/InstallWallet.vue";
 import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
 ---
 
@@ -51,7 +52,7 @@ import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
   </header>
 
   <!-- ─── What is Sidecoin ──────────────────────────────────── -->
-  <section class="mx-auto max-w-5xl px-6 py-20">
+  <section id="platforms" class="mx-auto max-w-5xl px-6 py-20">
     <h2 class="text-center text-3xl font-bold md:text-4xl">
       What is <span class="text-ecash-400">Sidecoin</span>?
     </h2>
@@ -93,7 +94,7 @@ import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
   </section>
 
   <!-- ─── Sidechains ────────────────────────────────────────── -->
-  <section class="mx-auto max-w-5xl px-6 py-20">
+  <section id="chains" class="mx-auto max-w-5xl px-6 py-20">
     <h2 class="text-center text-3xl font-bold md:text-4xl">
       {ACTIVE_SIDECHAIN_COUNT} Sidechains at Launch
     </h2>
@@ -116,7 +117,7 @@ import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
   </section>
 
   <!-- ─── Technical Details ─────────────────────────────────── -->
-  <section class="border-t border-gray-800 bg-gray-900/30">
+  <section id="tech" class="border-t border-gray-800 bg-gray-900/30">
     <div class="mx-auto max-w-5xl px-6 py-20">
       <h2 class="text-center text-3xl font-bold md:text-4xl">
         Technical Details
@@ -163,4 +164,7 @@ import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../data/sidechains";
       </p>
     </div>
   </footer>
+
+  <!-- ─── Install-the-wallet prompt (mobile) ────────────────── -->
+  <InstallWallet client:load />
 </BaseLayout>
