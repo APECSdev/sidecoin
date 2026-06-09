@@ -2,6 +2,7 @@
 
 <script setup lang="ts">
 import { RouterView } from "vue-router";
+import InstallWallet from "./components/InstallWallet.vue";
 
 const links = [
   { to: "/", label: "Home" },
@@ -66,18 +67,22 @@ const links = [
     </main>
 
     <!-- Mobile bottom tab bar -->
+    <!-- h-16 + full-cell flex links = ~64px touch targets, easier to tap. -->
     <nav
-      class="fixed bottom-0 left-0 right-0 z-20 grid grid-cols-5 border-t border-gray-800 bg-gray-950/95 backdrop-blur md:hidden"
+      class="fixed bottom-0 left-0 right-0 z-20 grid h-16 grid-cols-5 border-t border-gray-800 bg-gray-950/95 backdrop-blur md:hidden"
     >
       <router-link
         v-for="l in links"
         :key="l.to"
         :to="l.to"
-        class="flex flex-col items-center gap-1 py-2.5 text-[11px] text-gray-400"
+        class="flex h-full flex-col items-center justify-center gap-1 text-xs font-medium text-gray-400 transition-colors hover:text-gray-200 active:bg-gray-800/60"
         active-class="text-ecash-400"
       >
         {{ l.label }}
       </router-link>
     </nav>
+
+    <!-- Install-the-wallet prompt (mobile) -->
+    <InstallWallet />
   </div>
 </template>
