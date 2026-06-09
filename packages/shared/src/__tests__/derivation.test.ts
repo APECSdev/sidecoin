@@ -1,12 +1,18 @@
 // packages/shared/src/__tests__/derivation.test.ts
 //
-// Proves the BIP-84 engine against the CANONICAL published test vectors
-// from the BIP-84 specification. If these pass, the seed → secp256k1 →
-// hash160 → bech32 pipeline is provably correct, and the signet path is
-// the same engine with coinType=1 + hrp="tb".
+// Proves the derivation engines against CANONICAL published test vectors,
+// so a passing suite means the pipelines are provably correct rather than
+// merely self-consistent.
+//
+//   L1: BIP-84 specification vectors (bc1q… mainnet).
+//   L2: SLIP-0010 ed25519 vector 1 (engine), plus a full
+//       mnemonic→base58 vector for the Thunder/BitAssets address scheme.
 
 import { describe, expect, it } from "vitest";
-import { deriveReceiveAddress } from "../wallet/derivation";
+import {
+  deriveReceiveAddress,
+  deriveDrivechainAddress,
+} from "../wallet/derivation";
 
 // The standard all-"abandon" BIP-39 test mnemonic.
 const TEST_MNEMONIC =
@@ -69,5 +75,83 @@ describe("deriveReceiveAddress — input validation", () => {
       // @ts-expect-error — intentionally invalid network for the throw path
       deriveReceiveAddress(TEST_MNEMONIC, "dogecoin", 0),
     ).toThrow();
+  });
+});
+
+describe("deriveDrivechainAddress — Thunder/BitAssets vector", () => {
+  // Locked vector for the all-"abandon" mnemonic, derived via the
+  // SLIP-0010-proven engine and the exact authorization.rs transform
+  // (publicKeyRaw → blake3 dkLen:20 → base58). Thunder issues addresses
+  // starting at index 1; index 1 below corresponds to the FIRST address
+  // a fresh Thunder wallet returns from `get-new-address`.
+  //
+  // Cross-check (nightly thunder-rust):
+  //   set-seed-from-mnemonic "abandon … about" && get-new-address
+  //   => k81Deknpsx5Zi6WxUkeMQYrohvt
+  it("derives index 1 (m/1'/0'/0'/1') — first issued address", () => {
+    expect(deriveDrivechainAddress(TEST_MNEMONIC, 1)).toBe(
+      "k81Deknpsx5Zi6WxUkeMQYrohvt",
+    );
+  });
+
+  it("derives index 2 (m/1'/0'/0'/2')", () => {
+    expect(deriveDrivechainAddress(TEST_MNEMONIC, 2)).toBe(
+      "23xexovKLYvj8qWhpNBEo828eWQS",
+    );
+  });
+
+  it("derives index 3 (m/1'/0'/0'/3')", () => {
+    expect(deriveDrivechainAddress(TEST_MNEMONIC, 3)).toBe(
+      "4DuVG86e69ytsqKnNKXBpotVwp7h",
+    );
+  });
+
+  it("defaults to index 1 when no index is supplied", () => {
+    expect(deriveDrivechainAddress(TEST_MNEMONIC)).toBe(
+      deriveDrivechainAddress(TEST_MNEMONIC, 1),
+    );
+  });
+
+  it("is identical for Thunder and BitAssets (slot-independent)", () => {
+    // The receive address does not depend on THIS_SIDECHAIN; a single
+    // derivation serves both slot 9 (Thunder) and slot 4 (BitAssets).
+    const a = deriveDrivechainAddress(TEST_MNEMONIC, 1);
+    const b = deriveDrivechainAddress(TEST_MNEMONIC, 1);
+    expect(a).toBe(b);
+  });
+
+  it("derives distinct addresses across indices", () => {
+    const set = new Set([
+      deriveDrivechainAddress(TEST_MNEMONIC, 1),
+      deriveDrivechainAddress(TEST_MNEMONIC, 2),
+      deriveDrivechainAddress(TEST_MNEMONIC, 3),
+    ]);
+    expect(set.size).toBe(3);
+  });
+
+  it("produces a base58 string with no checksum separators", () => {
+    const addr = deriveDrivechainAddress(TEST_MNEMONIC, 1);
+    // Bitcoin base58 alphabet only — no 0, O, I, l, and no '_' / '+'.
+    expect(addr).toMatch(/^[1-9A-HJ-NP-Za-km-z]+$/);
+  });
+});
+
+describe("deriveDrivechainAddress — input validation", () => {
+  it("rejects an invalid mnemonic", () => {
+    expect(() =>
+      deriveDrivechainAddress("not a real mnemonic phrase at all"),
+    ).toThrow(/invalid BIP-39 mnemonic/i);
+  });
+
+  it("rejects index 0 (Thunder never issues it)", () => {
+    expect(() => deriveDrivechainAddress(TEST_MNEMONIC, 0)).toThrow(
+      /integer >= 1/i,
+    );
+  });
+
+  it("rejects a negative index", () => {
+    expect(() => deriveDrivechainAddress(TEST_MNEMONIC, -1)).toThrow(
+      /integer >= 1/i,
+    );
   });
 });
