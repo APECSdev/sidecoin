@@ -1,4 +1,4 @@
-// packages/api/src/__tests__/worker.test.ts
+// packages/api/src/tests/worker.test.ts
 
 import { describe, it, expect, vi } from "vitest";
 
@@ -191,6 +191,18 @@ describe("derived balance", () => {
     let call = 0;
     const f = vi.fn(async (input: RequestInfo | URL) => {
       const u = new URL(input.toString());
+      // The slot balance route now PREFERS the indexed balance endpoint
+      // (/chains/:chainId/address/:address/balance) and only falls back to
+      // deriving from deposit inflow when that index isn't provisioned.
+      // Signal "no such table" (-> not_provisioned) so this test exercises
+      // the derived summation path. This call is NOT one of the deposit
+      // pages, so it must not advance the page counter.
+      if (u.pathname.includes("/address/") && u.pathname.endsWith("/balance")) {
+        return new Response(
+          JSON.stringify({ error: "no such table: balances" }),
+          { status: 500 },
+        );
+      }
       call++;
       if (call === 1) {
         return new Response(

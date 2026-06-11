@@ -5,20 +5,20 @@
 // SupaQt's chainId-addressed, snake_case, bare-string-error API.
 //
 // Public routes (GET unless noted; /v1 prefix optional):
-//   /v1                                 (Swagger UI)
-//   /v1/openapi.json                    (OpenAPI 3.1 document)
+//   /v1                                       (Swagger UI)
+//   /v1/openapi.json                          (OpenAPI 3.1 document)
 //   /v1/health
 //   /v1/sidechains
-//   /v1/wallet/:slot/deposits           ?address &status &limit &cursor
+//   /v1/wallet/:slot/deposits                 ?address &status &limit &cursor
 //   /v1/wallet/:slot/deposits/:l1Txid/:vout
-//   /v1/wallet/:slot/balance            ?address   (indexed; derived fallback)
-//   /v1/chains/:chainId/broadcast       (POST — relay a signed tx)
+//   /v1/wallet/:slot/balance                  ?address  (indexed; derived fallback)
+//   /v1/chains/:chainId/address/:address/balance        (indexed; ANY chain incl. L1)
+//   /v1/chains/:chainId/broadcast             (POST — relay a signed tx)
 //
-// NOTE: broadcast is chainId-addressed (NOT slot-addressed) because it is
-// signet/L1-only today and signet has no sidechain slot. L2 chainIds pass
-// through and surface upstream's 501 (broadcast_unsupported) for now;
-// dedicated sidechain broadcast endpoints are planned and will arrive on this
-// same chainId-addressed path with no routing change here.
+// NOTE: both broadcast AND the chainId balance route are chainId-addressed
+// (NOT slot-addressed) because L1/signet has no sidechain slot. The
+// slot-addressed /wallet/:slot/balance route remains for sidechains; the
+// chainId route is the only way to read an L1/signet balance.
 //
 // Error envelope (normalized): { error: { code, message, details? } }
 
@@ -188,12 +188,13 @@ const OPENAPI_SPEC = {
     },
     "/v1/wallet/{slot}/balance": {
       get: {
-        summary: "Balance for an address",
+        summary: "Balance for an address (slot-addressed; sidechains)",
         description:
           "Authoritative indexed balance from upstream when available " +
           "(source=indexed). Falls back to a sum of credited deposit inflow " +
           "(source=derived) only when the chain's balance index is not " +
-          "provisioned; the derived value is NOT a spendable balance.",
+          "provisioned; the derived value is NOT a spendable balance. For " +
+          "L1/signet (no slot), use the chainId-addressed balance route.",
         parameters: [
           { $ref: "#/components/parameters/Slot" },
           {
@@ -209,6 +210,32 @@ const OPENAPI_SPEC = {
             content: {
               "application/json": {
                 schema: { $ref: "#/components/schemas/Balance" },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/Error" },
+          "404": { $ref: "#/components/responses/Error" },
+          "502": { $ref: "#/components/responses/Error" },
+        },
+      },
+    },
+    "/v1/chains/{chainId}/address/{address}/balance": {
+      get: {
+        summary: "Indexed balance for an address (chainId-addressed; any chain)",
+        description:
+          "Authoritative indexed balance for ANY chain, including L1/signet " +
+          "(which has no sidechain slot). An unknown address is not an error " +
+          "— it returns totalSats \"0\" with seen=false.",
+        parameters: [
+          { $ref: "#/components/parameters/ChainId" },
+          { $ref: "#/components/parameters/Address" },
+        ],
+        responses: {
+          "200": {
+            description: "The indexed balance.",
+            content: {
+              "application/json": {
+                schema: { $ref: "#/components/schemas/ChainBalance" },
               },
             },
           },
@@ -283,6 +310,13 @@ const OPENAPI_SPEC = {
         description:
           "Upstream chain id (e.g. signet). Broadcast is signet/L1 only today.",
         schema: { type: "string", pattern: "^[a-z0-9_-]+$" },
+      },
+      Address: {
+        name: "address",
+        in: "path",
+        required: true,
+        description: "On-chain address (bech32 / base58).",
+        schema: { type: "string", pattern: "^[a-zA-Z0-9]+$" },
       },
     },
     responses: {
@@ -360,6 +394,27 @@ const OPENAPI_SPEC = {
           updatedAtHeight: {
             type: ["integer", "null"],
             description: "indexed height; null when derived or never seen.",
+          },
+          note: { type: "string" },
+        },
+      },
+      ChainBalance: {
+        type: "object",
+        properties: {
+          chainId: { type: "string" },
+          address: { type: "string" },
+          source: { type: "string", enum: ["indexed"] },
+          totalSats: {
+            type: "string",
+            description: "bigint balance in sats, as a decimal string.",
+          },
+          seen: {
+            type: "boolean",
+            description: "false when the address was never observed upstream.",
+          },
+          updatedAtHeight: {
+            type: ["integer", "null"],
+            description: "indexed height; null when never seen.",
           },
           note: { type: "string" },
         },
@@ -463,6 +518,54 @@ export async function handleV1(req: Request, env: Env): Promise<Response> {
   // GET /sidechains — from OUR registry (active drivechains only).
   if (parts.length === 1 && parts[0] === "sidechains") {
     return json({ sidechains: listSidechains() });
+  }
+
+  // GET /chains/:chainId/address/:address/balance
+  // Authoritative indexed balance for ANY chain, including L1/signet (which
+  // has no sidechain slot and therefore no /wallet/:slot route). This is the
+  // ONLY way to read an L1/signet balance. chainId-addressed, mirroring the
+  // broadcast route's addressing decision.
+  if (
+    parts[0] === "chains" &&
+    parts.length === 5 &&
+    parts[2] === "address" &&
+    parts[4] === "balance"
+  ) {
+    const chainId = parts[1];
+    const address = parts[3];
+    if (!/^[a-z0-9_-]+$/i.test(chainId)) {
+      return err("unknown_chain", `invalid chainId "${chainId}"`, 404);
+    }
+    if (!/^[a-z0-9]+$/i.test(address)) {
+      return err("bad_address", `invalid address "${address}"`, 400);
+    }
+
+    const out = await opGetBalance(client, chainId, address);
+    if (out.kind === "ok") {
+      return json({
+        chainId,
+        address,
+        source: "indexed",
+        totalSats: out.balanceSats,
+        seen: out.seen,
+        // -1 sentinel ("never seen") is normalized to null here.
+        updatedAtHeight: out.seen ? out.updatedAtHeight : null,
+        note: "indexed balance from upstream (sats)",
+      });
+    }
+    if (out.kind === "unknown_chain") {
+      return err("unknown_chain", `upstream has no chain "${chainId}"`, 404);
+    }
+    if (out.kind === "not_provisioned") {
+      // The balance index works on any chain incl. signet; absence here is a
+      // real upstream problem, not a "normal" empty state.
+      return err(
+        "balance_unavailable",
+        `balance index not provisioned for "${chainId}"`,
+        502,
+      );
+    }
+    return err("upstream_error", out.message, 502);
   }
 
   // /wallet/:slot/...

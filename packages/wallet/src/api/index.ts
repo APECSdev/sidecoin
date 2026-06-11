@@ -12,6 +12,7 @@ import {
   type SidechainSummary,
   type DepositsPage,
   type WalletBalance,
+  type ChainBalance,
   type ListDepositsParams,
   type BroadcastReceipt,
 } from "@sidecoin/api-client";
@@ -20,10 +21,17 @@ export type {
   SidechainSummary,
   DepositsPage,
   WalletBalance,
+  ChainBalance,
   ListDepositsParams,
   BroadcastReceipt,
 } from "@sidecoin/api-client";
 export { ApiError } from "@sidecoin/api-client";
+
+/** Upstream chain id for Bitcoin L1 / signet (no sidechain slot). */
+export const L1_CHAIN_ID = "signet";
+
+/** Satoshis per whole coin (1 BTC = 100,000,000 sats). */
+const SATS_PER_COIN = 100_000_000n;
 
 // ---------------------------------------------------------------------------
 // Client configuration (single source of truth)
@@ -66,6 +74,28 @@ export function getClient(): SidecoinClient {
 }
 
 // ---------------------------------------------------------------------------
+// Display helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Format a bigint sats amount as a decimal coin string (e.g. 133700000n ->
+ * "1.337"). Trailing zeros in the fractional part are trimmed; a whole number
+ * has no decimal point. Pure/lossless — never uses floating point.
+ */
+export function satsToBtc(sats: bigint): string {
+  const neg = sats < 0n;
+  const abs = neg ? -sats : sats;
+  const whole = abs / SATS_PER_COIN;
+  const frac = abs % SATS_PER_COIN;
+  let out = whole.toString();
+  if (frac > 0n) {
+    const f = frac.toString().padStart(8, "0").replace(/0+$/, "");
+    out += `.${f}`;
+  }
+  return neg ? `-${out}` : out;
+}
+
+// ---------------------------------------------------------------------------
 // Data functions (delegating to the frozen client)
 // ---------------------------------------------------------------------------
 
@@ -83,8 +113,9 @@ export async function getDeposits(
 }
 
 /**
- * GET /wallet/:slot/balance — DERIVED inflow for an address, not a spendable
- * balance. Requires an address (available once a key exists in Phase 3).
+ * GET /wallet/:slot/balance — slot-addressed (sidechains). Indexed balance
+ * when available, deposit-inflow fallback otherwise. For L1/signet use
+ * getL1Balance / getChainBalance instead (signet has no slot).
  */
 export async function getWalletBalance(
   slot: number,
@@ -94,8 +125,28 @@ export async function getWalletBalance(
 }
 
 /**
+ * GET /chains/:chainId/address/:address/balance — chainId-addressed indexed
+ * balance for ANY chain, including L1/signet. Unknown address => totalSats 0n,
+ * seen=false.
+ */
+export async function getChainBalance(
+  chainId: string,
+  address: string,
+): Promise<ChainBalance> {
+  return _client.getChainBalance(chainId, address);
+}
+
+/**
+ * Convenience: indexed L1/signet balance for an address. This is what the
+ * dashboard uses to show the wallet's on-chain (signet) balance.
+ */
+export async function getL1Balance(address: string): Promise<ChainBalance> {
+  return _client.getChainBalance(L1_CHAIN_ID, address);
+}
+
+/**
  * POST /chains/:chainId/broadcast — relay a fully-signed raw tx hex to a
- * chain's node. Broadcast is signet/L1 ONLY in Tier-1; pass "signet". L2
+ * chain's node. Broadcast is signet/L1 ONLY today; pass "signet". L2
  * sidechains are NOT broadcastable here (ApiError "broadcast_unsupported",
  * 501) — use the sidechain's own transfer/withdraw verbs instead.
  *

@@ -87,12 +87,12 @@ export interface DepositsPage {
 }
 
 /**
- * Wallet balance. source distinguishes the authoritative indexed balance
- * ("indexed") from the deposit-inflow fallback ("derived"). totalSats is the
- * balance in sats (bigint). seen=false means the address was never observed
- * upstream. updatedAtHeight is the indexed height, or null when derived /
- * never seen. provisioned/depositCount/truncated are meaningful mainly for
- * the derived fallback.
+ * Slot-addressed wallet balance (sidechains). source distinguishes the
+ * authoritative indexed balance ("indexed") from the deposit-inflow fallback
+ * ("derived"). totalSats is the balance in sats (bigint). seen=false means
+ * the address was never observed upstream. updatedAtHeight is the indexed
+ * height, or null when derived / never seen. provisioned/depositCount/
+ * truncated are meaningful mainly for the derived fallback.
  */
 export interface WalletBalance {
   slot: number;
@@ -103,6 +103,21 @@ export interface WalletBalance {
   totalSats: bigint;
   depositCount: number;
   truncated: boolean;
+  seen: boolean;
+  updatedAtHeight: number | null;
+  note: string;
+}
+
+/**
+ * ChainId-addressed indexed balance for ANY chain, including L1/signet (which
+ * has no sidechain slot). Always sourced from the upstream balance index.
+ * seen=false => address never observed (totalSats 0n, updatedAtHeight null).
+ */
+export interface ChainBalance {
+  chainId: string;
+  address: string;
+  source: "indexed";
+  totalSats: bigint;
   seen: boolean;
   updatedAtHeight: number | null;
   note: string;
@@ -303,9 +318,10 @@ export class SidecoinClient {
   }
 
   /**
-   * GET /wallet/:slot/balance — authoritative indexed balance when available
-   * (source="indexed"), otherwise a deposit-inflow fallback (source="derived",
-   * NOT a spendable balance). totalSats is coerced to bigint.
+   * GET /wallet/:slot/balance — slot-addressed (sidechains). Authoritative
+   * indexed balance when available (source="indexed"), otherwise a
+   * deposit-inflow fallback (source="derived", NOT a spendable balance).
+   * For L1/signet (no slot), use getChainBalance instead.
    */
   async getWalletBalance(
     slot: number,
@@ -325,6 +341,29 @@ export class SidecoinClient {
       updatedAtHeight: number | null;
       note: string;
     }>(`/wallet/${slot}/balance`, q);
+
+    return { ...r, totalSats: coerceSats(r.totalSats, "totalSats") };
+  }
+
+  /**
+   * GET /chains/:chainId/address/:address/balance — chainId-addressed indexed
+   * balance for ANY chain, including L1/signet. This is the ONLY way to read
+   * an L1/signet balance (signet has no sidechain slot). An unknown address
+   * is not an error: it returns totalSats 0n with seen=false.
+   */
+  async getChainBalance(
+    chainId: string,
+    address: string,
+  ): Promise<ChainBalance> {
+    const r = await this.get<{
+      chainId: string;
+      address: string;
+      source: "indexed";
+      totalSats: string;
+      seen: boolean;
+      updatedAtHeight: number | null;
+      note: string;
+    }>(`/chains/${chainId}/address/${address}/balance`);
 
     return { ...r, totalSats: coerceSats(r.totalSats, "totalSats") };
   }
