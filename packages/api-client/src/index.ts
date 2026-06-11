@@ -86,15 +86,37 @@ export interface DepositsPage {
   nextCursor: string | null;
 }
 
+/**
+ * Wallet balance. source distinguishes the authoritative indexed balance
+ * ("indexed") from the deposit-inflow fallback ("derived"). totalSats is the
+ * balance in sats (bigint). seen=false means the address was never observed
+ * upstream. updatedAtHeight is the indexed height, or null when derived /
+ * never seen. provisioned/depositCount/truncated are meaningful mainly for
+ * the derived fallback.
+ */
 export interface WalletBalance {
   slot: number;
   chainId: string;
   address: string;
+  source: "indexed" | "derived";
   provisioned: boolean;
   totalSats: bigint;
   depositCount: number;
   truncated: boolean;
+  seen: boolean;
+  updatedAtHeight: number | null;
   note: string;
+}
+
+/**
+ * Receipt for a relayed broadcast (chainId-addressed; camelCase). Broadcast
+ * is signet/L1 only today, so there is no slot here.
+ */
+export interface BroadcastReceipt {
+  chainId: string;
+  txid: string;
+  accepted: boolean;
+  broadcastAt: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -187,6 +209,51 @@ export class SidecoinClient {
     return body as T;
   }
 
+  private async post<T>(path: string, payload: unknown): Promise<T> {
+    let res: Response;
+    try {
+      res = await this.f(`${this.base}${path}`, {
+        method: "POST",
+        headers: {
+          accept: "application/json",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+    } catch (e) {
+      throw new ApiError(
+        "network_error",
+        e instanceof Error ? e.message : "request failed",
+        0,
+      );
+    }
+
+    let body: unknown = null;
+    const text = await res.text();
+    if (text) {
+      try {
+        body = JSON.parse(text);
+      } catch {
+        body = null;
+      }
+    }
+
+    if (!res.ok) {
+      const env =
+        body && typeof body === "object" && "error" in body
+          ? (body as { error: { code?: string; message?: string; details?: unknown } })
+              .error
+          : undefined;
+      throw new ApiError(
+        env?.code ?? "http_error",
+        env?.message ?? `HTTP ${res.status}`,
+        res.status,
+        env?.details,
+      );
+    }
+    return body as T;
+  }
+
   /** GET /sidechains — active drivechains known to the adapter. */
   async getSidechains(): Promise<SidechainSummary[]> {
     const r = await this.get<{ sidechains: SidechainSummary[] }>(
@@ -235,7 +302,11 @@ export class SidecoinClient {
     return coerceDeposit(w);
   }
 
-  /** GET /wallet/:slot/balance — DERIVED inflow, not spendable balance. */
+  /**
+   * GET /wallet/:slot/balance — authoritative indexed balance when available
+   * (source="indexed"), otherwise a deposit-inflow fallback (source="derived",
+   * NOT a spendable balance). totalSats is coerced to bigint.
+   */
   async getWalletBalance(
     slot: number,
     address: string,
@@ -245,14 +316,45 @@ export class SidecoinClient {
       slot: number;
       chainId: string;
       address: string;
+      source: "indexed" | "derived";
       provisioned: boolean;
       totalSats: string;
       depositCount: number;
       truncated: boolean;
+      seen: boolean;
+      updatedAtHeight: number | null;
       note: string;
     }>(`/wallet/${slot}/balance`, q);
 
     return { ...r, totalSats: coerceSats(r.totalSats, "totalSats") };
+  }
+
+  /**
+   * POST /chains/:chainId/broadcast — relay a fully-signed raw transaction
+   * to a chain's node. The adapter forwards it and returns the resulting
+   * txid; it never signs. Broadcast is signet/L1 ONLY today — pass "signet".
+   * L2 chainIds throw ApiError "broadcast_unsupported" (501) for now
+   * (dedicated sidechain endpoints are planned). Re-broadcasting an
+   * already-known tx is idempotent (accepted:true, same txid).
+   *
+   * Throws ApiError on failure, code mirroring the adapter envelope:
+   *   "malformed_tx"          (400) — bad/undecodable tx hex
+   *   "rejected"              (422) — node refused; reason in message. DO NOT
+   *                                   retry the same bytes.
+   *   "unknown_chain"         (404) — unknown/disabled chain
+   *   "rate_limited"          (429) — per-identity budget; details.retryAfter
+   *                                   (s). Honor it before retrying.
+   *   "broadcast_unsupported" (501) — chain not broadcastable yet; do not
+   *                                   retry, use wallet verbs
+   *   "relay_error"           (502) — transport; retry with backoff
+   *   "broadcast_unavailable" (503) — relay down; retry later with backoff
+   *   "network_error"         (0)   — transport failure
+   */
+  async broadcast(chainId: string, txHex: string): Promise<BroadcastReceipt> {
+    return this.post<BroadcastReceipt>(
+      `/chains/${chainId}/broadcast`,
+      { txHex },
+    );
   }
 }
 

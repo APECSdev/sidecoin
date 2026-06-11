@@ -85,7 +85,11 @@ describe("deriveDrivechainAddress — Thunder/BitAssets vector", () => {
   // starting at index 1; index 1 below corresponds to the FIRST address
   // a fresh Thunder wallet returns from `get-new-address`.
   //
-  // Cross-check (nightly thunder-rust):
+  // CONFIRMED against the thunder-rust source derivation:
+  //   wallet.rs get_signing_key derives m/1'/0'/0'/index' (all hardened),
+  //   authorization.rs get_address = blake3(verifying_key.to_bytes())
+  //   finalize_xof → 20 bytes → base58. Index starts at 1.
+  // To re-confirm empirically against a running node:
   //   set-seed-from-mnemonic "abandon … about" && get-new-address
   //   => k81Deknpsx5Zi6WxUkeMQYrohvt
   it("derives index 1 (m/1'/0'/0'/1') — first issued address", () => {

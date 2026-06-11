@@ -13,6 +13,7 @@ import {
   type DepositsPage,
   type WalletBalance,
   type ListDepositsParams,
+  type BroadcastReceipt,
 } from "@sidecoin/api-client";
 
 export type {
@@ -20,6 +21,7 @@ export type {
   DepositsPage,
   WalletBalance,
   ListDepositsParams,
+  BroadcastReceipt,
 } from "@sidecoin/api-client";
 export { ApiError } from "@sidecoin/api-client";
 
@@ -89,4 +91,22 @@ export async function getWalletBalance(
   address: string,
 ): Promise<WalletBalance> {
   return _client.getWalletBalance(slot, address);
+}
+
+/**
+ * POST /chains/:chainId/broadcast — relay a fully-signed raw tx hex to a
+ * chain's node. Broadcast is signet/L1 ONLY in Tier-1; pass "signet". L2
+ * sidechains are NOT broadcastable here (ApiError "broadcast_unsupported",
+ * 501) — use the sidechain's own transfer/withdraw verbs instead.
+ *
+ * Returns the broadcast receipt (txid + accepted). Throws ApiError on
+ * failure; notable codes: "rejected" (422 — do not retry same bytes),
+ * "rate_limited" (429 — honor details.retryAfter), "relay_error"/
+ * "broadcast_unavailable" (502/503 — retry with backoff).
+ */
+export async function broadcastTransaction(
+  chainId: string,
+  txHex: string,
+): Promise<BroadcastReceipt> {
+  return _client.broadcast(chainId, txHex);
 }

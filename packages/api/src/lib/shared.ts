@@ -20,6 +20,12 @@ import {
 
 export interface Env {
   SUPAQT_BASE_URL?: string;
+  /**
+   * Optional authorized-provider API key for SupaQt. When set it is forwarded
+   * (Authorization: Bearer) so we are rate-limited by key, not by our shared
+   * Cloudflare egress IP. Wire it as a Worker secret once SupaQt issues it.
+   */
+  SUPAQT_API_KEY?: string;
 }
 
 // POST is allowed because /graphql and /mcp are POST endpoints; /v1 stays
@@ -55,6 +61,17 @@ export function err(
     { error: { code, message, ...(details != null ? { details } : {}) } },
     status,
   );
+}
+
+/**
+ * Build an UpstreamClient from the Worker env, threading the base URL and the
+ * (optional) authorized-provider API key in one place.
+ */
+export function makeUpstream(env: Env): UpstreamClient {
+  return new UpstreamClient({
+    baseUrl: env.SUPAQT_BASE_URL,
+    apiKey: env.SUPAQT_API_KEY,
+  });
 }
 
 /** Stable, camelCase deposit shape served by every transport. */
@@ -217,6 +234,51 @@ export async function opGetDeposit(
   return { kind: "error", message: "unknown upstream state" };
 }
 
+/**
+ * Authoritative indexed balance from SupaQt's balance route. seen=false maps
+ * the upstream updated_at_height === -1 sentinel ("address never seen").
+ */
+export type IndexedBalanceResult =
+  | {
+      kind: "ok";
+      balanceSats: string;
+      updatedAtHeight: number;
+      seen: boolean;
+    }
+  | { kind: "not_provisioned" }
+  | { kind: "unknown_chain" }
+  | { kind: "error"; message: string };
+
+export async function opGetBalance(
+  client: UpstreamClient,
+  chainId: string,
+  address: string,
+): Promise<IndexedBalanceResult> {
+  const out = await client.getBalance(chainId, address);
+  if (out.kind === "ok") {
+    // Validate the bigint string but keep it as a string over the wire.
+    try {
+      toSats(out.data.balance);
+    } catch (e) {
+      return {
+        kind: "error",
+        message: e instanceof Error ? e.message : "bad balance",
+      };
+    }
+    const h = out.data.updated_at_height;
+    // -1 => address never seen (synthetic zero balance).
+    return {
+      kind: "ok",
+      balanceSats: out.data.balance,
+      updatedAtHeight: h,
+      seen: h !== -1,
+    };
+  }
+  if (out.kind === "not_provisioned") return { kind: "not_provisioned" };
+  if (out.kind === "unknown_chain") return { kind: "unknown_chain" };
+  return { kind: "error", message: out.message };
+}
+
 export type BalanceResult =
   | {
       kind: "ok";
@@ -230,8 +292,11 @@ export type BalanceResult =
 
 /**
  * DERIVED balance: sum of credited deposit inflow for an address across up
- * to MAX_BALANCE_PAGES pages of MAX_PAGE. NOT spendable L2 balance — SupaQt
- * exposes no balance route today.
+ * to MAX_BALANCE_PAGES pages of MAX_PAGE. NOT spendable balance.
+ *
+ * Retained as the FALLBACK behind opGetBalance: the v1 balance route prefers
+ * the real indexed balance and only falls back to this derived sum when the
+ * chain's balance index isn't provisioned.
  */
 export async function opDeriveBalance(
   client: UpstreamClient,
@@ -285,4 +350,68 @@ export async function opDeriveBalance(
     depositCount: count,
     truncated,
   };
+}
+
+export type BroadcastResult =
+  | {
+      kind: "ok";
+      chainId: string;
+      txid: string;
+      accepted: boolean;
+      broadcastAt: number;
+    }
+  | { kind: "malformed"; message: string }
+  | { kind: "rejected"; message: string }
+  | { kind: "unknown_chain" }
+  | { kind: "unsupported"; message: string }
+  | { kind: "rate_limited"; retryAfter: number }
+  | { kind: "relay_error"; message: string }
+  | { kind: "unavailable"; message: string }
+  | { kind: "error"; message: string };
+
+/**
+ * Relay a fully-signed raw transaction to the chain's node via SupaQt's
+ * broadcast route. The adapter never signs — it forwards an already-signed
+ * tx_hex. Broadcast is signet/L1 ONLY today; L2 chainIds map to "unsupported"
+ * (501) until dedicated sidechain endpoints ship. Maps the upstream verdict
+ * to a transport-neutral result so each transport can format malformed/
+ * rejected/unsupported/rate_limited/relay_error/unavailable/error in its own
+ * envelope. Re-broadcasting an already-known tx is idempotent (ok, accepted,
+ * same txid).
+ */
+export async function opBroadcast(
+  client: UpstreamClient,
+  chainId: string,
+  txHex: string,
+): Promise<BroadcastResult> {
+  const out = await client.broadcast(chainId, txHex);
+  if (out.kind === "ok") {
+    return {
+      kind: "ok",
+      chainId: out.data.chainId,
+      txid: out.data.txid,
+      accepted: out.data.accepted,
+      broadcastAt: out.data.broadcast_at,
+    };
+  }
+  if (out.kind === "malformed") {
+    return { kind: "malformed", message: out.message };
+  }
+  if (out.kind === "rejected") {
+    return { kind: "rejected", message: out.message };
+  }
+  if (out.kind === "unknown_chain") return { kind: "unknown_chain" };
+  if (out.kind === "unsupported") {
+    return { kind: "unsupported", message: out.message };
+  }
+  if (out.kind === "rate_limited") {
+    return { kind: "rate_limited", retryAfter: out.retryAfter };
+  }
+  if (out.kind === "relay_error") {
+    return { kind: "relay_error", message: out.message };
+  }
+  if (out.kind === "unavailable") {
+    return { kind: "unavailable", message: out.message };
+  }
+  return { kind: "error", message: out.message };
 }
