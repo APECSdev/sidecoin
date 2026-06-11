@@ -2,8 +2,10 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
-import { getSidechains, getDeposits } from "../api";
-import type { SidechainSummary } from "../api";
+import { getSidechains, getDeposits, getL1Balance, satsToBtc } from "../api";
+import type { SidechainSummary, ChainBalance } from "../api";
+import { deriveReceiveAddress } from "@sidecoin/shared";
+import { loadWallet } from "../keystore";
 
 interface ChainRow {
   summary: SidechainSummary;
@@ -17,6 +19,15 @@ const totalSats = ref<bigint>(0n);
 const totalDeposits = ref(0);
 const loading = ref(true);
 const error = ref<string | null>(null);
+
+// L1 (signet) spendable balance — independent of the sidechain inflow
+// fan-out below. Derived from the same BIP-84 receive address ReceiveView
+// shows (m/84'/1'/0'/0/0 on signet); queried via the chainId-addressed
+// indexed balance route (signet has no sidechain slot).
+const l1Address = ref("");
+const l1Balance = ref<ChainBalance | null>(null);
+const l1Loading = ref(true);
+const l1Error = ref<string | null>(null);
 
 async function load() {
   loading.value = true;
@@ -54,7 +65,40 @@ async function load() {
   }
 }
 
-onMounted(load);
+async function loadL1Balance() {
+  l1Loading.value = true;
+  l1Error.value = null;
+
+  const wallet = loadWallet();
+  if (!wallet) {
+    // No key yet — the signet balance card shows a setup-required state,
+    // mirroring ReceiveView's pending state.
+    l1Address.value = "";
+    l1Balance.value = null;
+    l1Loading.value = false;
+    return;
+  }
+
+  try {
+    const address = deriveReceiveAddress(wallet.mnemonic, wallet.network, 0);
+    l1Address.value = address;
+    // Indexed balance for ANY chain incl. signet. An unseen address is not
+    // an error: it comes back totalSats 0n with seen=false.
+    l1Balance.value = await getL1Balance(address);
+  } catch (e) {
+    // Keep the real error for developers; show users a friendly message.
+    console.error("[DashboardView] Failed to load L1 balance:", e);
+    l1Error.value =
+      "We couldn't load your signet balance. Please try again.";
+  } finally {
+    l1Loading.value = false;
+  }
+}
+
+onMounted(() => {
+  load();
+  loadL1Balance();
+});
 
 function formatSats(sats: bigint): string {
   const neg = sats < 0n;
@@ -68,6 +112,46 @@ function formatSats(sats: bigint): string {
 <template>
   <div>
     <h2 class="mb-6 text-2xl font-bold">Dashboard</h2>
+
+    <!-- L1 (signet) wallet balance — always shown, independent of the
+         sidechain inflow fan-out below. -->
+    <div class="mb-6 rounded-lg border border-gray-800 bg-gray-900 p-6">
+      <p class="text-sm text-gray-400">Wallet Balance (signet)</p>
+
+      <div v-if="l1Loading" class="mt-2 text-gray-400">Loading balance…</div>
+
+      <div v-else-if="l1Error" class="mt-2 text-sm text-red-400">
+        <p>{{ l1Error }}</p>
+        <button
+          class="mt-2 rounded-lg bg-red-800/40 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-800/60"
+          @click="loadL1Balance"
+        >
+          Retry
+        </button>
+      </div>
+
+      <div v-else-if="!l1Address" class="mt-2 text-sm text-yellow-500">
+        Wallet setup required — your signet balance appears once key setup is
+        complete.
+      </div>
+
+      <template v-else>
+        <p class="mt-2 text-4xl font-bold text-ecash-400">
+          {{ satsToBtc(l1Balance ? l1Balance.totalSats : 0n) }}
+          <span class="text-lg text-gray-500">signet BTC</span>
+        </p>
+        <p
+          v-if="l1Balance && !l1Balance.seen"
+          class="mt-2 text-xs text-yellow-600"
+        >
+          Address not yet seen on-chain. New deposits appear after they confirm
+          and are indexed.
+        </p>
+        <p v-else class="mt-2 break-all font-mono text-xs text-gray-600">
+          {{ l1Address }}
+        </p>
+      </template>
+    </div>
 
     <!-- Loading state -->
     <div v-if="loading" class="text-gray-400">Loading sidechain activity…</div>
