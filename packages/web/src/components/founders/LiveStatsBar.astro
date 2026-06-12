@@ -2,12 +2,13 @@
 // packages/web/src/components/founders/LiveStatsBar.astro
 //
 // Displays three live stats:
-//   1. Total Founders (populated client-side)
-//   2. Alpha Circle Cut Line (top 10%)
+//   1. Total Founders (fetched client-side from our API)
+//   2. Alpha Circle Cut Line (top 20%, computed server-side)
 //   3. Countdown to August 21, 2026
 //
 // Values are populated by client-side JavaScript on mount
-// and fall back to placeholder text if JS is disabled.
+// and fall back to placeholder text ("—") if JS is disabled
+// or the API is unreachable.
 ---
 
 <section class="border-y border-gray-800 bg-gray-900/40">
@@ -52,6 +53,9 @@
 <script>
   const FORK_DATE = new Date("2026-08-21T15:00:00Z").getTime();
 
+  // Same-origin API by default; override with PUBLIC_API_BASE in dev.
+  const API_BASE = import.meta.env.PUBLIC_API_BASE || "/v1";
+
   const $totalFounders = document.getElementById("stats-total-founders");
   const $cutLine = document.getElementById("stats-cut-line");
   const $countdown = document.getElementById("stats-countdown");
@@ -83,25 +87,40 @@
   tickCountdown();
   setInterval(tickCountdown, 1000);
 
-  // ── Founder stats (mock data — replace with API call) ────
+  // ── Founder stats (live from our API) ────────────────────
   //
-  // TODO: Replace with actual API endpoint when backend is ready.
-  // Expected endpoint: GET /api/founders/stats
-  // Response: { total: number, cutLine: number }
+  // GET /v1/founders?limit=1 returns { total, cutLine, ... }. We only need the
+  // aggregate fields, so we request the smallest possible page. The cut line is
+  // computed server-side (live 20%), so we render it verbatim.
 
-  function updateFounderStats(total: number): void {
-    const cutLine = Math.max(1, Math.ceil(total * 0.10));
-
+  function renderFounderStats(total: number, cutLine: number): void {
     if ($totalFounders) {
       $totalFounders.textContent = total.toLocaleString();
     }
-
     if ($cutLine) {
       $cutLine.textContent = `#${cutLine.toLocaleString()}`;
     }
   }
 
-  // Simulated stats — remove when API is available
-  // In production this will be: fetch("/api/founders/stats").then(...)
-  updateFounderStats(1284);
+  async function loadFounderStats(): Promise<void> {
+    try {
+      const res = await fetch(`${API_BASE}/founders?limit=1`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      const total = typeof data.total === "number" ? data.total : 0;
+      // Prefer the server's live cut line; fall back to the 20% rule locally.
+      const cutLine =
+        typeof data.cutLine === "number"
+          ? data.cutLine
+          : Math.max(1, Math.ceil(total * 0.2));
+
+      renderFounderStats(total, cutLine);
+    } catch (err) {
+      // Non-fatal: leave the "—" placeholders in place.
+      console.error("[founders:stats] failed to load", err);
+    }
+  }
+
+  loadFounderStats();
 </script>

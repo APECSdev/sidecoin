@@ -59,6 +59,10 @@ function shapeFounder(row: FounderRow, total: number, now: number) {
     username: row.username,
     displayName: row.display_name,
     avatarSeed: row.avatar_seed,
+    // created_at is a non-sensitive join timestamp; founders are public, so
+    // exposing it powers the leaderboard "Joined" column. (identity is still
+    // NEVER exposed — only this timestamp and the avatar_seed hash.)
+    createdAt: row.created_at,
     isAlpha: row.is_alpha === 1,
     proActive,
     aboveCutLine,

@@ -552,6 +552,9 @@ importers:
       astro:
         specifier: 6.3.8
         version: 6.3.8(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(rollup@4.60.4)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
+      jdenticon:
+        specifier: ^3.3.0
+        version: 3.3.0
       tailwindcss:
         specifier: 4.1.11
         version: 4.1.11
@@ -4809,6 +4812,9 @@ packages:
   caniuse-lite@1.0.30001793:
     resolution: {integrity: sha512-iwSsYWaCOoh26cV8NwNRViHlrfUvYsHDfRVcbtmw0Kg6PJIZZXwMkj1442FYLBGkeUf1juAsU3DTfxW579mrPA==}
 
+  canvas-renderer@2.2.1:
+    resolution: {integrity: sha512-RrBgVL5qCEDIXpJ6NrzyRNoTnXxYarqm/cS/W6ERhUJts5UQtt/XPEosGN3rqUkZ4fjBArlnCbsISJ+KCFnIAg==}
+
   canvaskit-wasm@0.40.0:
     resolution: {integrity: sha512-Od2o+ZmoEw9PBdN/yCGvzfu0WVqlufBPEWNG452wY7E9aT8RBE+ChpZF526doOlg7zumO4iCS+RAeht4P0Gbpw==}
 
@@ -6806,6 +6812,11 @@ packages:
   jake@10.9.4:
     resolution: {integrity: sha512-wpHYzhxiVQL+IV05BLE2Xn34zW1S223hvjtqk0+gsPrwd/8JNLXJgZZM/iPFsYc1xyphF+6M6EvdE5E9MBGkDA==}
     engines: {node: '>=10'}
+    hasBin: true
+
+  jdenticon@3.3.0:
+    resolution: {integrity: sha512-DhuBRNRIybGPeAjMjdHbkIfiwZCCmf8ggu7C49jhp6aJ7DYsZfudnvnTY5/1vgUhrGA7JaDAx1WevnpjCPvaGg==}
+    engines: {node: '>=6.4.0'}
     hasBin: true
 
   jest-changed-files@29.7.0:
@@ -15941,6 +15952,10 @@ snapshots:
 
   caniuse-lite@1.0.30001793: {}
 
+  canvas-renderer@2.2.1:
+    dependencies:
+      '@types/node': 25.0.3
+
   canvaskit-wasm@0.40.0:
     dependencies:
       '@webgpu/types': 0.1.21
@@ -18208,6 +18223,10 @@ snapshots:
       async: 3.2.6
       filelist: 1.0.6
       picocolors: 1.1.1
+
+  jdenticon@3.3.0:
+    dependencies:
+      canvas-renderer: 2.2.1
 
   jest-changed-files@29.7.0:
     dependencies:
