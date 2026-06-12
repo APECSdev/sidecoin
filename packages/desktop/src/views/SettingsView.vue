@@ -1,49 +1,11 @@
 <!-- packages/desktop/src/views/SettingsView.vue -->
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
-import { loadWallet } from "@sidecoin/wallet";
-import { deriveNostrIdentityKey } from "@sidecoin/shared";
+import { ref } from "vue";
 
 const nodeUrl = ref("http://127.0.0.1:8332");
 const electrumUrl = ref("tcp://127.0.0.1:50001");
 const saved = ref(false);
-
-// ─── Founder Identity Key (NIP-06 Nostr key) ────────────────
-// Derived locally from the wallet mnemonic at m/44'/1237'/0'/0/0. This is the
-// canonical Founder identity: the user copies it here and pastes it at
-// sidecoin.app/pro. Only the PUBLIC key is ever shown — the private half never
-// leaves this derivation call.
-const identityKey = ref<string | null>(null);
-const identityError = ref<string | null>(null);
-const copied = ref(false);
-
-onMounted(() => {
-  try {
-    const wallet = loadWallet();
-    if (!wallet) {
-      identityError.value = "No wallet found. Create or import a wallet first.";
-      return;
-    }
-    identityKey.value = deriveNostrIdentityKey(wallet.mnemonic, 0).publicKeyHex;
-  } catch (err) {
-    console.error("[SettingsView] identity key derivation failed:", err);
-    identityError.value = "Could not derive your Founder identity key.";
-  }
-});
-
-async function copyIdentityKey() {
-  if (!identityKey.value) return;
-  try {
-    await navigator.clipboard.writeText(identityKey.value);
-    copied.value = true;
-    setTimeout(() => {
-      copied.value = false;
-    }, 2000);
-  } catch (err) {
-    console.error("[SettingsView] clipboard write failed:", err);
-  }
-}
 
 function handleSave() {
   // TODO: persist via tauri-plugin-store
@@ -88,34 +50,6 @@ function handleSave() {
         {{ saved ? "Saved ✓" : "Save Settings" }}
       </button>
     </form>
-
-    <!-- ─── Founder Identity Key ──────────────────────────── -->
-    <div class="mt-8 max-w-lg rounded border border-gray-800 bg-gray-900 p-4">
-      <p class="mb-1 text-sm font-semibold text-gray-300">Founder Identity Key</p>
-      <p class="mb-3 text-xs text-gray-500">
-        Paste this at
-        <span class="text-ecash-400">sidecoin.app/pro</span> to claim your
-        Founder profile. It's your public Nostr identity — safe to share.
-      </p>
-
-      <div v-if="identityKey" class="flex items-center gap-2">
-        <code
-          class="flex-1 break-all rounded border border-gray-700 bg-gray-950 px-3 py-2 font-mono text-xs text-gray-300 select-all"
-        >{{ identityKey }}</code>
-        <button
-          type="button"
-          class="shrink-0 rounded bg-ecash-600 px-3 py-2 text-xs font-semibold text-white hover:bg-ecash-500"
-          @click="copyIdentityKey"
-        >
-          {{ copied ? "Copied ✓" : "Copy" }}
-        </button>
-      </div>
-
-      <p v-else-if="identityError" class="text-xs text-amber-400">
-        {{ identityError }}
-      </p>
-      <p v-else class="text-xs text-gray-500">Deriving…</p>
-    </div>
 
     <!-- Debug info -->
     <div class="mt-8 rounded border border-gray-800 bg-gray-900 p-4">
