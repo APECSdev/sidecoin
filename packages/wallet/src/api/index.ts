@@ -15,6 +15,8 @@ import {
   type ChainBalance,
   type ListDepositsParams,
   type BroadcastReceipt,
+  type UtxosResult,
+  type GetUtxosParams,
 } from "@sidecoin/api-client";
 
 export type {
@@ -24,6 +26,9 @@ export type {
   ChainBalance,
   ListDepositsParams,
   BroadcastReceipt,
+  Utxo,
+  UtxosResult,
+  GetUtxosParams,
 } from "@sidecoin/api-client";
 export { ApiError } from "@sidecoin/api-client";
 
@@ -142,6 +147,38 @@ export async function getChainBalance(
  */
 export async function getL1Balance(address: string): Promise<ChainBalance> {
   return _client.getChainBalance(L1_CHAIN_ID, address);
+}
+
+/**
+ * GET /chains/:chainId/address/:address/utxos — chainId-addressed spendable
+ * UTXO set for ANY chain, including L1/signet. Unknown address => empty utxos.
+ * valueSats on each UTXO is a bigint; check result.truncated before treating
+ * the set as complete for coin selection.
+ *
+ * MATURITY: the adapter/upstream does NOT pre-filter coinbase maturity — it
+ * reports the per-UTXO isCoinbase flag and leaves the policy to the caller.
+ * Whoever builds coin selection MUST skip immature coinbase outputs
+ * (isCoinbase && confirmations < the chain's coinbase maturity, 100 on
+ * Bitcoin/signet). The optional minConfirmations is a GLOBAL floor across all
+ * outputs, NOT a substitute for that per-UTXO maturity guard.
+ */
+export async function getUtxos(
+  chainId: string,
+  address: string,
+  params: GetUtxosParams = {},
+): Promise<UtxosResult> {
+  return _client.getUtxos(chainId, address, params);
+}
+
+/**
+ * Convenience: spendable L1/signet UTXO set for an address. This is what Send
+ * uses to fund a signet transaction before signing locally.
+ */
+export async function getL1Utxos(
+  address: string,
+  params: GetUtxosParams = {},
+): Promise<UtxosResult> {
+  return _client.getUtxos(L1_CHAIN_ID, address, params);
 }
 
 /**

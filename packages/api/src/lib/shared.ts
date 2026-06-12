@@ -16,6 +16,7 @@ import {
 import {
   UpstreamClient,
   type UpstreamDepositRecord,
+  type UpstreamUtxoRecord,
 } from "../upstream.js";
 
 export interface Env {
@@ -110,6 +111,49 @@ export function normalizeDeposit(
     firstSeenTs: r.first_seen_ts,
     l1ConfirmedTs: r.l1_confirmed_ts,
     l2CreditedTs: r.l2_credited_ts,
+  };
+}
+
+/**
+ * Stable, camelCase UTXO shape served by every transport. valueSats stays a
+ * bigint decimal string over the wire (CAN exceed 2^53); the client coerces
+ * it to bigint. blockHeight uses a -1 sentinel for an unconfirmed (mempool)
+ * output — matching the wallet's domain Utxo.blockHeight convention and the
+ * balance route's updated_at_height === -1 ("never seen") sentinel — so the
+ * wire shape never carries null for it. isCoinbase carries the upstream
+ * `coinbase` fact verbatim; maturity policy is NOT applied here (it is the
+ * coin-selection layer's surgical per-UTXO guard).
+ */
+export interface NormalizedUtxo {
+  chainId: string;
+  address: string;
+  txid: string;
+  vout: number;
+  valueSats: string;
+  scriptPubKey: string;
+  confirmations: number;
+  blockHeight: number;
+  isCoinbase: boolean;
+}
+
+/** Normalize an upstream snake_case UTXO row to our stable camelCase shape. */
+export function normalizeUtxo(
+  chainId: string,
+  address: string,
+  r: UpstreamUtxoRecord,
+): NormalizedUtxo {
+  return {
+    chainId,
+    address,
+    txid: r.txid,
+    vout: r.vout,
+    valueSats: r.value_sats, // keep bigint as decimal string over the wire
+    scriptPubKey: r.script_pubkey,
+    confirmations: r.confirmations,
+    // null block_height (0-conf mempool output) -> -1 sentinel; otherwise the
+    // confirming height verbatim.
+    blockHeight: r.block_height === null ? -1 : r.block_height,
+    isCoinbase: r.coinbase,
   };
 }
 
@@ -232,6 +276,61 @@ export async function opGetDeposit(
   }
   if (out.kind === "error") return { kind: "error", message: out.message };
   return { kind: "error", message: "unknown upstream state" };
+}
+
+/**
+ * Result of opListUtxos. The UTXO set is fully paginated upstream (callers
+ * get the COMPLETE set in one call) because partial UTXO data would silently
+ * corrupt coin selection. `truncated` is true only if the page cap
+ * (MAX_BALANCE_PAGES) was hit before the cursor was exhausted — a wallet with
+ * more than MAX_PAGE * MAX_BALANCE_PAGES UTXOs, which we surface rather than
+ * silently drop. not_provisioned mirrors the deposits route (chain known but
+ * its UTXO index isn't live yet) so the transport can return an empty set.
+ */
+export type ListUtxosResult =
+  | { kind: "ok"; utxos: NormalizedUtxo[]; truncated: boolean }
+  | { kind: "not_provisioned" }
+  | { kind: "unknown_chain" }
+  | { kind: "error"; message: string };
+
+/**
+ * List the spendable UTXO set for an address (chainId-addressed, any chain
+ * incl. L1/signet). Pages through up to MAX_BALANCE_PAGES of MAX_PAGE,
+ * mirroring opDeriveBalance's bounded keyset loop. minConfirmations is passed
+ * straight through to upstream (endpoint default is 1); it is a GLOBAL floor,
+ * NOT a coinbase-maturity filter — the per-UTXO maturity guard lives in
+ * coin-selection. Each row is normalized to the stable camelCase shape.
+ */
+export async function opListUtxos(
+  client: UpstreamClient,
+  chainId: string,
+  address: string,
+  params: { minConfirmations?: number } = {},
+): Promise<ListUtxosResult> {
+  const utxos: NormalizedUtxo[] = [];
+  let cursor: string | undefined;
+  let pages = 0;
+
+  do {
+    const out = await client.listUtxos(chainId, address, {
+      limit: MAX_PAGE,
+      cursor,
+      minConfirmations: params.minConfirmations,
+    });
+    if (out.kind === "not_provisioned") return { kind: "not_provisioned" };
+    if (out.kind === "unknown_chain") return { kind: "unknown_chain" };
+    if (out.kind === "error") return { kind: "error", message: out.message };
+
+    for (const u of out.data.utxos) {
+      utxos.push(normalizeUtxo(chainId, address, u));
+    }
+    cursor = out.data.next_cursor ?? undefined;
+    pages++;
+  } while (cursor && pages < MAX_BALANCE_PAGES);
+
+  const truncated = Boolean(cursor) && pages >= MAX_BALANCE_PAGES;
+
+  return { kind: "ok", utxos, truncated };
 }
 
 /**

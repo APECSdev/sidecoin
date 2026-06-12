@@ -67,6 +67,17 @@ export interface Utxo {
    * -1 if still in the mempool.
    */
   readonly blockHeight: number;
+
+  /**
+   * Whether this UTXO originates from a coinbase transaction (the block's
+   * reward output). Maps from the indexer's snake_case `coinbase` field.
+   *
+   * Coinbase outputs are consensus-unspendable until ConsensusParams
+   * .coinbaseMaturity (100) confirmations; coin-selection MUST exclude any
+   * coinbase UTXO with confirmations < coinbaseMaturity, or the signed tx
+   * will be rejected at broadcast (bad-txns-premature-spend-of-coinbase).
+   */
+  readonly isCoinbase: boolean;
 }
 
 /**

@@ -1,7 +1,8 @@
 // packages/api/src/upstream.ts
 //
 // Thin client for the SupaQt read API (default https://supaqt.com/v1).
-// Contract verified 2026-06-07; broadcast + rate-limit handoff 2026-06-11.
+// Contract verified 2026-06-07; broadcast + rate-limit handoff 2026-06-11;
+// /utxos object shape verified against the live endpoint 2026-06-11.
 // SupaQt is READ-ONLY for reads; the broadcast route is the sole write path
 // (relay-only — it forwards an already-signed tx to the chain's node and
 // never signs). Broadcast is signet/L1 ONLY *today*; L2 sidechains return
@@ -51,6 +52,44 @@ export interface UpstreamBalance {
   address: string;
   balance: string;
   updated_at_height: number;
+}
+
+/**
+ * UTXO exactly as SupaQt returns it (snake_case, verbatim) on the per-address
+ * UTXO route. value_sats is a bigint sats decimal string and CAN exceed 2^53
+ * — never parse with Number/parseInt. confirmations is computed upstream as
+ * (tip_height - block_height + 1); it is 1+ for a confirmed UTXO and only 0
+ * for a mempool output (reachable solely when ?min_confirmations=0 is passed,
+ * since the endpoint defaults to min_confirmations=1). block_height is the
+ * integer confirming height, or null for a 0-conf mempool output. coinbase
+ * marks a coinbase (block-reward) output, which is consensus-unspendable
+ * until it matures (coinbaseMaturity confirmations); the endpoint does NOT
+ * pre-filter maturity — it reports the fact and leaves the policy to the
+ * caller, so coin-selection MUST enforce the per-UTXO maturity guard. SupaQt
+ * OMITS outputs whose script it cannot describe, so script_pubkey is always
+ * present here (a signing-safety guard, unrelated to maturity).
+ *
+ * CONTRACT NOTE: these object fields are CONFIRMED against SupaQt's live
+ * endpoint and their OpenAPI components.schemas.Utxo (verified 2026-06-11),
+ * field-for-field. What remains mirrored-by-convention (NOT yet confirmed) is
+ * the request URL path and the page envelope below — both follow the deposits
+ * route. If the live wrapper differs, listUtxos() is the only place to change.
+ */
+export interface UpstreamUtxoRecord {
+  txid: string;
+  vout: number;
+  value_sats: string;
+  script_pubkey: string;
+  confirmations: number;
+  block_height: number | null;
+  coinbase: boolean;
+}
+
+/** A page of UTXOs for an address, as SupaQt returns it (snake_case). */
+export interface UpstreamUtxosPage {
+  chainId: string;
+  utxos: UpstreamUtxoRecord[];
+  next_cursor: string | null;
 }
 
 /**
@@ -382,6 +421,73 @@ export class UpstreamClient {
     }
 
     const msg = UpstreamClient.errString(body);
+    if (isNoSuchTable(msg) || status === 500) {
+      return { kind: "not_provisioned" };
+    }
+    if (status === 404) return { kind: "unknown_chain" };
+    return { kind: "error", status, message: msg || `upstream ${status}` };
+  }
+
+  /**
+   * GET /chains/:chainId/address/:address/utxos — the spendable UTXO set for
+   * an address (any chain incl. signet), keyset-paginated like deposits.
+   *
+   * min_confirmations (optional) is a CONFIRMED upstream query param. The
+   * endpoint defaults to 1, so by default it returns only confirmed UTXOs
+   * (and never 0-conf mempool outputs). IMPORTANT: this floor applies to ALL
+   * outputs, NOT just coinbase — it is NOT a substitute for coinbase maturity.
+   * The endpoint deliberately does NOT pre-filter coinbase maturity (it
+   * reports the `coinbase` flag and leaves policy to us), so coin-selection
+   * still enforces the surgical per-UTXO guard. Pass minConfirmations: 0 to
+   * include mempool outputs.
+   *
+   * SupaQt OMITS outputs whose script it can't describe, so every returned
+   * row has a script_pubkey. value_sats is a bigint sats decimal string. A
+   * bad chainId is 404 -> unknown_chain; an unprovisioned chain's UTXO index
+   * may surface as 500 / "no such table" -> not_provisioned. An unknown
+   * ADDRESS is NOT an error here — upstream returns 200 with an empty utxos
+   * array.
+   *
+   * CONTRACT NOTE: the per-row object shape is CONFIRMED (UpstreamUtxoRecord,
+   * verified 2026-06-11). The URL path and the { chainId, utxos, next_cursor }
+   * envelope still mirror the deposits route by convention; if the live
+   * wrapper differs, THIS method is the only place that changes.
+   */
+  async listUtxos(
+    chainId: string,
+    address: string,
+    params: { limit?: number; cursor?: string; minConfirmations?: number } = {},
+  ): Promise<ListOutcome<UpstreamUtxosPage>> {
+    const u = new URL(
+      `${this.base}/chains/${chainId}/address/${address}/utxos`,
+    );
+    if (params.limit != null) {
+      u.searchParams.set("limit", String(params.limit));
+    }
+    if (params.cursor) u.searchParams.set("cursor", params.cursor);
+    if (params.minConfirmations != null) {
+      u.searchParams.set("min_confirmations", String(params.minConfirmations));
+    }
+
+    let r: { status: number; body: unknown };
+    try {
+      r = await this.raw(u);
+    } catch (e) {
+      return {
+        kind: "error",
+        status: 502,
+        message: e instanceof Error ? e.message : "upstream fetch failed",
+      };
+    }
+
+    const { status, body } = r;
+    if (status === 200) {
+      return { kind: "ok", data: body as UpstreamUtxosPage };
+    }
+
+    const msg = UpstreamClient.errString(body);
+    // Missing UTXO table -> 400 "no such table" or platform 500; both mean
+    // "chain not provisioned" so callers can degrade gracefully.
     if (isNoSuchTable(msg) || status === 500) {
       return { kind: "not_provisioned" };
     }

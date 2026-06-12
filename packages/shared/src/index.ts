@@ -7,3 +7,4 @@ export * from "./chain";
 export * from "./sidechains";
 export * from "./types";
 export * from "./wallet";
+export * from "./tx";

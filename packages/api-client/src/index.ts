@@ -86,6 +86,43 @@ export interface DepositsPage {
   nextCursor: string | null;
 }
 
+/** UTXO as returned by the adapter (valueSats is a decimal string). */
+interface WireUtxo {
+  chainId: string;
+  address: string;
+  txid: string;
+  vout: number;
+  valueSats: string;
+  scriptPubKey: string;
+  confirmations: number;
+  blockHeight: number;
+  isCoinbase: boolean;
+}
+
+/**
+ * UTXO with valueSats coerced to bigint for safe arithmetic. blockHeight is
+ * -1 for an unconfirmed (mempool) output. isCoinbase carries the upstream
+ * coinbase fact verbatim — maturity is NOT pre-filtered here; coin selection
+ * MUST apply the per-UTXO guard (skip coinbase with confirmations < the
+ * chain's coinbase maturity).
+ */
+export interface Utxo extends Omit<WireUtxo, "valueSats"> {
+  valueSats: bigint;
+}
+
+/**
+ * Result of getUtxos. utxos is the COMPLETE spendable set (the adapter pages
+ * upstream). truncated is true only if the adapter hit its page cap before
+ * the full set was retrieved — coin selection should treat a truncated set as
+ * incomplete rather than authoritative.
+ */
+export interface UtxosResult {
+  chainId: string;
+  address: string;
+  utxos: Utxo[];
+  truncated: boolean;
+}
+
 /**
  * Slot-addressed wallet balance (sidechains). source distinguishes the
  * authoritative indexed balance ("indexed") from the deposit-inflow fallback
@@ -153,6 +190,10 @@ function coerceDeposit(w: WireDeposit): Deposit {
   return { ...w, valueSats: coerceSats(w.valueSats, "valueSats") };
 }
 
+function coerceUtxo(w: WireUtxo): Utxo {
+  return { ...w, valueSats: coerceSats(w.valueSats, "valueSats") };
+}
+
 // ---------------------------------------------------------------------------
 // Client
 // ---------------------------------------------------------------------------
@@ -168,6 +209,16 @@ export interface ListDepositsParams {
   status?: string;
   limit?: number;
   cursor?: string;
+}
+
+export interface GetUtxosParams {
+  /**
+   * Global confirmations floor applied to ALL outputs (adapter/upstream
+   * default 1). NOT a coinbase-maturity filter — the per-UTXO isCoinbase
+   * flag is the surgical guard coin selection applies. Pass 0 to include
+   * mempool (0-conf) outputs.
+   */
+  minConfirmations?: number;
 }
 
 export class SidecoinClient {
@@ -366,6 +417,44 @@ export class SidecoinClient {
     }>(`/chains/${chainId}/address/${address}/balance`);
 
     return { ...r, totalSats: coerceSats(r.totalSats, "totalSats") };
+  }
+
+  /**
+   * GET /chains/:chainId/address/:address/utxos — chainId-addressed spendable
+   * UTXO set for ANY chain, including L1/signet (no sidechain slot). The
+   * adapter pages upstream, so the returned set is COMPLETE; check truncated
+   * (true only if the adapter's page cap was hit) before treating it as
+   * authoritative for coin selection. An unknown address is not an error: it
+   * returns an empty utxos array. Each UTXO's valueSats is coerced to bigint.
+   *
+   * IMPORTANT: coinbase maturity is NOT pre-filtered. Coin selection MUST
+   * apply the per-UTXO guard (skip a UTXO where isCoinbase && confirmations <
+   * the chain's coinbase maturity). The optional minConfirmations is a GLOBAL
+   * floor across all outputs, not a maturity filter.
+   */
+  async getUtxos(
+    chainId: string,
+    address: string,
+    params: GetUtxosParams = {},
+  ): Promise<UtxosResult> {
+    const q = new URLSearchParams();
+    if (params.minConfirmations != null) {
+      q.set("min_confirmations", String(params.minConfirmations));
+    }
+
+    const r = await this.get<{
+      chainId: string;
+      address: string;
+      utxos: WireUtxo[];
+      truncated: boolean;
+    }>(`/chains/${chainId}/address/${address}/utxos`, q);
+
+    return {
+      chainId: r.chainId,
+      address: r.address,
+      utxos: r.utxos.map(coerceUtxo),
+      truncated: r.truncated,
+    };
   }
 
   /**

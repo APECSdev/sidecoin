@@ -13,6 +13,7 @@
 //   /v1/wallet/:slot/deposits/:l1Txid/:vout
 //   /v1/wallet/:slot/balance                  ?address  (indexed; derived fallback)
 //   /v1/chains/:chainId/address/:address/balance        (indexed; ANY chain incl. L1)
+//   /v1/chains/:chainId/address/:address/utxos          (spendable set; ANY chain incl. L1)
 //   /v1/chains/:chainId/broadcast             (POST — relay a signed tx)
 //
 // NOTE: both broadcast AND the chainId balance route are chainId-addressed
@@ -36,6 +37,7 @@ import {
   opGetDeposit,
   opGetBalance,
   opDeriveBalance,
+  opListUtxos,
   opBroadcast,
 } from "../lib/shared.js";
 
@@ -245,6 +247,64 @@ const OPENAPI_SPEC = {
         },
       },
     },
+    "/v1/chains/{chainId}/address/{address}/utxos": {
+      get: {
+        summary:
+          "Spendable UTXO set for an address (chainId-addressed; any chain)",
+        description:
+          "The spendable UTXO set for an address on ANY chain, including " +
+          "L1/signet (which has no sidechain slot). Fully paginated upstream " +
+          "so the wallet receives the COMPLETE set for coin selection. Each " +
+          "UTXO reports the coinbase flag, confirmations, and blockHeight; " +
+          "coinbase maturity is NOT pre-filtered — the per-UTXO isCoinbase " +
+          "flag is the surgical guard the wallet applies in coin selection. " +
+          "Outputs with an indescribable script are omitted upstream, so " +
+          "every scriptPubKey is present. An unknown address is not an error " +
+          "— it returns an empty utxos array.",
+        parameters: [
+          { $ref: "#/components/parameters/ChainId" },
+          { $ref: "#/components/parameters/Address" },
+          {
+            name: "min_confirmations",
+            in: "query",
+            required: false,
+            description:
+              "Global confirmations floor applied to ALL outputs (upstream " +
+              "default 1). NOT a coinbase-maturity filter.",
+            schema: { type: "integer", minimum: 0 },
+          },
+        ],
+        responses: {
+          "200": {
+            description: "The spendable UTXO set.",
+            content: {
+              "application/json": {
+                schema: {
+                  type: "object",
+                  properties: {
+                    chainId: { type: "string" },
+                    address: { type: "string" },
+                    utxos: {
+                      type: "array",
+                      items: { $ref: "#/components/schemas/Utxo" },
+                    },
+                    truncated: {
+                      type: "boolean",
+                      description:
+                        "true if the upstream page cap was hit before the " +
+                        "full set was retrieved.",
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "400": { $ref: "#/components/responses/Error" },
+          "404": { $ref: "#/components/responses/Error" },
+          "502": { $ref: "#/components/responses/Error" },
+        },
+      },
+    },
     "/v1/chains/{chainId}/broadcast": {
       post: {
         summary: "Broadcast a signed transaction",
@@ -419,6 +479,43 @@ const OPENAPI_SPEC = {
           note: { type: "string" },
         },
       },
+      Utxo: {
+        type: "object",
+        properties: {
+          chainId: { type: "string" },
+          address: { type: "string" },
+          txid: { type: "string" },
+          vout: { type: "integer" },
+          valueSats: {
+            type: "string",
+            description: "bigint value in sats, as a decimal string.",
+          },
+          scriptPubKey: {
+            type: "string",
+            description:
+              "Locking script (scriptPubKey) as hex. Always present " +
+              "(unsignable outputs are omitted upstream).",
+          },
+          confirmations: {
+            type: "integer",
+            description:
+              "Computed upstream as tip_height - blockHeight + 1; 0 for a " +
+              "mempool output.",
+          },
+          blockHeight: {
+            type: "integer",
+            description:
+              "Confirming block height; -1 for an unconfirmed (mempool) " +
+              "output.",
+          },
+          isCoinbase: {
+            type: "boolean",
+            description:
+              "true when the funding tx is the block's coinbase. Maturity " +
+              "is NOT pre-filtered; the wallet applies the per-UTXO guard.",
+          },
+        },
+      },
       BroadcastReceipt: {
         type: "object",
         properties: {
@@ -562,6 +659,73 @@ export async function handleV1(req: Request, env: Env): Promise<Response> {
       return err(
         "balance_unavailable",
         `balance index not provisioned for "${chainId}"`,
+        502,
+      );
+    }
+    return err("upstream_error", out.message, 502);
+  }
+
+  // GET /chains/:chainId/address/:address/utxos
+  // The spendable UTXO set for an address (chainId-addressed; any chain incl.
+  // L1/signet, which has no sidechain slot). Fully paginated upstream so the
+  // wallet receives the COMPLETE set for coin selection. Mirrors the chainId
+  // balance route's addressing AND its not_provisioned-as-502 treatment: an
+  // absent UTXO index is a real upstream problem for a spendable-set query,
+  // not a "normal" empty state.
+  if (
+    parts[0] === "chains" &&
+    parts.length === 5 &&
+    parts[2] === "address" &&
+    parts[4] === "utxos"
+  ) {
+    const chainId = parts[1];
+    const address = parts[3];
+    if (!/^[a-z0-9_-]+$/i.test(chainId)) {
+      return err("unknown_chain", `invalid chainId "${chainId}"`, 404);
+    }
+    if (!/^[a-z0-9]+$/i.test(address)) {
+      return err("bad_address", `invalid address "${address}"`, 400);
+    }
+
+    // Optional global confirmations floor. NOTE: this applies to ALL outputs,
+    // not just coinbase — it is NOT a coinbase-maturity filter (the maturity
+    // guard is the wallet's surgical per-UTXO check). Upstream defaults to 1
+    // when omitted.
+    const mcRaw = url.searchParams.get("min_confirmations");
+    let minConfirmations: number | undefined;
+    if (mcRaw != null) {
+      const n = Number(mcRaw);
+      if (!Number.isInteger(n) || n < 0) {
+        return err(
+          "bad_min_confirmations",
+          `invalid min_confirmations "${mcRaw}"`,
+          400,
+        );
+      }
+      minConfirmations = n;
+    }
+
+    const out = await opListUtxos(client, chainId, address, {
+      minConfirmations,
+    });
+    if (out.kind === "ok") {
+      return json({
+        chainId,
+        address,
+        utxos: out.utxos,
+        truncated: out.truncated,
+      });
+    }
+    if (out.kind === "unknown_chain") {
+      return err("unknown_chain", `upstream has no chain "${chainId}"`, 404);
+    }
+    if (out.kind === "not_provisioned") {
+      // The UTXO index is needed to spend; absence here is a real upstream
+      // problem, not a "normal" empty state (an unknown address returns an
+      // empty set with kind "ok", not not_provisioned).
+      return err(
+        "utxos_unavailable",
+        `utxo index not provisioned for "${chainId}"`,
         502,
       );
     }
