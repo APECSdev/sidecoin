@@ -1,8 +1,10 @@
 // packages/api/src/routes/founders.ts
 //
-// Public Founders read surface (D1-backed, no auth). The public key is the
-// sole identity; it is NEVER exposed publicly — only the derived avatar_seed
-// (sha256(pubkey)) leaves the worker.
+// Public Founders read surface (D1-backed, no auth). The public key IS the
+// identity, and Founder profiles are public — so the raw pubkey (identity) is
+// exposed here intentionally to enable Nostr (NIP-19 npub) linking. Clients
+// derive the npub from `identity`; the avatar_seed (sha256(pubkey)) is still
+// provided for deterministic identicons.
 //
 //   GET /v1/founders                 -> paginated leaderboard + live cut line
 //   GET /v1/founders/:number         -> single public profile
@@ -10,7 +12,7 @@
 //
 // Profile gating: full profile (bio/links) is unlocked above the cut line
 // (pre-fork) or once is_alpha is locked (post-fork). Below the line only the
-// minimal, identity-safe fields are returned.
+// minimal public fields (incl. identity) are returned.
 
 import type { Env } from "../lib/env.js";
 import { json, err } from "../lib/shared.js";
@@ -46,8 +48,9 @@ const FOUNDER_COLUMNS =
    bio, links_json, paid_through, is_alpha, created_at`;
 
 /**
- * Shape a row for public output. NEVER includes identity (the raw pubkey).
- * Gates bio/links behind the cut line (or a locked is_alpha).
+ * Shape a row for public output. Founder profiles are public, so this now
+ * includes `identity` (the raw pubkey) for Nostr/npub linking. Gates bio/links
+ * behind the cut line (or a locked is_alpha).
  */
 function shapeFounder(row: FounderRow, total: number, now: number) {
   const line = cutLine(total);
@@ -56,12 +59,13 @@ function shapeFounder(row: FounderRow, total: number, now: number) {
 
   const base = {
     founderNumber: row.founder_number,
+    // identity (raw pubkey) is exposed so clients can render the Nostr npub.
+    identity: row.identity,
     username: row.username,
     displayName: row.display_name,
     avatarSeed: row.avatar_seed,
     // created_at is a non-sensitive join timestamp; founders are public, so
-    // exposing it powers the leaderboard "Joined" column. (identity is still
-    // NEVER exposed — only this timestamp and the avatar_seed hash.)
+    // exposing it powers the leaderboard "Joined" column.
     createdAt: row.created_at,
     isAlpha: row.is_alpha === 1,
     proActive,
@@ -129,9 +133,19 @@ async function leaderboard(env: Env, url: URL): Promise<Response> {
     limit = Math.min(n, MAX_LIMIT);
   }
 
-  // Keyset pagination by founder_number (the PK, already ordered).
+  // Sort direction over founder_number: "asc" (oldest first, default) or
+  // "desc" (newest first). Both use keyset pagination on the PK.
+  const sortRaw = (url.searchParams.get("sort") || "asc").toLowerCase();
+  if (sortRaw !== "asc" && sortRaw !== "desc") {
+    return err("bad_sort", `invalid sort "${sortRaw}"`, 400);
+  }
+  const desc = sortRaw === "desc";
+
+  // Keyset pagination by founder_number (the PK, already ordered). The cursor
+  // is the last founder_number seen; with no cursor we start at the correct
+  // edge for the chosen direction (0 for asc, +∞ for desc).
   const cursorRaw = url.searchParams.get("cursor");
-  let after = 0;
+  let after = desc ? Number.MAX_SAFE_INTEGER : 0;
   if (cursorRaw != null) {
     const n = Number(cursorRaw);
     if (!Number.isInteger(n) || n < 0) {
@@ -146,11 +160,15 @@ async function leaderboard(env: Env, url: URL): Promise<Response> {
   const total = totalRow?.c ?? 0;
 
   // Fetch limit+1 to detect another page without a second COUNT.
+  // cmp/order come from a fixed whitelist above — never user input — so the
+  // string interpolation here cannot be an injection vector.
+  const cmp = desc ? "<" : ">";
+  const order = desc ? "DESC" : "ASC";
   const { results } = await env.DB.prepare(
     `SELECT ${FOUNDER_COLUMNS}
        FROM founders
-      WHERE founder_number > ?
-      ORDER BY founder_number ASC
+      WHERE founder_number ${cmp} ?
+      ORDER BY founder_number ${order}
       LIMIT ?`,
   )
     .bind(after, limit + 1)
@@ -165,6 +183,7 @@ async function leaderboard(env: Env, url: URL): Promise<Response> {
     total,
     cutLine: cutLine(total),
     cutLinePct: CUT_LINE_PCT,
+    sort: sortRaw,
     founders: page.map((r) => shapeFounder(r, total, now)),
     nextCursor,
   });

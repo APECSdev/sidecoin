@@ -5,22 +5,25 @@
   Displays a cursor-paginated, scrollable list of Founding Members
   with Alpha Circle cut-line visualization.
 
-  Data source: GET /v1/founders?limit=50&cursor=<lastFounderNumber>
+  Data source: GET /v1/founders?limit=50&sort=asc|desc&cursor=<lastFounderNumber>
   Highlight:   GET /v1/founders/by-key/:pubkey  ("find my position")
 
   Features:
-    - Sort toggle: oldest first (default) / newest first (over loaded rows)
+    - Sort toggle: oldest first (default) / newest first — TRUE server-side
+      keyset sort (re-queries page 1), not just a reorder of loaded rows
     - Alpha Circle zone highlight, driven by the server's aboveCutLine flag
     - Visual cut-line separator at the live 20% cut line
     - Cursor "Load More" pagination (50 per page)
     - "Find my position" via the Nostr/identity public key
     - jdenticon avatars derived from avatar_seed
+    - "View on Nostr" links (NIP-19 npub derived from identity)
     - Responsive layout
 -->
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from "vue";
 import { toSvg } from "jdenticon";
+import { nip19 } from "nostr-tools";
 
 // ─── Configuration ───────────────────────────────────────
 
@@ -28,14 +31,17 @@ const API_BASE = import.meta.env.PUBLIC_API_BASE || "/v1";
 const PAGE_SIZE = 50;
 const AVATAR_SIZE = 32; // px — matches the h-8 w-8 container
 const MY_KEY_STORAGE = "sidecoin:identity_pubkey";
+const NOSTR_VIEWER = "https://njump.me"; // human-friendly npub viewer
 
 // ─── Types ───────────────────────────────────────────────
 //
 // Mirrors the public shape from packages/api/src/routes/founders.ts
-// (shapeFounder). The raw identity pubkey is intentionally NOT exposed.
+// (shapeFounder). identity is the raw 66-char compressed pubkey, exposed so
+// clients can derive the Nostr npub.
 
 interface Founder {
   founderNumber: number;
+  identity: string;
   username: string | null;
   displayName: string | null;
   avatarSeed: string;
@@ -51,6 +57,7 @@ interface LeaderboardResponse {
   total: number;
   cutLine: number;
   cutLinePct: number;
+  sort?: string;
   founders: Founder[];
   nextCursor: number | null;
 }
@@ -85,19 +92,9 @@ const myError = ref<string | null>(null);
 
 // ─── Computed ────────────────────────────────────────────
 
-// NOTE: The leaderboard route only supports ascending keyset paging, so the
-// "Newest First" toggle reorders the CURRENTLY LOADED rows client-side
-// (i.e. newest among those shown). True server-side desc paging would need a
-// `sort=desc` param on the API.
-const sortedFounders = computed(() => {
-  const arr = [...founders.value];
-  if (sortOrder.value === "desc") {
-    arr.sort((a, b) => b.founderNumber - a.founderNumber);
-  } else {
-    arr.sort((a, b) => a.founderNumber - b.founderNumber);
-  }
-  return arr;
-});
+// The API returns rows already sorted by the active `sort` direction, so we
+// render them as-is. (Kept as a computed so the template binding is stable.)
+const sortedFounders = computed(() => founders.value);
 
 const hasMore = computed(() => nextCursor.value !== null);
 
@@ -112,7 +109,10 @@ const myFounderNumber = computed(() =>
 // ─── Data Loading ────────────────────────────────────────
 
 async function fetchPage(cursor: number | null): Promise<void> {
-  const params = new URLSearchParams({ limit: String(PAGE_SIZE) });
+  const params = new URLSearchParams({
+    limit: String(PAGE_SIZE),
+    sort: sortOrder.value,
+  });
   if (cursor != null) params.set("cursor", String(cursor));
 
   const res = await fetch(`${API_BASE}/founders?${params}`);
@@ -197,6 +197,9 @@ function clearMe(): void {
 
 function toggleSort(): void {
   sortOrder.value = sortOrder.value === "asc" ? "desc" : "asc";
+  // TRUE server-side sort: re-query page 1 with the new direction so the whole
+  // dataset reorders, not just the rows already loaded.
+  loadInitial();
 }
 
 function formatDate(unixSeconds: number): string {
@@ -217,6 +220,36 @@ function displayName(founder: Founder): string {
 /** Deterministic identicon SVG from the avatar_seed (sha256 of the pubkey). */
 function avatarSvg(seed: string): string {
   return toSvg(seed, AVATAR_SIZE);
+}
+
+// ─── Nostr / npub ────────────────────────────────────────
+//
+// `identity` is the 66-char compressed secp256k1 pubkey (02/03 parity prefix +
+// the 32-byte X coordinate). A Nostr pubkey is the X-only coordinate, so we
+// drop the leading prefix byte before NIP-19 npub-encoding. Memoized because
+// this is called per-row during render.
+
+const npubCache = new Map<string, string>();
+
+function npubOf(identity: string): string {
+  if (!identity || identity.length < 66) return "";
+  const cached = npubCache.get(identity);
+  if (cached !== undefined) return cached;
+  try {
+    const xOnly = identity.slice(2); // strip 02/03 parity prefix → X-only
+    const npub = nip19.npubEncode(xOnly);
+    npubCache.set(identity, npub);
+    return npub;
+  } catch (err) {
+    console.error("[founders] npub encode failed", err);
+    npubCache.set(identity, "");
+    return "";
+  }
+}
+
+function nostrUrl(identity: string): string {
+  const npub = npubOf(identity);
+  return npub ? `${NOSTR_VIEWER}/${npub}` : "";
 }
 
 /** Row sits in the Alpha zone (server-computed: live 20% OR locked is_alpha). */
@@ -337,6 +370,18 @@ onMounted(() => {
                 spots from the cut line
               </span>
             </p>
+            <a
+              v-if="nostrUrl(myResult.founder.identity)"
+              :href="nostrUrl(myResult.founder.identity)"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="mt-1 inline-flex items-center gap-1 text-[11px] font-semibold text-purple-400 transition-colors hover:text-purple-300"
+            >
+              View on Nostr
+              <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+              </svg>
+            </a>
           </div>
           <button
             @click="clearMe"
@@ -476,6 +521,19 @@ onMounted(() => {
               >
                 Early
               </span>
+              <!-- View on Nostr (npub derived from identity) -->
+              <a
+                v-if="nostrUrl(founder.identity)"
+                :href="nostrUrl(founder.identity)"
+                target="_blank"
+                rel="noopener noreferrer"
+                class="flex-shrink-0 text-gray-600 transition-colors hover:text-purple-400"
+                title="View on Nostr"
+              >
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+                </svg>
+              </a>
             </div>
 
             <!-- Joined Date -->
