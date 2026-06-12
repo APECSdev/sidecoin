@@ -2,17 +2,17 @@
 //
 // Tests for the NOWPayments API client functions.
 // Uses fetch mocking — no real network calls.
-// Covers getAvailableCurrencies, getEstimate, createPayment,
-// getPaymentStatus, and getMinimumAmount.
+// WHITE-LABEL: these functions talk ONLY to our own Worker (/v1/pay/*),
+// never to NOWPayments directly, and the browser never holds the API key.
+// Covers getAvailableCurrencies, createPayment, and getPaymentStatus.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
   getAvailableCurrencies,
-  getEstimate,
   createPayment,
   getPaymentStatus,
-  getMinimumAmount,
 } from "../lib/nowpayments";
+import type { CreatePaymentRequest } from "../lib/nowpayments";
 
 // ---------------------------------------------------------------------------
 // Global fetch mock
@@ -123,186 +123,107 @@ describe("getAvailableCurrencies", () => {
 });
 
 // ---------------------------------------------------------------------------
-// getEstimate
-// ---------------------------------------------------------------------------
-
-describe("getEstimate", () => {
-  it("should return estimated amount on success", async () => {
-    mockFetchResponse({
-      estimated_amount: 0.00042,
-      currency_from: "usd",
-      currency_to: "btc",
-    });
-
-    const result = await getEstimate(25, "btc");
-
-    expect(result.estimated_amount).toBe(0.00042);
-    expect(result.currency_from).toBe("usd");
-    expect(result.currency_to).toBe("btc");
-  });
-
-  it("should pass amount and currencies as query params", async () => {
-    mockFetchResponse({
-      estimated_amount: 0.015,
-      currency_from: "usd",
-      currency_to: "eth",
-    });
-
-    await getEstimate(35, "ETH");
-
-    const call = findCall("/estimate");
-    expect(call).toBeDefined();
-    const url = call![0];
-    expect(url).toContain("amount=35");
-    expect(url).toContain("currency_from=usd");
-    expect(url).toContain("currency_to=eth");
-  });
-
-  it("should lowercase the currency parameter", async () => {
-    mockFetchResponse({
-      estimated_amount: 25,
-      currency_from: "usd",
-      currency_to: "usdcerc20",
-    });
-
-    await getEstimate(25, "USDCERC20");
-
-    const call = findCall("/estimate");
-    expect(call).toBeDefined();
-    expect(call![0]).toContain("currency_to=usdcerc20");
-  });
-
-  it("should throw on HTTP error", async () => {
-    mockFetchResponse("Bad request", 400);
-
-    await expect(getEstimate(25, "btc")).rejects.toThrow("Estimate failed: 400");
-  });
-
-  it("should throw on network error", async () => {
-    mockFetchError("timeout");
-
-    await expect(getEstimate(25, "btc")).rejects.toThrow("timeout");
-  });
-});
-
-// ---------------------------------------------------------------------------
 // createPayment
 // ---------------------------------------------------------------------------
 
 describe("createPayment", () => {
-  const testApiKey = "test-api-key-12345";
-
-  const testRequest = {
-    price_amount: 25,
-    price_currency: "usd",
-    pay_currency: "btc",
-    order_id: "pro-1y-1234567890",
-    order_description: "Founding Member — 1 Year",
+  const testRequest: CreatePaymentRequest = {
+    plan: "monthly",
+    quantity: 1,
+    publicKey: "0317162c921dc4d2518f9a101db33695df1afb56ab82f5ff3e5da6eec3ca5cd917",
+    payCurrency: "btc",
   };
 
   it("should return payment data on success", async () => {
     const mockPayment = {
-      payment_id: "pay-abc-123",
-      payment_status: "waiting",
-      pay_address: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
-      pay_amount: 0.00042,
-      pay_currency: "btc",
-      price_amount: 25,
-      price_currency: "usd",
-      order_id: "pro-1y-1234567890",
-      order_description: "Founding Member — 1 Year",
-      created_at: "2026-05-31T00:00:00Z",
-      expiration_estimate_date: "2026-05-31T00:20:00Z",
-      purchase_id: "purch-xyz",
+      orderId: "monthly-1234567890",
+      paymentId: "pay-abc-123",
+      payAddress: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+      payAmount: 0.00042,
+      payCurrency: "btc",
+      priceAmountUsd: 5,
+      durationMonths: 1,
+      expiresAt: "2026-05-31T00:20:00Z",
     };
 
     mockFetchResponse(mockPayment);
 
-    const result = await createPayment(testApiKey, testRequest);
+    const result = await createPayment(testRequest);
 
-    expect(result.payment_id).toBe("pay-abc-123");
-    expect(result.pay_address).toBe("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
-    expect(result.pay_amount).toBe(0.00042);
+    expect(result.paymentId).toBe("pay-abc-123");
+    expect(result.payAddress).toBe("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
+    expect(result.payAmount).toBe(0.00042);
   });
 
-  it("should include x-api-key header", async () => {
+  it("should NOT include an api key header (white-label: key stays in the Worker)", async () => {
     mockFetchResponse({
-      payment_id: "pay-1",
-      payment_status: "waiting",
-      pay_address: "addr",
-      pay_amount: 1,
-      pay_currency: "btc",
-      price_amount: 25,
-      price_currency: "usd",
-      order_id: "o1",
-      order_description: "test",
-      created_at: "2026-01-01T00:00:00Z",
-      expiration_estimate_date: "2026-01-01T00:20:00Z",
-      purchase_id: "p1",
+      orderId: "o1",
+      paymentId: "pay-1",
+      payAddress: "addr",
+      payAmount: 1,
+      payCurrency: "btc",
+      priceAmountUsd: 5,
+      durationMonths: 1,
+      expiresAt: null,
     });
 
-    await createPayment(testApiKey, testRequest);
+    await createPayment(testRequest);
 
-    const call = findCall("/payment");
+    const call = findCall("/pay/create");
     expect(call).toBeDefined();
     const headers = call![1]?.headers as Record<string, string>;
-    expect(headers["x-api-key"]).toBe(testApiKey);
+    expect(headers["x-api-key"]).toBeUndefined();
+    expect(headers["Content-Type"]).toBe("application/json");
   });
 
-  it("should use POST method", async () => {
+  it("should call our own /pay/create endpoint with POST", async () => {
     mockFetchResponse({
-      payment_id: "pay-1",
-      payment_status: "waiting",
-      pay_address: "addr",
-      pay_amount: 1,
-      pay_currency: "btc",
-      price_amount: 25,
-      price_currency: "usd",
-      order_id: "o1",
-      order_description: "test",
-      created_at: "2026-01-01T00:00:00Z",
-      expiration_estimate_date: "2026-01-01T00:20:00Z",
-      purchase_id: "p1",
+      orderId: "o1",
+      paymentId: "pay-1",
+      payAddress: "addr",
+      payAmount: 1,
+      payCurrency: "btc",
+      priceAmountUsd: 5,
+      durationMonths: 1,
+      expiresAt: null,
     });
 
-    await createPayment(testApiKey, testRequest);
+    await createPayment(testRequest);
 
-    const call = findCall("/payment");
+    const call = findCall("/pay/create");
     expect(call).toBeDefined();
+    expect(call![0]).toContain("/pay/create");
     expect(call![1]?.method).toBe("POST");
   });
 
   it("should stringify the request body", async () => {
     mockFetchResponse({
-      payment_id: "pay-1",
-      payment_status: "waiting",
-      pay_address: "addr",
-      pay_amount: 1,
-      pay_currency: "btc",
-      price_amount: 25,
-      price_currency: "usd",
-      order_id: "o1",
-      order_description: "test",
-      created_at: "2026-01-01T00:00:00Z",
-      expiration_estimate_date: "2026-01-01T00:20:00Z",
-      purchase_id: "p1",
+      orderId: "o1",
+      paymentId: "pay-1",
+      payAddress: "addr",
+      payAmount: 1,
+      payCurrency: "btc",
+      priceAmountUsd: 5,
+      durationMonths: 1,
+      expiresAt: null,
     });
 
-    await createPayment(testApiKey, testRequest);
+    await createPayment(testRequest);
 
-    const call = findCall("/payment");
+    const call = findCall("/pay/create");
     expect(call).toBeDefined();
     const body = call![1]?.body as string;
     const parsed = JSON.parse(body);
-    expect(parsed.price_amount).toBe(25);
-    expect(parsed.pay_currency).toBe("btc");
-    expect(parsed.order_id).toBe("pro-1y-1234567890");
+    expect(parsed.plan).toBe("monthly");
+    expect(parsed.quantity).toBe(1);
+    expect(parsed.payCurrency).toBe("btc");
+    expect(parsed.publicKey).toBe(testRequest.publicKey);
   });
 
   it("should throw on HTTP error with body", async () => {
     mockFetchResponse({ message: "Invalid currency" }, 400);
 
-    await expect(createPayment(testApiKey, testRequest)).rejects.toThrow(
+    await expect(createPayment(testRequest)).rejects.toThrow(
       "Create payment failed: 400",
     );
   });
@@ -310,7 +231,7 @@ describe("createPayment", () => {
   it("should throw on network error", async () => {
     mockFetchError("connection refused");
 
-    await expect(createPayment(testApiKey, testRequest)).rejects.toThrow(
+    await expect(createPayment(testRequest)).rejects.toThrow(
       "connection refused",
     );
   });
@@ -321,162 +242,108 @@ describe("createPayment", () => {
 // ---------------------------------------------------------------------------
 
 describe("getPaymentStatus", () => {
-  const testApiKey = "test-api-key-12345";
-
   it("should return payment status on success", async () => {
     mockFetchResponse({
-      payment_id: "pay-abc-123",
-      payment_status: "waiting",
-      pay_amount: 0.00042,
-      actually_paid: 0,
-      pay_currency: "btc",
-      outcome_amount: 0,
-      outcome_currency: "btc",
+      paymentId: "pay-abc-123",
+      orderId: "monthly-1234567890",
+      paymentStatus: "waiting",
+      payAmount: 0.00042,
+      actuallyPaid: 0,
+      payCurrency: "btc",
+      confirmed: false,
+      founderNumber: null,
     });
 
-    const result = await getPaymentStatus(testApiKey, "pay-abc-123");
+    const result = await getPaymentStatus("pay-abc-123");
 
-    expect(result.payment_id).toBe("pay-abc-123");
-    expect(result.payment_status).toBe("waiting");
-    expect(result.actually_paid).toBe(0);
+    expect(result.paymentId).toBe("pay-abc-123");
+    expect(result.paymentStatus).toBe("waiting");
+    expect(result.actuallyPaid).toBe(0);
   });
 
-  it("should include api key in headers", async () => {
+  it("should NOT include an api key header (white-label: key stays in the Worker)", async () => {
     mockFetchResponse({
-      payment_id: "pay-1",
-      payment_status: "finished",
-      pay_amount: 1,
-      actually_paid: 1,
-      pay_currency: "btc",
-      outcome_amount: 1,
-      outcome_currency: "btc",
+      paymentId: "pay-1",
+      orderId: "o1",
+      paymentStatus: "finished",
+      payAmount: 1,
+      actuallyPaid: 1,
+      payCurrency: "btc",
+      confirmed: true,
+      founderNumber: 42,
     });
 
-    await getPaymentStatus(testApiKey, "pay-1");
+    await getPaymentStatus("pay-1");
 
-    const call = findCall("/payment/pay-1");
+    const call = findCall("/pay/status");
     expect(call).toBeDefined();
     const headers = call![1]?.headers as Record<string, string>;
-    expect(headers["x-api-key"]).toBe(testApiKey);
+    expect(headers["x-api-key"]).toBeUndefined();
+    expect(headers["Content-Type"]).toBe("application/json");
   });
 
-  it("should include payment ID in the URL path", async () => {
+  it("should include the payment ID in the query string", async () => {
     mockFetchResponse({
-      payment_id: "pay-xyz-789",
-      payment_status: "confirming",
-      pay_amount: 0.5,
-      actually_paid: 0.5,
-      pay_currency: "eth",
-      outcome_amount: 0.5,
-      outcome_currency: "eth",
+      paymentId: "pay-xyz-789",
+      orderId: "o1",
+      paymentStatus: "confirming",
+      payAmount: 0.5,
+      actuallyPaid: 0.5,
+      payCurrency: "eth",
+      confirmed: false,
+      founderNumber: null,
     });
 
-    await getPaymentStatus(testApiKey, "pay-xyz-789");
+    await getPaymentStatus("pay-xyz-789");
 
-    const call = findCall("/payment/pay-xyz-789");
+    const call = findCall("/pay/status");
     expect(call).toBeDefined();
-    expect(call![0]).toContain("/payment/pay-xyz-789");
+    expect(call![0]).toContain("paymentId=pay-xyz-789");
   });
 
   it("should throw on HTTP error", async () => {
     mockFetchResponse({ message: "Not found" }, 404);
 
-    await expect(getPaymentStatus(testApiKey, "bad-id")).rejects.toThrow(
+    await expect(getPaymentStatus("bad-id")).rejects.toThrow(
       "Payment status check failed: 404",
     );
   });
 
   it("should report finished status", async () => {
     mockFetchResponse({
-      payment_id: "pay-done",
-      payment_status: "finished",
-      pay_amount: 0.00042,
-      actually_paid: 0.00042,
-      pay_currency: "btc",
-      outcome_amount: 25,
-      outcome_currency: "usd",
+      paymentId: "pay-done",
+      orderId: "o1",
+      paymentStatus: "finished",
+      payAmount: 0.00042,
+      actuallyPaid: 0.00042,
+      payCurrency: "btc",
+      confirmed: true,
+      founderNumber: 7,
     });
 
-    const result = await getPaymentStatus(testApiKey, "pay-done");
+    const result = await getPaymentStatus("pay-done");
 
-    expect(result.payment_status).toBe("finished");
-    expect(result.actually_paid).toBe(result.pay_amount);
+    expect(result.paymentStatus).toBe("finished");
+    expect(result.actuallyPaid).toBe(result.payAmount);
+    expect(result.confirmed).toBe(true);
+    expect(result.founderNumber).toBe(7);
   });
 
   it("should report partially_paid status", async () => {
     mockFetchResponse({
-      payment_id: "pay-partial",
-      payment_status: "partially_paid",
-      pay_amount: 0.00042,
-      actually_paid: 0.00020,
-      pay_currency: "btc",
-      outcome_amount: 12,
-      outcome_currency: "usd",
+      paymentId: "pay-partial",
+      orderId: "o1",
+      paymentStatus: "partially_paid",
+      payAmount: 0.00042,
+      actuallyPaid: 0.00020,
+      payCurrency: "btc",
+      confirmed: false,
+      founderNumber: null,
     });
 
-    const result = await getPaymentStatus(testApiKey, "pay-partial");
+    const result = await getPaymentStatus("pay-partial");
 
-    expect(result.payment_status).toBe("partially_paid");
-    expect(result.actually_paid).toBeLessThan(result.pay_amount);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// getMinimumAmount
-// ---------------------------------------------------------------------------
-
-describe("getMinimumAmount", () => {
-  it("should return minimum amount on success", async () => {
-    mockFetchResponse({ min_amount: 0.0001 });
-
-    const result = await getMinimumAmount("btc");
-
-    expect(result).toBe(0.0001);
-  });
-
-  it("should lowercase the currency in query params", async () => {
-    mockFetchResponse({ min_amount: 0.01 });
-
-    await getMinimumAmount("ETH");
-
-    const call = findCall("/min-amount");
-    expect(call).toBeDefined();
-    const url = call![0];
-    expect(url).toContain("currency_from=eth");
-    expect(url).toContain("currency_to=eth");
-  });
-
-  it("should return 0 on HTTP error (graceful fallback)", async () => {
-    mockFetchResponse({ message: "error" }, 500);
-
-    const result = await getMinimumAmount("btc");
-
-    expect(result).toBe(0);
-  });
-
-  it("should return 0 on network error (graceful fallback)", async () => {
-    mockFetchError("timeout");
-
-    const result = await getMinimumAmount("btc");
-
-    expect(result).toBe(0);
-  });
-
-  it("should return 0 when min_amount is missing from response", async () => {
-    mockFetchResponse({});
-
-    const result = await getMinimumAmount("btc");
-
-    expect(result).toBe(0);
-  });
-
-  it("should use GET method", async () => {
-    mockFetchResponse({ min_amount: 0.5 });
-
-    await getMinimumAmount("ltc");
-
-    const call = findCall("/min-amount");
-    expect(call).toBeDefined();
-    expect(call![1]?.method).toBe("GET");
+    expect(result.paymentStatus).toBe("partially_paid");
+    expect(result.actuallyPaid!).toBeLessThan(result.payAmount!);
   });
 });
