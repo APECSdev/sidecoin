@@ -13,11 +13,9 @@ import {
 } from "../lib/nowpayments";
 import type {
   Plan,
-  EstimateResponse,
-  InvoiceRequest,
+  CreatePaymentRequest,
   PaymentResponse,
   PaymentStatus,
-  CurrencyInfo,
 } from "../lib/nowpayments";
 
 // ---------------------------------------------------------------------------
@@ -28,30 +26,30 @@ describe("PLANS", () => {
   it("should define exactly two plans", () => {
     const planIds = Object.keys(PLANS);
     expect(planIds).toHaveLength(2);
-    expect(planIds).toContain("pro-1y");
-    expect(planIds).toContain("pro-2y");
+    expect(planIds).toContain("monthly");
+    expect(planIds).toContain("yearly");
   });
 
-  it("should have correct 1-year plan details", () => {
-    const plan = PLANS["pro-1y"];
-    expect(plan.id).toBe("pro-1y");
-    expect(plan.label).toBe("Founding Member — 1 Year");
-    expect(plan.priceUSD).toBe(25);
-    expect(plan.durationMonths).toBe(12);
+  it("should have correct monthly plan details", () => {
+    const plan = PLANS["monthly"];
+    expect(plan.id).toBe("monthly");
+    expect(plan.label).toBe("Sidecoin PRO — Monthly");
+    expect(plan.priceUSD).toBe(5);
+    expect(plan.periodUnit).toBe("month");
   });
 
-  it("should have correct 2-year plan details", () => {
-    const plan = PLANS["pro-2y"];
-    expect(plan.id).toBe("pro-2y");
-    expect(plan.label).toBe("Founding Member — 2 Years");
-    expect(plan.priceUSD).toBe(35);
-    expect(plan.durationMonths).toBe(24);
+  it("should have correct yearly plan details", () => {
+    const plan = PLANS["yearly"];
+    expect(plan.id).toBe("yearly");
+    expect(plan.label).toBe("Sidecoin PRO — Yearly");
+    expect(plan.priceUSD).toBe(36);
+    expect(plan.periodUnit).toBe("year");
   });
 
-  it("should price the 2-year plan lower per-month than 1-year", () => {
-    const perMonth1y = PLANS["pro-1y"].priceUSD / PLANS["pro-1y"].durationMonths;
-    const perMonth2y = PLANS["pro-2y"].priceUSD / PLANS["pro-2y"].durationMonths;
-    expect(perMonth2y).toBeLessThan(perMonth1y);
+  it("should price the yearly plan lower per-month than monthly", () => {
+    const perMonthMonthly = PLANS["monthly"].priceUSD; // 5 / month
+    const perMonthYearly = PLANS["yearly"].priceUSD / 12; // 36 / 12 = 3 / month
+    expect(perMonthYearly).toBeLessThan(perMonthMonthly);
   });
 
   it("should have positive USD prices for all plans", () => {
@@ -60,9 +58,9 @@ describe("PLANS", () => {
     }
   });
 
-  it("should have positive duration for all plans", () => {
+  it("should have a valid period unit for all plans", () => {
     for (const plan of Object.values(PLANS)) {
-      expect(plan.durationMonths).toBeGreaterThan(0);
+      expect(["month", "year"]).toContain(plan.periodUnit);
     }
   });
 
@@ -100,8 +98,16 @@ describe("FEATURED_CURRENCIES", () => {
     expect(FEATURED_CURRENCIES).toContain("ltc");
   });
 
-  it("should have exactly 4 featured currencies", () => {
-    expect(FEATURED_CURRENCIES).toHaveLength(4);
+  it("should include XEC (eCash)", () => {
+    expect(FEATURED_CURRENCIES).toContain("xec");
+  });
+
+  it("should include SOL", () => {
+    expect(FEATURED_CURRENCIES).toContain("sol");
+  });
+
+  it("should have exactly 6 featured currencies", () => {
+    expect(FEATURED_CURRENCIES).toHaveLength(6);
   });
 
   it("should contain only lowercase strings", () => {
@@ -135,6 +141,11 @@ describe("buildPaymentURI", () => {
     it("should build a dogecoin: URI for DOGE", () => {
       const uri = buildPaymentURI("doge", "DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L", 100);
       expect(uri).toBe("dogecoin:DH5yaieqoZN36fDVciNyRueRGvGLR3mr7L?amount=100");
+    });
+
+    it("should build an ecash: URI for XEC", () => {
+      const uri = buildPaymentURI("xec", "ecash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a", 1000);
+      expect(uri).toBe("ecash:ecash:qpm2qsznhks23z7629mms6s4cwef74vcwvy22gdx6a?amount=1000");
     });
 
     it("should handle uppercase currency code for BTC", () => {
@@ -223,54 +234,65 @@ describe("buildPaymentURI", () => {
 describe("Type exports", () => {
   it("should export Plan type with required fields", () => {
     const plan: Plan = {
-      id: "pro-1y",
+      id: "monthly",
       label: "Test",
-      priceUSD: 10,
-      durationMonths: 12,
+      priceUSD: 5,
+      periodUnit: "month",
     };
-    expect(plan.id).toBe("pro-1y");
+    expect(plan.id).toBe("monthly");
   });
 
-  it("should export EstimateResponse type", () => {
-    const est: EstimateResponse = {
-      estimated_amount: 0.00042,
-      currency_from: "usd",
-      currency_to: "btc",
+  it("should export CreatePaymentRequest type", () => {
+    const req: CreatePaymentRequest = {
+      plan: "monthly",
+      quantity: 1,
+      publicKey: "02abc",
+      payCurrency: "btc",
     };
-    expect(est.estimated_amount).toBe(0.00042);
+    expect(req.plan).toBe("monthly");
   });
 
-  it("should export InvoiceRequest type", () => {
-    const req: InvoiceRequest = {
-      price_amount: 25,
-      price_currency: "usd",
-      pay_currency: "btc",
-      order_id: "test-123",
-      order_description: "Test order",
+  it("should allow CreatePaymentRequest with an optional email", () => {
+    const req: CreatePaymentRequest = {
+      plan: "yearly",
+      quantity: 2,
+      publicKey: "02abc",
+      payCurrency: "eth",
+      email: "founder@example.com",
     };
-    expect(req.price_amount).toBe(25);
+    expect(req.email).toBe("founder@example.com");
   });
 
   it("should export PaymentResponse type", () => {
     const res: PaymentResponse = {
-      payment_id: "pay-123",
-      payment_status: "waiting",
-      pay_address: "1addr",
-      pay_amount: 0.00042,
-      pay_currency: "btc",
-      price_amount: 25,
-      price_currency: "usd",
-      order_id: "order-1",
-      order_description: "Test",
-      created_at: "2026-01-01T00:00:00Z",
-      expiration_estimate_date: "2026-01-01T00:20:00Z",
-      purchase_id: "purch-1",
+      orderId: "order-1",
+      paymentId: "pay-123",
+      payAddress: "1addr",
+      payAmount: 0.00042,
+      payCurrency: "btc",
+      priceAmountUsd: 5,
+      durationMonths: 1,
+      expiresAt: "2026-01-01T00:20:00Z",
     };
-    expect(res.payment_id).toBe("pay-123");
+    expect(res.paymentId).toBe("pay-123");
+  });
+
+  it("should allow PaymentResponse with a null expiresAt", () => {
+    const res: PaymentResponse = {
+      orderId: "order-1",
+      paymentId: "pay-123",
+      payAddress: "1addr",
+      payAmount: 0.00042,
+      payCurrency: "btc",
+      priceAmountUsd: 5,
+      durationMonths: 1,
+      expiresAt: null,
+    };
+    expect(res.expiresAt).toBeNull();
   });
 
   it("should export PaymentStatus type with all status values", () => {
-    const statuses: PaymentStatus["payment_status"][] = [
+    const statuses: PaymentStatus["paymentStatus"][] = [
       "waiting",
       "confirming",
       "confirmed",
@@ -280,24 +302,23 @@ describe("Type exports", () => {
       "failed",
       "refunded",
       "expired",
+      "unknown",
     ];
-    expect(statuses).toHaveLength(9);
+    expect(statuses).toHaveLength(10);
   });
 
-  it("should export CurrencyInfo type", () => {
-    const info: CurrencyInfo = {
-      code: "btc",
-      name: "Bitcoin",
-      minAmount: 0.0001,
+  it("should export PaymentStatus type with founder fields", () => {
+    const status: PaymentStatus = {
+      paymentId: "pay-123",
+      orderId: "order-1",
+      paymentStatus: "waiting",
+      payAmount: 0.00042,
+      actuallyPaid: 0,
+      payCurrency: "btc",
+      confirmed: false,
+      founderNumber: null,
     };
-    expect(info.code).toBe("btc");
-  });
-
-  it("should allow CurrencyInfo without optional minAmount", () => {
-    const info: CurrencyInfo = {
-      code: "eth",
-      name: "Ethereum",
-    };
-    expect(info.minAmount).toBeUndefined();
+    expect(status.confirmed).toBe(false);
+    expect(status.founderNumber).toBeNull();
   });
 });

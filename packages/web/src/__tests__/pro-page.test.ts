@@ -24,12 +24,12 @@ describe("Pro Page — Pricing Integrity", () => {
     expect(Object.keys(PLANS)).toHaveLength(2);
   });
 
-  it("should price the 1-year plan at 25 USD", () => {
-    expect(PLANS["pro-1y"].priceUSD).toBe(25);
+  it("should price the monthly plan at 5 USD", () => {
+    expect(PLANS["monthly"].priceUSD).toBe(5);
   });
 
-  it("should price the 2-year plan at 35 USD", () => {
-    expect(PLANS["pro-2y"].priceUSD).toBe(35);
+  it("should price the yearly plan at 36 USD", () => {
+    expect(PLANS["yearly"].priceUSD).toBe(36);
   });
 
   it("should NOT show a 50% discount anywhere in plan labels", () => {
@@ -40,19 +40,18 @@ describe("Pro Page — Pricing Integrity", () => {
     }
   });
 
-  it("should use 'Founding Member' language in plan labels", () => {
+  it("should use 'Sidecoin PRO' language in plan labels", () => {
     for (const plan of Object.values(PLANS)) {
-      expect(plan.label).toContain("Founding Member");
+      expect(plan.label).toContain("Sidecoin PRO");
     }
   });
 
-  it("should have the 2-year plan as best value (lower per-month)", () => {
-    const monthly1y = PLANS["pro-1y"].priceUSD / PLANS["pro-1y"].durationMonths;
-    const monthly2y = PLANS["pro-2y"].priceUSD / PLANS["pro-2y"].durationMonths;
-    // ~2.08 vs ~1.46
-    expect(monthly2y).toBeLessThan(monthly1y);
-    expect(monthly2y).toBeCloseTo(1.458, 2);
-    expect(monthly1y).toBeCloseTo(2.083, 2);
+  it("should have the yearly plan as best value (lower per-month)", () => {
+    const monthlyPerMonth = PLANS["monthly"].priceUSD; // 5 / month
+    const yearlyPerMonth = PLANS["yearly"].priceUSD / 12; // 36 / 12 = 3 / month
+    expect(yearlyPerMonth).toBeLessThan(monthlyPerMonth);
+    expect(yearlyPerMonth).toBeCloseTo(3, 2);
+    expect(monthlyPerMonth).toBe(5);
   });
 
   it("should not have any free plans", () => {
