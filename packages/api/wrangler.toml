@@ -17,3 +17,12 @@ routes = [
 # Public base of the upstream SupaQt read API. Overridable per-env.
 [vars]
 SUPAQT_BASE_URL = "https://supaqt.com/v1"
+
+# Founders + payments store. Bound as DB; written by routes/payments.ts
+# (webhook mints/credits) and read by routes/founders.ts (leaderboard).
+# Secrets NOWPAYMENTS_API_KEY, NOWPAYMENTS_IPN_SECRET (and later
+# RESEND_API_KEY) are set via `wrangler secret put`, NOT here.
+[[d1_databases]]
+binding = "DB"
+database_name = "sidecoin-founders"
+database_id = "912dadd5-a54e-4c51-9d67-11cc86de5c18"

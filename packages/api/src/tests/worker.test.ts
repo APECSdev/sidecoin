@@ -8,7 +8,12 @@ async function readJson<T = any>(res: Response): Promise<T> {
   return (await res.json()) as T;
 }
 
-const ENV: Env = { SUPAQT_BASE_URL: "https://supaqt.test/v1" };
+const ENV: Env = {
+  SUPAQT_BASE_URL: "https://supaqt.test/v1",
+  // Payment/founder routes are not exercised by these upstream-adapter tests;
+  // a stub satisfies the widened Env without pulling in a D1 mock.
+  DB: {} as unknown as D1Database,
+};
 
 function upstream(
   routes: Record<string, { status: number; body: unknown }>,

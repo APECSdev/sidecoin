@@ -11,6 +11,7 @@ interface Props {
   period: string;
   label?: string;
   featured?: boolean;
+  priceNote?: string;
   features: string[];
 }
 
@@ -21,6 +22,7 @@ const {
   period,
   label,
   featured = false,
+  priceNote,
   features,
 } = Astro.props;
 ---
@@ -64,12 +66,11 @@ const {
   </div>
 
   <!-- Per-month breakdown -->
-  <p class="mt-2 text-center text-xs text-gray-500">
-    {price === 35
-      ? "~1.46 USD / month"
-      : "~2.08 USD / month"
-    }
-  </p>
+  {priceNote && (
+    <p class="mt-2 text-center text-xs text-gray-500">
+      {priceNote}
+    </p>
+  )}
 
   <!-- Features -->
   <ul class="mt-8 flex-1 space-y-3">

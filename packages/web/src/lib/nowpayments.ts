@@ -1,24 +1,28 @@
 // packages/web/src/lib/nowpayments.ts
 //
-// NOWPayments API client for Sidecoin Pro purchases.
-// Uses the NOWPayments REST API directly (no hosted checkout).
+// Sidecoin Pro payment client. WHITE-LABEL: this talks ONLY to our own API
+// (/v1/pay/*), never to NOWPayments directly. The API key lives exclusively
+// in the Worker (sidecoin-api); the browser never sees it, and the user never
+// sees NOWPayments branding.
 //
-// Docs: https://documenter.getpostman.com/view/7907941/S1a32n38
+// Endpoints (served by packages/api/src/routes/payments.ts):
+//   POST /v1/pay/create            -> create a direct crypto payment
+//   GET  /v1/pay/status?paymentId= -> live status + founder number
+//   GET  /v1/pay/currencies        -> available pay currencies
 //
-// Environment variables (set in Cloudflare Pages dashboard):
-//   PUBLIC_NOWPAYMENTS_API_URL — base URL (default: https://api.nowpayments.io/v1)
-//   NOWPAYMENTS_API_KEY        — API key (server-side only, used via proxy/edge fn)
+// Env:
+//   PUBLIC_API_BASE — base of our API (default "/v1", same-origin in prod).
+//     Override in local dev, e.g. "https://sidecoin.app/v1".
 
 // ─── Configuration ───────────────────────────────────────────
 
-const API_URL =
-  (typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_NOWPAYMENTS_API_URL) ||
-  "https://api.nowpayments.io/v1";
+const API_BASE =
+  (typeof import.meta !== "undefined" && import.meta.env?.PUBLIC_API_BASE) ||
+  "/v1";
 
 // ─── Debug Logging ───────────────────────────────────────────
 
-const DEBUG =
-  typeof import.meta !== "undefined" && import.meta.env?.DEV;
+const DEBUG = typeof import.meta !== "undefined" && import.meta.env?.DEV;
 
 function debug(...args: unknown[]): void {
   if (DEBUG) {
@@ -33,80 +37,65 @@ function debugError(...args: unknown[]): void {
 // ─── Types ───────────────────────────────────────────────────
 
 export interface Plan {
-  id: "pro-1y" | "pro-2y";
+  id: "monthly" | "yearly";
   label: string;
   priceUSD: number;
-  durationMonths: number;
+  /** Unit of one quantity step, for the duration stepper labels. */
+  periodUnit: "month" | "year";
 }
 
 export const PLANS: Record<string, Plan> = {
-  "pro-1y": {
-    id: "pro-1y",
-    label: "Founding Member — 1 Year",
-    priceUSD: 25,
-    durationMonths: 12,
+  monthly: {
+    id: "monthly",
+    label: "Sidecoin PRO — Monthly",
+    priceUSD: 5,
+    periodUnit: "month",
   },
-  "pro-2y": {
-    id: "pro-2y",
-    label: "Founding Member — 2 Years",
-    priceUSD: 35,
-    durationMonths: 24,
+  yearly: {
+    id: "yearly",
+    label: "Sidecoin PRO — Yearly",
+    priceUSD: 36,
+    periodUnit: "year",
   },
 };
 
-/** Curated list of cryptocurrencies shown by default */
-export const FEATURED_CURRENCIES = ["btc", "eth", "usdcerc20", "ltc"] as const;
+/** Curated list of cryptocurrencies shown by default. xec = eCash. */
+export const FEATURED_CURRENCIES = [
+  "btc",
+  "eth",
+  "usdcerc20",
+  "ltc",
+  "xec",
+  "sol",
+] as const;
 
-export interface CurrencyInfo {
-  code: string;
-  name: string;
-  /** Minimum payment amount in this currency */
-  minAmount?: number;
+/** Request body for POST /v1/pay/create. */
+export interface CreatePaymentRequest {
+  plan: "monthly" | "yearly";
+  quantity: number;
+  publicKey: string;
+  payCurrency: string;
+  email?: string;
 }
 
-export interface EstimateResponse {
-  /** Estimated crypto amount to pay */
-  estimated_amount: number;
-  currency_from: string;
-  currency_to: string;
-}
-
-export interface InvoiceRequest {
-  price_amount: number;
-  price_currency: string;
-  pay_currency: string;
-  order_id: string;
-  order_description: string;
-  /** Wallet-derived user identifier */
-  payer_email?: string;
-  /** URL to redirect after payment (not used in API flow, but stored) */
-  success_url?: string;
-  /** Custom fields passed through to webhook */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  [key: string]: any;
-}
-
+/** Response from POST /v1/pay/create. */
 export interface PaymentResponse {
-  payment_id: string;
-  payment_status: string;
-  pay_address: string;
-  pay_amount: number;
-  pay_currency: string;
-  price_amount: number;
-  price_currency: string;
-  order_id: string;
-  order_description: string;
-  /** ISO 8601 timestamp — payment created */
-  created_at: string;
-  /** ISO 8601 timestamp — price lock expires */
-  expiration_estimate_date: string;
-  /** QR code data — the pay_address with amount encoded */
-  purchase_id: string;
+  orderId: string;
+  paymentId: string;
+  payAddress: string;
+  payAmount: number;
+  payCurrency: string;
+  priceAmountUsd: number;
+  durationMonths: number;
+  /** ISO 8601 price-lock expiry, or null if upstream didn't provide one. */
+  expiresAt: string | null;
 }
 
+/** Response from GET /v1/pay/status. */
 export interface PaymentStatus {
-  payment_id: string;
-  payment_status:
+  paymentId: string;
+  orderId: string | null;
+  paymentStatus:
     | "waiting"
     | "confirming"
     | "confirmed"
@@ -115,26 +104,86 @@ export interface PaymentStatus {
     | "finished"
     | "failed"
     | "refunded"
-    | "expired";
-  pay_amount: number;
-  actually_paid: number;
-  pay_currency: string;
-  outcome_amount: number;
-  outcome_currency: string;
+    | "expired"
+    | "unknown";
+  payAmount: number | null;
+  actuallyPaid: number | null;
+  payCurrency: string | null;
+  confirmed: boolean;
+  founderNumber: number | null;
 }
 
-// ─── API Client ──────────────────────────────────────────────
+// ─── API Client (our API only) ───────────────────────────────
 
 /**
- * Fetch available currencies from NOWPayments.
- *
- * This is a public endpoint — no API key required.
+ * Create a crypto payment via our Worker. The Worker calls NOWPayments with
+ * the secret key attached; the browser never holds it.
  */
+export async function createPayment(
+  request: CreatePaymentRequest,
+): Promise<PaymentResponse> {
+  debug("Creating payment", {
+    plan: request.plan,
+    quantity: request.quantity,
+    currency: request.payCurrency,
+  });
+
+  try {
+    const res = await fetch(`${API_BASE}/pay/create`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(request),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      debugError("Create payment failed", res.status, body);
+      throw new Error(`Create payment failed: ${res.status}`);
+    }
+
+    const data: PaymentResponse = await res.json();
+    debug("Payment created", data.paymentId);
+    return data;
+  } catch (err) {
+    debugError("createPayment error:", err);
+    throw err;
+  }
+}
+
+/** Check payment status via our Worker (live status + founder number). */
+export async function getPaymentStatus(
+  paymentId: string,
+): Promise<PaymentStatus> {
+  debug("Checking payment status", paymentId);
+
+  try {
+    const params = new URLSearchParams({ paymentId });
+    const res = await fetch(`${API_BASE}/pay/status?${params}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      debugError("Payment status check failed", res.status, body);
+      throw new Error(`Payment status check failed: ${res.status}`);
+    }
+
+    const data: PaymentStatus = await res.json();
+    debug("Payment status:", data.paymentStatus);
+    return data;
+  } catch (err) {
+    debugError("getPaymentStatus error:", err);
+    throw err;
+  }
+}
+
+/** Fetch the available pay currencies (proxied through our Worker). */
 export async function getAvailableCurrencies(): Promise<string[]> {
   debug("Fetching available currencies");
 
   try {
-    const res = await fetch(`${API_URL}/currencies`, {
+    const res = await fetch(`${API_BASE}/pay/currencies`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
@@ -154,159 +203,6 @@ export async function getAvailableCurrencies(): Promise<string[]> {
 }
 
 /**
- * Get estimated price in a specific cryptocurrency.
- *
- * Public endpoint — no API key required.
- */
-export async function getEstimate(
-  amountUSD: number,
-  payCurrency: string,
-): Promise<EstimateResponse> {
-  debug("Getting estimate", { amountUSD, payCurrency });
-
-  try {
-    const params = new URLSearchParams({
-      amount: amountUSD.toString(),
-      currency_from: "usd",
-      currency_to: payCurrency.toLowerCase(),
-    });
-
-    const res = await fetch(`${API_URL}/estimate?${params}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      debugError("Estimate failed", res.status, body);
-      throw new Error(`Estimate failed: ${res.status}`);
-    }
-
-    const data: EstimateResponse = await res.json();
-    debug("Estimate result:", data);
-    return data;
-  } catch (err) {
-    debugError("getEstimate error:", err);
-    throw err;
-  }
-}
-
-/**
- * Create a payment invoice.
- *
- * ⚠️  REQUIRES API KEY — this must be called through a server-side
- * proxy (Cloudflare Pages Function, edge middleware, or your own API).
- * The API key must NEVER be exposed to the client.
- *
- * The client calls YOUR endpoint (e.g. /api/create-payment),
- * which calls NOWPayments with the key attached.
- */
-export async function createPayment(
-  apiKey: string,
-  request: InvoiceRequest,
-): Promise<PaymentResponse> {
-  debug("Creating payment", {
-    amount: request.price_amount,
-    currency: request.pay_currency,
-    orderId: request.order_id,
-  });
-
-  try {
-    const res = await fetch(`${API_URL}/payment`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-      },
-      body: JSON.stringify(request),
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      debugError("Create payment failed", res.status, body);
-      throw new Error(`Create payment failed: ${res.status} — ${body}`);
-    }
-
-    const data: PaymentResponse = await res.json();
-    debug("Payment created", data.payment_id);
-    return data;
-  } catch (err) {
-    debugError("createPayment error:", err);
-    throw err;
-  }
-}
-
-/**
- * Check payment status.
- *
- * ⚠️  REQUIRES API KEY — same server-side proxy constraint.
- */
-export async function getPaymentStatus(
-  apiKey: string,
-  paymentId: string,
-): Promise<PaymentStatus> {
-  debug("Checking payment status", paymentId);
-
-  try {
-    const res = await fetch(`${API_URL}/payment/${paymentId}`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": apiKey,
-      },
-    });
-
-    if (!res.ok) {
-      const body = await res.text();
-      debugError("Payment status check failed", res.status, body);
-      throw new Error(`Payment status check failed: ${res.status}`);
-    }
-
-    const data: PaymentStatus = await res.json();
-    debug("Payment status:", data.payment_status);
-    return data;
-  } catch (err) {
-    debugError("getPaymentStatus error:", err);
-    throw err;
-  }
-}
-
-/**
- * Get the minimum payment amount for a given currency.
- *
- * Public endpoint — no API key required.
- */
-export async function getMinimumAmount(
-  payCurrency: string,
-): Promise<number> {
-  debug("Fetching minimum amount for", payCurrency);
-
-  try {
-    const params = new URLSearchParams({
-      currency_from: payCurrency.toLowerCase(),
-      currency_to: payCurrency.toLowerCase(),
-    });
-
-    const res = await fetch(`${API_URL}/min-amount?${params}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
-
-    if (!res.ok) {
-      debugError("Min amount fetch failed", res.status);
-      return 0;
-    }
-
-    const data = await res.json();
-    debug("Minimum amount:", data.min_amount);
-    return data.min_amount ?? 0;
-  } catch (err) {
-    debugError("getMinimumAmount error:", err);
-    return 0;
-  }
-}
-
-/**
  * Generate a BIP-21 / EIP-681 payment URI for QR code display.
  *
  * Produces URIs like:
@@ -321,12 +217,13 @@ export function buildPaymentURI(
   const lc = currency.toLowerCase();
 
   // Bitcoin-family
-  if (["btc", "ltc", "bch", "doge"].includes(lc)) {
+  if (["btc", "ltc", "bch", "doge", "xec"].includes(lc)) {
     const scheme: Record<string, string> = {
       btc: "bitcoin",
       ltc: "litecoin",
       bch: "bitcoincash",
       doge: "dogecoin",
+      xec: "ecash",
     };
     const uri = `${scheme[lc] ?? lc}:${address}?amount=${amount}`;
     debug("Built payment URI:", uri);

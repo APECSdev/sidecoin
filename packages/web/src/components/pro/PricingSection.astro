@@ -21,29 +21,31 @@ const sharedFeatures = [
     Founding Member <span class="text-amber-400">Pricing</span>
   </h2>
   <p class="mx-auto mt-4 max-w-xl text-center text-gray-400">
-    Lock in Founding Member rates before Drivechain activation.
-    Available until August 21, 2026.
+    Simple crypto pricing. No auto-renew — you pay only for the time you buy.
+    Join early to climb the Founders leaderboard.
   </p>
 
   <div class="mt-14 grid items-center gap-8 md:grid-cols-2">
-    <!-- 1 Year Plan -->
+    <!-- Monthly Plan -->
     <PricingCard
-      planId="pro-1y"
-      title="1 Year"
-      price={25}
-      period="year"
-      label="Founding Member"
+      planId="monthly"
+      title="Monthly"
+      price={5}
+      period="month"
+      label="Pay as you go"
+      priceNote="Billed per month · cancel anytime"
       features={sharedFeatures}
     />
 
-    <!-- 2 Year Plan — Featured -->
+    <!-- Yearly Plan — Featured -->
     <PricingCard
-      planId="pro-2y"
-      title="2 Years"
-      price={35}
-      period="2 years"
+      planId="yearly"
+      title="Yearly"
+      price={36}
+      period="year"
       label="Best Value"
       featured={true}
+      priceNote="Just 3 USD / month"
       features={[
         ...sharedFeatures,
         "Eligible for Alpha Circle",

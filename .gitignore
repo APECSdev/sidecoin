@@ -68,3 +68,14 @@ lcov.info
 *.profdata
 test-results/
 *.tsbuildinfo
+
+# ─── Cloudflare / Wrangler ───────────────────────────────
+# Local wrangler state: D1 SQLite, KV, cache, dev server artifacts.
+# Machine-local — never commit.
+.wrangler/
+**/.wrangler/
+
+# Wrangler may emit these at the package root
+.dev.vars
+.dev.vars.*
+wrangler.log
