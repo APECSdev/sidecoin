@@ -1,84 +1,104 @@
 <!-- packages/wallet/src/components/QrScanner.vue -->
 
 <script setup lang="ts">
-import { ref } from "vue";
-import { QrcodeStream } from "vue-qrcode-reader";
+import { ref, onMounted, onBeforeUnmount } from "vue";
+import QrScanner from "qr-scanner";
 
 const emit = defineEmits<{
   (e: "decode", value: string): void;
   (e: "close"): void;
 }>();
 
+// qr-scanner renders the live feed into this <video> element and overlays its
+// OWN highlight canvas as a sibling. We give it a ref rather than letting a
+// wrapper component manage the stream, so the decoder worker (bundled by Vite)
+// is the single, device-independent detection path — no BarcodeDetector.
+const video = ref<HTMLVideoElement | null>(null);
 const errorMsg = ref<string | null>(null);
 const loading = ref(true);
+
+let scanner: QrScanner | null = null;
 // Guard so a multi-frame detection only emits once before the modal closes.
 let handled = false;
 
-function onDetect(codes: { rawValue: string }[]): void {
-  if (handled || codes.length === 0) return;
-  handled = true;
-  emit("decode", codes[0].rawValue);
-}
+onMounted(async () => {
+  const el = video.value;
+  if (!el) return;
 
-function onCameraOn(): void {
-  loading.value = false;
-  errorMsg.value = null;
-}
+  scanner = new QrScanner(
+    el,
+    (result) => {
+      if (handled) return;
+      handled = true;
+      emit("decode", result.data);
+    },
+    {
+      // Rear camera on phones; falls back to the only camera on a laptop.
+      preferredCamera: "environment",
+      // Built-in viewfinder + green outline on detection (mobile-friendly UX).
+      highlightScanRegion: true,
+      highlightCodeOutline: true,
+      // Give the callback { data, cornerPoints } instead of a bare string.
+      returnDetailedScanResult: true,
+    },
+  );
+
+  try {
+    await scanner.start();
+    loading.value = false;
+    errorMsg.value = null;
+  } catch (err) {
+    loading.value = false;
+    mapError(err);
+  }
+});
+
+onBeforeUnmount(() => {
+  // Release the camera + worker; leaking the stream keeps the LED on and can
+  // block the camera for other apps until the tab is closed.
+  scanner?.stop();
+  scanner?.destroy();
+  scanner = null;
+});
 
 /**
- * Map the stream's DOMException-style errors to clear, mobile-relevant
- * guidance. The two that bite most often on phones are a denied permission
- * and a non-secure (plain-HTTP) context — both surfaced explicitly here.
+ * Map start()/getUserMedia failures to clear, mobile-relevant guidance. The
+ * two that bite most often on phones are a denied permission and a non-secure
+ * (plain-HTTP) context — both surfaced explicitly here.
  */
-function onError(err: Error): void {
-  loading.value = false;
-  switch (err.name) {
+function mapError(err: unknown): void {
+  const name = err instanceof Error ? err.name : "";
+  const msg = err instanceof Error ? err.message : String(err);
+
+  switch (name) {
     case "NotAllowedError":
+    case "SecurityError":
       errorMsg.value =
         "Camera permission denied. Allow camera access and try again.";
-      break;
+      return;
     case "NotFoundError":
     case "OverconstrainedError":
       errorMsg.value = "No usable camera found on this device.";
-      break;
-    case "NotSupportedError":
-    case "InsecureContextError":
-      errorMsg.value =
-        "Camera needs a secure (HTTPS) connection. Open this page over " +
-        "HTTPS or on localhost to scan.";
-      break;
+      return;
     case "NotReadableError":
       errorMsg.value = "Camera is already in use by another app.";
-      break;
-    case "StreamApiNotSupportedError":
-      errorMsg.value = "This browser does not support camera scanning.";
-      break;
-    default:
-      errorMsg.value = err.message || "Could not start the camera.";
+      return;
+  }
+
+  // qr-scanner reports a missing camera / insecure context as a plain message.
+  if (/camera not found|no camera/i.test(msg)) {
+    errorMsg.value = "No usable camera found on this device.";
+  } else if (/secure|https/i.test(msg)) {
+    errorMsg.value =
+      "Camera needs a secure (HTTPS) connection. Open this page over " +
+      "HTTPS or on localhost to scan.";
+  } else {
+    errorMsg.value = msg || "Could not start the camera.";
   }
 }
 
 function close(): void {
   emit("close");
-}
-
-/** Draw a green outline around a detected code for visual feedback. */
-function paintOutline(
-  detectedCodes: { cornerPoints: { x: number; y: number }[] }[],
-  ctx: CanvasRenderingContext2D,
-): void {
-  for (const code of detectedCodes) {
-    const [first, ...rest] = code.cornerPoints;
-    if (!first) continue;
-    ctx.strokeStyle = "#22c55e";
-    ctx.lineWidth = 4;
-    ctx.beginPath();
-    ctx.moveTo(first.x, first.y);
-    for (const p of rest) ctx.lineTo(p.x, p.y);
-    ctx.lineTo(first.x, first.y);
-    ctx.closePath();
-    ctx.stroke();
-  }
 }
 </script>
 
@@ -102,15 +122,12 @@ function paintOutline(
     </div>
 
     <div class="relative flex-1 overflow-hidden">
-      <QrcodeStream
-        :constraints="{ facingMode: 'environment' }"
-        :formats="['qr_code']"
-        :track="paintOutline"
+      <video
+        ref="video"
         class="h-full w-full object-cover"
-        @detect="onDetect"
-        @camera-on="onCameraOn"
-        @error="onError"
-      />
+        muted
+        playsinline
+      ></video>
 
       <div
         v-if="loading && !errorMsg"
