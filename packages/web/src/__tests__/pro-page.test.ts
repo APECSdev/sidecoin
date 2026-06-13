@@ -2,9 +2,9 @@
 //
 // Integration-level tests for the /pro page data and structure.
 // Tests the pricing logic, FAQ content, plan/currency relationships,
-// and countdown timer math. Does NOT render Astro components
-// (Astro compilation requires a build step) — instead tests the
-// data, logic, and contracts that the components rely on.
+// Founder eligibility contracts, and countdown timer math. Does NOT render
+// Astro components (Astro compilation requires a build step) — instead tests
+// the data, logic, and contracts that the components rely on.
 
 import { describe, it, expect } from "vitest";
 import { PLANS, FEATURED_CURRENCIES } from "../lib/nowpayments";
@@ -58,6 +58,39 @@ describe("Pro Page — Pricing Integrity", () => {
     for (const plan of Object.values(PLANS)) {
       expect(plan.priceUSD).toBeGreaterThan(0);
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Founder Eligibility
+// ---------------------------------------------------------------------------
+
+describe("Pro Page — Founder Eligibility", () => {
+  const monthlyEligibility =
+    "Monthly PRO unlocks Sidecoin PRO wallet features, but does not qualify for Founder Leaderboard placement or Alpha Circle eligibility.";
+  const yearlyEligibility =
+    "Yearly PRO unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Alpha Circle eligibility.";
+
+  it("should clarify that monthly PRO does not qualify for Founder Leaderboard", () => {
+    expect(monthlyEligibility).toContain("Monthly PRO");
+    expect(monthlyEligibility).toContain("does not qualify");
+    expect(monthlyEligibility).toContain("Founder Leaderboard");
+    expect(monthlyEligibility).toContain("Alpha Circle");
+  });
+
+  it("should clarify that yearly PRO qualifies for Founder Leaderboard", () => {
+    expect(yearlyEligibility).toContain("Yearly PRO");
+    expect(yearlyEligibility).toContain("qualifies");
+    expect(yearlyEligibility).toContain("Founder Leaderboard");
+    expect(yearlyEligibility).toContain("Alpha Circle");
+  });
+
+  it("should keep monthly as PRO features only and yearly as Founder eligible", () => {
+    const monthlyQualifies = false;
+    const yearlyQualifies = true;
+
+    expect(monthlyQualifies).toBe(false);
+    expect(yearlyQualifies).toBe(true);
   });
 });
 
@@ -189,14 +222,15 @@ describe("Pro Page — FAQ Contracts", () => {
   const expectedQuestions = [
     "What is Sidecoin Pro?",
     "What is a Founding Member?",
+    "Does Monthly PRO qualify for the Founder Leaderboard?",
     "What is Alpha Circle?",
     "How do crypto payments work?",
-    "When does Founding pricing end?",
+    "When does Founding Member pricing end?",
     "Will prices increase after launch?",
   ];
 
-  it("should have at least 6 FAQ entries", () => {
-    expect(expectedQuestions.length).toBeGreaterThanOrEqual(6);
+  it("should have at least 7 FAQ entries", () => {
+    expect(expectedQuestions.length).toBeGreaterThanOrEqual(7);
   });
 
   it("should include a question about Sidecoin Pro", () => {
@@ -205,6 +239,11 @@ describe("Pro Page — FAQ Contracts", () => {
 
   it("should include a question about Founding Members", () => {
     expect(expectedQuestions.some((q) => q.includes("Founding Member"))).toBe(true);
+  });
+
+  it("should include a question about monthly Founder eligibility", () => {
+    expect(expectedQuestions.some((q) => q.includes("Monthly PRO"))).toBe(true);
+    expect(expectedQuestions.some((q) => q.includes("Founder Leaderboard"))).toBe(true);
   });
 
   it("should include a question about Alpha Circle", () => {

@@ -6,23 +6,29 @@
 
 import PricingCard from "./PricingCard.astro";
 
-const sharedFeatures = [
+const proFeatures = [
   "Lower fees on swaps & bridging",
   "Early access to new sidechains",
   "Advanced tools & routing",
+  "Support Drivechain development",
+];
+
+const yearlyFounderFeatures = [
+  "Founder Leaderboard placement",
+  "Eligible for Alpha Circle",
   "Permanent Founding Member badge",
   "Unique Founder number",
-  "Support Drivechain development",
+  "Best per-month rate",
 ];
 ---
 
 <section id="pricing" class="mx-auto max-w-5xl px-6 py-20">
   <h2 class="text-center text-3xl font-bold md:text-4xl">
-    Founding Member <span class="text-amber-400">Pricing</span>
+    Sidecoin PRO <span class="text-amber-400">Pricing</span>
   </h2>
-  <p class="mx-auto mt-4 max-w-xl text-center text-gray-400">
-    Simple crypto pricing. No auto-renew — you pay only for the time you buy.
-    Join early to climb the Founders leaderboard.
+  <p class="mx-auto mt-4 max-w-2xl text-center text-gray-400">
+    Monthly PRO unlocks wallet features. Yearly PRO unlocks wallet features
+    and qualifies for Founder Leaderboard placement and Alpha Circle eligibility.
   </p>
 
   <div class="mt-14 grid items-center gap-8 md:grid-cols-2">
@@ -33,8 +39,10 @@ const sharedFeatures = [
       price={5}
       period="month"
       label="Pay as you go"
-      priceNote="Billed per month · cancel anytime"
-      features={sharedFeatures}
+      priceNote="2-month crypto checkout minimum"
+      eligibilityNote="Monthly PRO unlocks Sidecoin PRO wallet features, but does not qualify for Founder Leaderboard placement or Alpha Circle eligibility."
+      eligibilityTone="ineligible"
+      features={proFeatures}
     />
 
     <!-- Yearly Plan — Featured -->
@@ -46,10 +54,11 @@ const sharedFeatures = [
       label="Best Value"
       featured={true}
       priceNote="Just 3 USD / month"
+      eligibilityNote="Yearly PRO unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Alpha Circle eligibility."
+      eligibilityTone="eligible"
       features={[
-        ...sharedFeatures,
-        "Eligible for Alpha Circle",
-        "Best per-month rate",
+        ...proFeatures,
+        ...yearlyFounderFeatures,
       ]}
     />
   </div>

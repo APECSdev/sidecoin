@@ -32,4 +32,24 @@ describe("ProBenefitsView.vue", () => {
     expect(wrapper.text()).toContain("PRO platforms");
     expect(wrapper.text()).toContain("Early access");
   });
+
+  it("clarifies yearly-only Founder eligibility", () => {
+    const wrapper = mount(ProBenefitsView, {
+      global: {
+        stubs: {
+          RouterLink: { template: "<a><slot /></a>" },
+        },
+      },
+    });
+
+    expect(wrapper.text()).toContain("Founder eligibility");
+    expect(wrapper.text()).toContain("Leaderboard and Alpha Circle require Yearly PRO");
+    expect(wrapper.text()).toContain(
+      "Monthly subscriptions do not qualify for Founder Leaderboard placement or Alpha Circle eligibility.",
+    );
+    expect(wrapper.text()).toContain("Yearly PRO");
+    expect(wrapper.text()).toContain(
+      "Unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Alpha Circle eligibility.",
+    );
+  });
 });

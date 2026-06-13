@@ -45,6 +45,19 @@ const proHighlights = [
       "Use advanced hardware wallet workflows as signing support rolls out.",
   },
 ];
+
+const founderEligibility = [
+  {
+    title: "Monthly PRO",
+    body:
+      "Unlocks Sidecoin PRO wallet features. Monthly subscriptions do not qualify for Founder Leaderboard placement or Alpha Circle eligibility.",
+  },
+  {
+    title: "Yearly PRO",
+    body:
+      "Unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Alpha Circle eligibility.",
+  },
+];
 </script>
 
 <template>
@@ -88,6 +101,31 @@ const proHighlights = [
       >
         <h3 class="font-bold text-white">{{ item.title }}</h3>
         <p class="mt-2 text-sm leading-6 text-gray-400">{{ item.body }}</p>
+      </div>
+    </section>
+
+    <section class="mt-8 rounded-2xl border border-amber-500/40 bg-amber-950/10 p-6">
+      <p class="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
+        Founder eligibility
+      </p>
+      <h3 class="mt-2 text-2xl font-black text-white">
+        Leaderboard and Alpha Circle require Yearly PRO
+      </h3>
+      <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-300">
+        Monthly PRO unlocks Sidecoin PRO wallet features. Yearly PRO unlocks
+        those features and qualifies for Founder Leaderboard placement and Alpha
+        Circle eligibility.
+      </p>
+
+      <div class="mt-5 grid gap-4 md:grid-cols-2">
+        <div
+          v-for="item in founderEligibility"
+          :key="item.title"
+          class="rounded-xl border border-gray-800 bg-gray-950 p-4"
+        >
+          <h4 class="font-black text-white">{{ item.title }}</h4>
+          <p class="mt-2 text-sm leading-6 text-gray-400">{{ item.body }}</p>
+        </div>
       </div>
     </section>
 

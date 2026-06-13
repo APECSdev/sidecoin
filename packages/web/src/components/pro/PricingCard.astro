@@ -12,6 +12,8 @@ interface Props {
   label?: string;
   featured?: boolean;
   priceNote?: string;
+  eligibilityNote?: string;
+  eligibilityTone?: "eligible" | "ineligible";
   features: string[];
 }
 
@@ -23,6 +25,8 @@ const {
   label,
   featured = false,
   priceNote,
+  eligibilityNote,
+  eligibilityTone = "eligible",
   features,
 } = Astro.props;
 ---
@@ -70,6 +74,28 @@ const {
     <p class="mt-2 text-center text-xs text-gray-500">
       {priceNote}
     </p>
+  )}
+
+  <!-- Eligibility note -->
+  {eligibilityNote && (
+    <div
+      class:list={[
+        "mt-6 rounded-xl border p-4 text-sm leading-6",
+        eligibilityTone === "eligible"
+          ? "border-amber-500/40 bg-amber-950/20 text-amber-100"
+          : "border-gray-800 bg-gray-950 text-gray-400",
+      ]}
+    >
+      <p
+        class:list={[
+          "text-xs font-black uppercase tracking-widest",
+          eligibilityTone === "eligible" ? "text-amber-400" : "text-gray-500",
+        ]}
+      >
+        Founder eligibility
+      </p>
+      <p class="mt-2">{eligibilityNote}</p>
+    </div>
   )}
 
   <!-- Features -->
