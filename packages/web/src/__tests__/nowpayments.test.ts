@@ -90,24 +90,24 @@ describe("FEATURED_CURRENCIES", () => {
     expect(FEATURED_CURRENCIES).toContain("eth");
   });
 
-  it("should include USDC (ERC-20)", () => {
-    expect(FEATURED_CURRENCIES).toContain("usdcerc20");
-  });
-
   it("should include LTC", () => {
     expect(FEATURED_CURRENCIES).toContain("ltc");
   });
 
-  it("should include XEC (eCash)", () => {
-    expect(FEATURED_CURRENCIES).toContain("xec");
+  it("should not include USDC ERC-20 by default until live availability is confirmed", () => {
+    expect(FEATURED_CURRENCIES).not.toContain("usdcerc20");
   });
 
-  it("should include SOL", () => {
-    expect(FEATURED_CURRENCIES).toContain("sol");
+  it("should not include XEC by default until live availability is confirmed", () => {
+    expect(FEATURED_CURRENCIES).not.toContain("xec");
   });
 
-  it("should have exactly 6 featured currencies", () => {
-    expect(FEATURED_CURRENCIES).toHaveLength(6);
+  it("should not include SOL by default until live availability is confirmed", () => {
+    expect(FEATURED_CURRENCIES).not.toContain("sol");
+  });
+
+  it("should have exactly 3 featured currencies", () => {
+    expect(FEATURED_CURRENCIES).toHaveLength(3);
   });
 
   it("should contain only lowercase strings", () => {
@@ -118,7 +118,7 @@ describe("FEATURED_CURRENCIES", () => {
 });
 
 // ---------------------------------------------------------------------------
-// buildPaymentURI — Bitcoin-family
+// buildPaymentURI
 // ---------------------------------------------------------------------------
 
 describe("buildPaymentURI", () => {
@@ -159,15 +159,13 @@ describe("buildPaymentURI", () => {
     });
   });
 
-  // ─── Ethereum-family ─────────────────────────────────────
-
   describe("Ethereum-family URIs", () => {
     it("should build an ethereum: URI for ETH", () => {
       const uri = buildPaymentURI("eth", "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD28", 0.015);
       expect(uri).toBe("ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f2bD28?value=0.015");
     });
 
-    it("should build an ethereum: URI for USDC ERC-20", () => {
+    it("should still know how to build an ethereum: URI for USDC ERC-20", () => {
       const uri = buildPaymentURI("usdcerc20", "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD28", 25);
       expect(uri).toBe("ethereum:0x742d35Cc6634C0532925a3b844Bc9e7595f2bD28?value=25");
     });
@@ -182,8 +180,6 @@ describe("buildPaymentURI", () => {
       expect(uri).toBe("ethereum:0xAddress?value=1");
     });
   });
-
-  // ─── Fallback ────────────────────────────────────────────
 
   describe("Fallback (unknown currencies)", () => {
     it("should return the raw address for unknown currencies", () => {
@@ -201,8 +197,6 @@ describe("buildPaymentURI", () => {
       expect(uri).toBe("TN2YqTv5e6bkBR7DpKaeHLGq1hKhVsqWZX");
     });
   });
-
-  // ─── Edge cases ──────────────────────────────────────────
 
   describe("Edge cases", () => {
     it("should handle zero amount for BTC", () => {

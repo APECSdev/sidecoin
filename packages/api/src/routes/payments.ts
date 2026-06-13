@@ -81,6 +81,61 @@ function durationMonths(plan: Plan, quantity: number): number {
   return plan === "monthly" ? quantity : quantity * 12;
 }
 
+function currencyDisplayName(currency: string): string {
+  const labels: Record<string, string> = {
+    btc: "BTC",
+    eth: "ETH",
+    ltc: "LTC",
+    usdcerc20: "USDC ERC-20",
+    usdterc20: "USDT ERC-20",
+    xec: "XEC",
+    sol: "SOL",
+  };
+
+  return labels[currency.toLowerCase()] ?? currency.toUpperCase();
+}
+
+function extractProviderMessage(detail: string): string {
+  if (!detail) return "";
+
+  try {
+    const parsed = JSON.parse(detail) as {
+      message?: unknown;
+      error?: {
+        message?: unknown;
+        details?: unknown;
+      };
+    };
+
+    if (typeof parsed.message === "string") {
+      return parsed.message;
+    }
+
+    if (typeof parsed.error?.message === "string") {
+      return parsed.error.message;
+    }
+
+    if (typeof parsed.error?.details === "string") {
+      return extractProviderMessage(parsed.error.details);
+    }
+  } catch {
+    // Fall through to raw text matching.
+  }
+
+  return detail;
+}
+
+function isUnsupportedProviderCurrency(detail: string, currency: string): boolean {
+  const message = extractProviderMessage(detail).toLowerCase();
+  const lc = currency.toLowerCase();
+
+  return (
+    message.includes("currency") &&
+    message.includes(lc) &&
+    message.includes("not found")
+  );
+}
+
 export async function handlePayments(
   req: Request,
   env: Env,
@@ -178,6 +233,16 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
   if (!np.ok) {
     const detail = await np.text().catch(() => "");
     console.error("[pay/create] NOWPayments payment failed", np.status, detail);
+
+    if (np.status === 400 && isUnsupportedProviderCurrency(detail, payCurrencyRaw)) {
+      return err(
+        "unsupported_currency",
+        `${currencyDisplayName(payCurrencyRaw)} is temporarily unavailable. Please choose BTC, ETH, or LTC.`,
+        400,
+        detail || undefined,
+      );
+    }
+
     return err(
       "payment_provider_error",
       `NOWPayments returned ${np.status}`,

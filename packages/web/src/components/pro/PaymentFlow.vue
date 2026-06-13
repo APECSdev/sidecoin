@@ -4,9 +4,9 @@
 /**
  * PaymentFlow
  *
- * White-label crypto payment flow. The user NEVER sees NOWPayments — every
- * call goes to OUR API (/v1/pay/*) and the QR/address/timer/status are all
- * rendered here under Sidecoin branding.
+ * Full-page, white-label crypto checkout flow. The user NEVER sees
+ * NOWPayments — every call goes to OUR API (/v1/pay/*), and the
+ * QR/address/timer/status are rendered here under Sidecoin branding.
  *
  * Steps:
  *   1. details — identity public key (required), email (optional), duration
@@ -17,7 +17,7 @@
  * Founder identity; it is embedded in the order on the server.
  */
 
-import { ref, computed, onMounted, onUnmounted } from "vue";
+import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import {
   PLANS,
   FEATURED_CURRENCIES,
@@ -49,15 +49,15 @@ function debugError(...args: unknown[]): void {
 
 // ─── State ───────────────────────────────────────────────────
 
-type Step = "closed" | "details" | "status";
+type Step = "details" | "status";
 
-const step = ref<Step>("closed");
-const selectedPlan = ref<Plan | null>(null);
+const step = ref<Step>("details");
+const selectedPlan = ref<Plan | null>(PLANS.monthly);
 
 const publicKey = ref<string>("");
 const email = ref<string>("");
 const quantity = ref<number>(1);
-const selectedCurrency = ref<string>("");
+const selectedCurrency = ref<string>(FEATURED_CURRENCIES[0] ?? "");
 
 const allCurrencies = ref<string[]>([]);
 const showAllCurrencies = ref(false);
@@ -75,17 +75,34 @@ let priceLockTimer: ReturnType<typeof setInterval> | null = null;
 
 // ─── Computed ────────────────────────────────────────────────
 
+const normalizedAvailableCurrencies = computed(() => {
+  return new Set(allCurrencies.value.map((cur) => cur.toLowerCase()));
+});
+
+const featuredAvailableCurrencies = computed(() => {
+  // Before live currencies load, show the conservative hardcoded defaults.
+  if (normalizedAvailableCurrencies.value.size === 0) {
+    return [...FEATURED_CURRENCIES];
+  }
+
+  return [...FEATURED_CURRENCIES].filter((cur) =>
+    normalizedAvailableCurrencies.value.has(cur),
+  );
+});
+
 const displayCurrencies = computed(() => {
   if (showAllCurrencies.value) {
     return allCurrencies.value;
   }
-  return [...FEATURED_CURRENCIES];
+
+  return featuredAvailableCurrencies.value;
 });
 
 const currencyLabels: Record<string, string> = {
   btc: "Bitcoin (BTC)",
   eth: "Ethereum (ETH)",
   usdcerc20: "USDC (ERC-20)",
+  usdterc20: "USDT (ERC-20)",
   ltc: "Litecoin (LTC)",
   xec: "eCash (XEC)",
   sol: "Solana (SOL)",
@@ -115,7 +132,8 @@ const canSubmit = computed(
     publicKeyValid.value &&
     emailValid.value &&
     !!selectedCurrency.value &&
-    !paymentLoading.value,
+    !paymentLoading.value &&
+    displayCurrencies.value.length > 0,
 );
 
 const isTerminalStatus = computed(() => {
@@ -172,17 +190,28 @@ function openWithPlan(planId: string): void {
   debug("Opening payment flow for plan:", planId);
   selectedPlan.value = plan;
   quantity.value = 1;
-  selectedCurrency.value = "";
   paymentData.value = null;
   paymentStatus.value = null;
   paymentError.value = null;
   step.value = "details";
+  ensureSelectedCurrency();
+
+  nextTick(() => {
+    document.getElementById("pro-checkout")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  });
 }
 
-/** Close the payment flow */
-function close(): void {
-  debug("Closing payment flow");
-  step.value = "closed";
+/** Reset the full-page checkout back to the details step */
+function resetCheckout(): void {
+  debug("Resetting payment flow");
+  paymentData.value = null;
+  paymentStatus.value = null;
+  paymentError.value = null;
+  priceLockCountdown.value = "";
+  step.value = "details";
   stopStatusPolling();
   stopPriceLockTimer();
 }
@@ -191,12 +220,52 @@ function close(): void {
 function selectCurrency(currency: string): void {
   debug("Selected currency:", currency);
   selectedCurrency.value = currency;
+  paymentError.value = null;
 }
 
 /** Clamp the duration quantity into [1, MAX_QUANTITY] */
 function bumpQuantity(delta: number): void {
   const next = quantity.value + delta;
   quantity.value = Math.min(MAX_QUANTITY, Math.max(1, next));
+}
+
+function normalizeCurrencyList(currencies: string[]): string[] {
+  return Array.from(
+    new Set(
+      currencies
+        .map((cur) => cur.trim().toLowerCase())
+        .filter((cur) => /^[a-z0-9]+$/.test(cur)),
+    ),
+  ).sort();
+}
+
+function ensureSelectedCurrency(): void {
+  const available = displayCurrencies.value;
+
+  if (available.length === 0) {
+    selectedCurrency.value = "";
+    return;
+  }
+
+  if (!available.includes(selectedCurrency.value)) {
+    selectedCurrency.value = available[0];
+  }
+}
+
+async function loadAvailableCurrencies(): Promise<void> {
+  currenciesLoading.value = true;
+
+  try {
+    allCurrencies.value = normalizeCurrencyList(await getAvailableCurrencies());
+    ensureSelectedCurrency();
+    debug("Loaded", allCurrencies.value.length, "available currencies");
+  } catch (err) {
+    debugError("Failed to load available currencies:", err);
+    // Keep conservative defaults if the currency endpoint is temporarily down.
+    ensureSelectedCurrency();
+  } finally {
+    currenciesLoading.value = false;
+  }
 }
 
 /** Create the payment via our API, then move to the status step */
@@ -222,7 +291,10 @@ async function createPaymentInvoice(): Promise<void> {
     startPriceLockTimer();
   } catch (err) {
     debugError("createPaymentInvoice error:", err);
-    paymentError.value = "Failed to create payment. Please try again.";
+    paymentError.value =
+      err instanceof Error
+        ? err.message
+        : "Failed to create payment. Please try again.";
   } finally {
     paymentLoading.value = false;
   }
@@ -248,21 +320,12 @@ async function pollStatus(): Promise<void> {
 
 /** Load all available currencies (proxied through our API) */
 async function loadAllCurrencies(): Promise<void> {
-  if (allCurrencies.value.length > 0) {
-    showAllCurrencies.value = true;
-    return;
+  if (allCurrencies.value.length === 0) {
+    await loadAvailableCurrencies();
   }
 
-  currenciesLoading.value = true;
-  try {
-    allCurrencies.value = await getAvailableCurrencies();
-    showAllCurrencies.value = true;
-    debug("Loaded", allCurrencies.value.length, "currencies");
-  } catch (err) {
-    debugError("Failed to load currencies:", err);
-  } finally {
-    currenciesLoading.value = false;
-  }
+  showAllCurrencies.value = true;
+  ensureSelectedCurrency();
 }
 
 // ─── Timers ──────────────────────────────────────────────────
@@ -330,6 +393,7 @@ function handlePlanSelect(event: Event): void {
 
 onMounted(() => {
   document.addEventListener("click", handlePlanSelect);
+  loadAvailableCurrencies();
   debug("PaymentFlow mounted, listening for plan selections");
 });
 
@@ -342,25 +406,21 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <!-- Modal overlay -->
-  <Teleport to="body">
-    <div
-      v-if="step !== 'closed'"
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
-      @click.self="close"
-    >
-      <div class="relative mx-4 w-full max-w-lg rounded-2xl border border-gray-800 bg-gray-950 p-8 shadow-2xl">
-
-        <!-- Close button -->
-        <button
-          class="absolute right-4 top-4 text-gray-500 hover:text-white transition-colors"
-          @click="close"
-          aria-label="Close payment flow"
-        >
-          <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+  <!-- Full-page checkout section -->
+  <section id="pro-checkout" class="border-y border-gray-800 bg-gray-950/80">
+    <div class="mx-auto max-w-5xl px-6 py-16">
+      <div class="mx-auto max-w-2xl rounded-2xl border border-gray-800 bg-gray-950 p-8 shadow-2xl">
+        <div class="mb-6 text-center">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-400">
+            Checkout
+          </p>
+          <h2 class="mt-2 text-3xl font-bold text-white">
+            Complete your Sidecoin Pro upgrade
+          </h2>
+          <p class="mt-2 text-sm text-gray-400">
+            Crypto payment, no account required. Your public key is your Founder identity.
+          </p>
+        </div>
 
         <!-- ─── Step: Details ─────────────────────────── -->
         <div v-if="step === 'details'">
@@ -442,8 +502,14 @@ onUnmounted(() => {
 
           <!-- Currency selection -->
           <div class="mt-6">
-            <label class="block text-sm font-semibold text-white">Pay with</label>
-            <div class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
+            <div class="flex items-center justify-between gap-3">
+              <label class="block text-sm font-semibold text-white">Pay with</label>
+              <span v-if="currenciesLoading" class="text-xs text-gray-500">
+                Checking live availability…
+              </span>
+            </div>
+
+            <div v-if="displayCurrencies.length > 0" class="mt-2 grid grid-cols-2 gap-3 sm:grid-cols-3">
               <button
                 v-for="cur in displayCurrencies"
                 :key="cur"
@@ -458,10 +524,17 @@ onUnmounted(() => {
               </button>
             </div>
 
+            <div v-else class="mt-2 rounded-lg border border-red-900/50 bg-red-950/30 p-3">
+              <p class="text-sm text-red-400">
+                No supported crypto payment currencies are available right now.
+                Please try again in a few minutes.
+              </p>
+            </div>
+
             <!-- More options -->
             <div class="mt-3 text-center" v-if="!showAllCurrencies">
               <button
-                class="text-sm text-amber-400 hover:text-amber-300 transition-colors"
+                class="text-sm text-amber-400 transition-colors hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
                 :disabled="currenciesLoading"
                 @click="loadAllCurrencies"
               >
@@ -480,7 +553,7 @@ onUnmounted(() => {
           </button>
 
           <!-- Payment error -->
-          <div v-if="paymentError" class="mt-4 rounded-lg bg-red-950/30 border border-red-900/50 p-3">
+          <div v-if="paymentError" class="mt-4 rounded-lg border border-red-900/50 bg-red-950/30 p-3">
             <p class="text-sm text-red-400">{{ paymentError }}</p>
           </div>
         </div>
@@ -506,17 +579,17 @@ onUnmounted(() => {
             <!-- Amount -->
             <div class="text-center">
               <p class="text-xs uppercase tracking-widest text-gray-500">Send exactly</p>
-              <p class="mt-1 text-2xl font-bold text-white font-mono">
+              <p class="mt-1 font-mono text-2xl font-bold text-white">
                 {{ paymentData.payAmount }}
-                <span class="text-sm text-amber-400 uppercase">{{ paymentData.payCurrency }}</span>
+                <span class="text-sm uppercase text-amber-400">{{ paymentData.payCurrency }}</span>
               </p>
               <p class="mt-1 text-xs text-gray-500">≈ ${{ paymentData.priceAmountUsd }} USD</p>
             </div>
 
             <!-- Address -->
             <div class="w-full rounded-lg border border-gray-800 bg-gray-900 p-3">
-              <p class="text-xs text-gray-500 mb-1">To address:</p>
-              <p class="break-all font-mono text-xs text-gray-300 select-all">
+              <p class="mb-1 text-xs text-gray-500">To address:</p>
+              <p class="select-all break-all font-mono text-xs text-gray-300">
                 {{ paymentData.payAddress }}
               </p>
             </div>
@@ -524,7 +597,10 @@ onUnmounted(() => {
             <!-- Price lock timer -->
             <div v-if="priceLockCountdown" class="text-center">
               <p class="text-xs text-gray-500">Price locked for</p>
-              <p class="font-mono text-lg font-bold" :class="priceLockCountdown === 'Expired' ? 'text-red-400' : 'text-amber-400'">
+              <p
+                class="font-mono text-lg font-bold"
+                :class="priceLockCountdown === 'Expired' ? 'text-red-400' : 'text-amber-400'"
+              >
                 {{ priceLockCountdown }}
               </p>
             </div>
@@ -532,7 +608,7 @@ onUnmounted(() => {
 
           <!-- Status -->
           <div class="mt-6 rounded-lg border border-gray-800 bg-gray-900 p-4 text-center">
-            <p class="text-xs uppercase tracking-widest text-gray-500 mb-2">Status</p>
+            <p class="mb-2 text-xs uppercase tracking-widest text-gray-500">Status</p>
 
             <!-- Loading spinner while no status yet -->
             <div v-if="!paymentStatus" class="flex items-center justify-center gap-2">
@@ -581,7 +657,7 @@ onUnmounted(() => {
           >
             <button
               class="rounded-lg bg-amber-500 px-6 py-2.5 text-sm font-bold text-gray-950 transition-all hover:bg-amber-400"
-              @click="step = 'details'"
+              @click="resetCheckout"
             >
               Try Again
             </button>
@@ -592,8 +668,7 @@ onUnmounted(() => {
             Payment ID: {{ paymentData.paymentId }}
           </p>
         </div>
-
       </div>
     </div>
-  </Teleport>
+  </section>
 </template>

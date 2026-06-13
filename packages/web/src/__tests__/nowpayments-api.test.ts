@@ -43,6 +43,16 @@ function mockFetchResponse(body: unknown, status = 200) {
   });
 }
 
+function mockFetchTextResponse(body: string, status = 200) {
+  fetchMock.mockResolvedValueOnce({
+    ok: status >= 200 && status < 300,
+    status,
+    statusText: status === 200 ? "OK" : "Error",
+    json: () => Promise.resolve(JSON.parse(body)),
+    text: () => Promise.resolve(body),
+  });
+}
+
 function mockFetchError(message: string) {
   fetchMock.mockRejectedValueOnce(new Error(message));
 }
@@ -59,14 +69,6 @@ function findCall(urlFragment: string): [string, RequestInit | undefined] | unde
     }
   }
   return undefined;
-}
-
-/**
- * Returns the last fetch call made (most recent).
- */
-function lastCall(): [string, RequestInit | undefined] {
-  const calls = fetchMock.mock.calls;
-  return calls[calls.length - 1] as [string, RequestInit | undefined];
 }
 
 // ---------------------------------------------------------------------------
@@ -220,11 +222,35 @@ describe("createPayment", () => {
     expect(parsed.publicKey).toBe(testRequest.publicKey);
   });
 
-  it("should throw on HTTP error with body", async () => {
-    mockFetchResponse({ message: "Invalid currency" }, 400);
+  it("should preserve structured backend error messages", async () => {
+    mockFetchResponse(
+      {
+        error: {
+          code: "unsupported_currency",
+          message: "USDC ERC-20 is temporarily unavailable. Please choose BTC, ETH, or LTC.",
+        },
+      },
+      400,
+    );
+
+    await expect(createPayment(testRequest)).rejects.toThrow(
+      "USDC ERC-20 is temporarily unavailable. Please choose BTC, ETH, or LTC.",
+    );
+  });
+
+  it("should fall back to HTTP status when error body is unstructured JSON", async () => {
+    mockFetchResponse({ message: "" }, 400);
 
     await expect(createPayment(testRequest)).rejects.toThrow(
       "Create payment failed: 400",
+    );
+  });
+
+  it("should fall back to HTTP status when error body is not JSON", async () => {
+    mockFetchTextResponse("Bad gateway", 502);
+
+    await expect(createPayment(testRequest)).rejects.toThrow(
+      "Create payment failed: 502",
     );
   });
 

@@ -6,7 +6,7 @@
 // (Astro compilation requires a build step) — instead tests the
 // data, logic, and contracts that the components rely on.
 
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { PLANS, FEATURED_CURRENCIES } from "../lib/nowpayments";
 
 // ---------------------------------------------------------------------------
@@ -66,11 +66,14 @@ describe("Pro Page — Pricing Integrity", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pro Page — Currency Selection", () => {
-  it("should show BTC, ETH, USDC, and LTC as featured", () => {
-    expect(FEATURED_CURRENCIES).toContain("btc");
-    expect(FEATURED_CURRENCIES).toContain("eth");
-    expect(FEATURED_CURRENCIES).toContain("usdcerc20");
-    expect(FEATURED_CURRENCIES).toContain("ltc");
+  it("should show BTC, ETH, and LTC as conservative default featured currencies", () => {
+    expect(FEATURED_CURRENCIES).toEqual(["btc", "eth", "ltc"]);
+  });
+
+  it("should not statically feature provider-sensitive currencies", () => {
+    expect(FEATURED_CURRENCIES).not.toContain("usdcerc20");
+    expect(FEATURED_CURRENCIES).not.toContain("xec");
+    expect(FEATURED_CURRENCIES).not.toContain("sol");
   });
 
   it("should NOT include fiat currencies in featured list", () => {
@@ -102,7 +105,7 @@ describe("Pro Page — Fork Date & Countdown", () => {
   });
 
   it("should be in the future (test written before fork)", () => {
-    // This test will naturally fail after the fork — that's expected
+    // This test will naturally fail after the fork — that's expected.
     const now = new Date("2026-05-31T00:00:00Z");
     expect(FORK_DATE.getTime()).toBeGreaterThan(now.getTime());
   });
@@ -119,13 +122,13 @@ describe("Pro Page — Fork Date & Countdown", () => {
     const diff = FORK_DATE.getTime() - after.getTime();
     expect(diff).toBeLessThan(0);
 
-    // The UrgencyBanner script should clamp to 0
+    // The UrgencyBanner script should clamp to 0.
     const d = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
     expect(d).toBe(0);
   });
 
   it("should compute correct hours/minutes/seconds breakdown", () => {
-    // 2 days, 3 hours, 45 minutes, 30 seconds before fork
+    // 2 days, 3 hours, 45 minutes, 30 seconds before fork.
     const from = new Date(FORK_DATE.getTime() - (2 * 86400000 + 3 * 3600000 + 45 * 60000 + 30000));
     const diff = FORK_DATE.getTime() - from.getTime();
 
@@ -191,13 +194,13 @@ describe("Pro Page — FAQ Contracts", () => {
 
 describe("Pro Page — Alpha Circle", () => {
   it("should define Alpha Circle as top 10%", () => {
-    // Contract: the Alpha Circle is the top 10% of Founding Members
+    // Contract: the Alpha Circle is the top 10% of Founding Members.
     const topPercent = 10;
     expect(topPercent).toBe(10);
   });
 
   it("should compute cut line from total founders", () => {
-    // If there are 100 founders, the cut line is position 10
+    // If there are 100 founders, the cut line is position 10.
     const totalFounders = 100;
     const cutLine = Math.ceil(totalFounders * 0.10);
     expect(cutLine).toBe(10);
@@ -227,22 +230,23 @@ describe("Pro Page — Alpha Circle", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pro Page — Payment Flow States", () => {
-  const validSteps = ["closed", "plan", "currency", "payment", "status"];
+  const validSteps = ["details", "status"];
 
-  it("should start in closed state", () => {
-    expect(validSteps[0]).toBe("closed");
+  it("should start in details state for full-page checkout", () => {
+    expect(validSteps[0]).toBe("details");
   });
 
-  it("should define exactly 5 steps", () => {
-    expect(validSteps).toHaveLength(5);
+  it("should define exactly 2 steps", () => {
+    expect(validSteps).toHaveLength(2);
   });
 
   it("should include all expected steps", () => {
-    expect(validSteps).toContain("closed");
-    expect(validSteps).toContain("plan");
-    expect(validSteps).toContain("currency");
-    expect(validSteps).toContain("payment");
+    expect(validSteps).toContain("details");
     expect(validSteps).toContain("status");
+  });
+
+  it("should not include closed state because checkout is no longer a modal", () => {
+    expect(validSteps).not.toContain("closed");
   });
 
   const terminalStatuses = ["finished", "failed", "refunded", "expired"];

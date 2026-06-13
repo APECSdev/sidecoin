@@ -59,14 +59,19 @@ export const PLANS: Record<string, Plan> = {
   },
 };
 
-/** Curated list of cryptocurrencies shown by default. xec = eCash. */
+/**
+ * Conservative default currencies shown before the live provider list loads.
+ *
+ * NOTE:
+ * USDC/XEC/SOL are intentionally NOT featured by default. Production proved
+ * that static currency lists can drift from the live NOWPayments account
+ * configuration. The checkout now fetches /v1/pay/currencies and only shows
+ * live-supported options.
+ */
 export const FEATURED_CURRENCIES = [
   "btc",
   "eth",
-  "usdcerc20",
   "ltc",
-  "xec",
-  "sol",
 ] as const;
 
 /** Request body for POST /v1/pay/create. */
@@ -113,6 +118,15 @@ export interface PaymentStatus {
   founderNumber: number | null;
 }
 
+interface ApiErrorBody {
+  error?: {
+    code?: string;
+    message?: string;
+    details?: unknown;
+  };
+  message?: string;
+}
+
 // ─── API Client (our API only) ───────────────────────────────
 
 /**
@@ -138,7 +152,21 @@ export async function createPayment(
     if (!res.ok) {
       const body = await res.text();
       debugError("Create payment failed", res.status, body);
-      throw new Error(`Create payment failed: ${res.status}`);
+
+      let message = `Create payment failed: ${res.status}`;
+
+      try {
+        const parsed = JSON.parse(body) as ApiErrorBody;
+        if (parsed.error?.message) {
+          message = parsed.error.message;
+        } else if (parsed.message) {
+          message = parsed.message;
+        }
+      } catch {
+        // Keep the generic status-based message if the response is not JSON.
+      }
+
+      throw new Error(message);
     }
 
     const data: PaymentResponse = await res.json();
@@ -233,7 +261,7 @@ export function buildPaymentURI(
   // Ethereum-family (ETH, ERC-20 tokens)
   if (["eth", "usdcerc20", "usdterc20"].includes(lc)) {
     // For native ETH: ethereum:<address>?value=<wei>
-    // For ERC-20 display purposes we just use the address + amount
+    // For ERC-20 display purposes we just use the address + amount.
     const uri = `ethereum:${address}?value=${amount}`;
     debug("Built payment URI:", uri);
     return uri;
