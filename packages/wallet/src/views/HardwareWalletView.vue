@@ -16,6 +16,12 @@ const coin = ref("btc");
 const showOnDevice = ref(true);
 const account = ref<HardwareAccount | null>(null);
 
+const quickStart = [
+  "Connect your OneKey over WebUSB",
+  "Choose a derivation path",
+  "Confirm the address on-device",
+];
+
 async function connect() {
   error.value = "";
   status.value = "connecting";
@@ -42,47 +48,67 @@ async function fetchAddress() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-3xl">
-    <div class="mb-6">
-      <p class="text-xs uppercase tracking-widest text-ecash-500">OneKey integration</p>
-      <h2 class="mt-1 text-2xl font-bold">Hardware Wallet</h2>
-      <p class="mt-2 max-w-2xl text-sm text-gray-400">
-        Connect a OneKey device, derive addresses, and verify receive details
-        directly on your hardware wallet.
-      </p>
-    </div>
-
-    <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
-      <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
-        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h3 class="font-semibold text-white">{{ wallet.name }} Device</h3>
-            <p class="mt-1 text-xs text-gray-500">
-              Chromium + HTTPS or localhost · WebUSB required
-            </p>
-          </div>
-          <span
-            class="rounded-full px-3 py-1 text-xs font-semibold"
-            :class="{
-              'bg-gray-800 text-gray-400': status === 'idle',
-              'bg-yellow-900 text-yellow-300': status === 'connecting',
-              'bg-ecash-900 text-ecash-400': status === 'connected',
-              'bg-red-900 text-red-300': status === 'error',
-            }"
-          >
-            {{ status }}
-          </span>
+  <div class="mx-auto max-w-5xl">
+    <section class="rounded-2xl border border-gray-800 bg-gray-900 p-5">
+      <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-widest text-ecash-500">OneKey integration</p>
+          <h2 class="mt-1 text-3xl font-black">Hardware Wallet</h2>
+          <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
+            Verify receive addresses directly on your OneKey device and prepare
+            for higher-assurance signing workflows across the Drivechains
+            Financial Hub.
+          </p>
         </div>
 
-        <button
-          class="mt-5 rounded-lg bg-ecash-500 px-4 py-2 text-sm font-semibold text-gray-950 hover:bg-ecash-400 disabled:opacity-40"
-          :disabled="status === 'connecting'"
-          @click="connect"
-        >
-          {{ status === "connected" ? "Reconnect OneKey" : "Connect OneKey" }}
-        </button>
+        <div class="rounded-xl border border-gray-800 bg-gray-950 p-4 lg:w-72">
+          <p class="text-xs uppercase tracking-widest text-gray-500">Device status</p>
+          <div class="mt-3 flex items-center justify-between">
+            <span class="text-sm font-semibold text-white">{{ wallet.name }}</span>
+            <span
+              class="rounded-full px-3 py-1 text-xs font-semibold"
+              :class="{
+                'bg-gray-800 text-gray-400': status === 'idle',
+                'bg-yellow-900 text-yellow-300': status === 'connecting',
+                'bg-ecash-900 text-ecash-400': status === 'connected',
+                'bg-red-900 text-red-300': status === 'error',
+              }"
+            >
+              {{ status }}
+            </span>
+          </div>
+          <button
+            class="mt-4 w-full rounded-lg bg-ecash-500 px-4 py-2 text-sm font-semibold text-gray-950 hover:bg-ecash-400 disabled:opacity-40"
+            :disabled="status === 'connecting'"
+            @click="connect"
+          >
+            {{ status === "connected" ? "Reconnect OneKey" : "Connect OneKey" }}
+          </button>
+        </div>
+      </div>
+    </section>
 
-        <div v-if="status === 'connected'" class="mt-6 space-y-4 rounded-lg border border-gray-800 bg-gray-950 p-4">
+    <section class="mt-5 grid gap-4 md:grid-cols-3">
+      <div
+        v-for="(item, i) in quickStart"
+        :key="item"
+        class="rounded-xl border border-gray-800 bg-gray-900 p-4"
+      >
+        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-ecash-600 text-sm font-black text-white">
+          {{ i + 1 }}
+        </span>
+        <p class="mt-3 text-sm font-semibold text-white">{{ item }}</p>
+      </div>
+    </section>
+
+    <section class="mt-5 grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
+      <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+        <h3 class="font-semibold text-white">Address verification</h3>
+        <p class="mt-1 text-xs text-gray-500">
+          Chromium + HTTPS or localhost · WebUSB required
+        </p>
+
+        <div class="mt-5 space-y-4 rounded-lg border border-gray-800 bg-gray-950 p-4">
           <label class="block text-xs uppercase tracking-wide text-gray-500">
             Derivation path
             <input
@@ -106,6 +132,7 @@ async function fetchAddress() {
 
           <button
             class="rounded border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+            :disabled="status !== 'connected'"
             @click="fetchAddress"
           >
             Show address
@@ -125,9 +152,9 @@ async function fetchAddress() {
         <p v-if="error" class="mt-4 text-sm text-red-400" data-test="hw-error">
           {{ error }}
         </p>
-      </section>
+      </div>
 
-      <aside class="space-y-4">
+      <div class="space-y-5">
         <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
           <h3 class="font-semibold text-white">Basic hardware tools</h3>
           <ul class="mt-3 space-y-2 text-sm text-gray-400">
@@ -148,7 +175,7 @@ async function fetchAddress() {
           ]"
           cta="Upgrade for hardware signing"
         />
-      </aside>
-    </div>
+      </div>
+    </section>
   </div>
 </template>

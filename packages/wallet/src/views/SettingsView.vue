@@ -141,10 +141,13 @@ function handleSave() {
       <p v-else class="text-xs text-gray-500">Deriving…</p>
     </div>
 
-    <!-- Debug info -->
-    <div class="mt-8 rounded border border-gray-800 bg-gray-900 p-4">
-      <p class="mb-2 text-sm font-semibold text-gray-400">Debug Info</p>
-      <div class="space-y-1 font-mono text-xs text-gray-500">
+    <!-- Debug info hidden by default for a cleaner user-facing settings page. -->
+    <details class="mt-8 rounded border border-gray-800 bg-gray-900 p-4">
+      <summary class="cursor-pointer select-none text-sm font-semibold text-gray-400 hover:text-white">
+        Show Debug Info
+      </summary>
+
+      <div class="mt-4 space-y-1 border-t border-gray-800 pt-4 font-mono text-xs text-gray-500">
         <p>Version: 26.5.11</p>
         <p>Product: Drivechains Financial Hub</p>
         <p>Platform: Web</p>
@@ -154,6 +157,6 @@ function handleSave() {
         <p>Sidechains: Thunder · zSide · BitNames · BitAssets · Photon · Truthcoin · CoinShift</p>
         <p>BIPs: 300, 301</p>
       </div>
-    </div>
+    </details>
   </div>
 </template>
