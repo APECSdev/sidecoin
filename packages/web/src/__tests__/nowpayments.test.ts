@@ -82,52 +82,47 @@ describe("PLANS", () => {
 // ---------------------------------------------------------------------------
 
 describe("FEATURED_CURRENCIES", () => {
-  it("should default to LTC first during the temporary low-minimum checkout period", () => {
-    expect(FEATURED_CURRENCIES[0]).toBe("ltc");
+  it("should use the requested featured order", () => {
+    expect(FEATURED_CURRENCIES).toEqual([
+      "btc",
+      "eth",
+      "ltc",
+      "xmr",
+      "usdterc20",
+      "dash",
+    ]);
   });
 
-  it("should include BTC", () => {
-    expect(FEATURED_CURRENCIES).toContain("btc");
+  it("should default to BTC first", () => {
+    expect(FEATURED_CURRENCIES[0]).toBe("btc");
   });
 
   it("should include ETH", () => {
     expect(FEATURED_CURRENCIES).toContain("eth");
   });
 
+  it("should include LTC", () => {
+    expect(FEATURED_CURRENCIES).toContain("ltc");
+  });
+
   it("should include XMR", () => {
     expect(FEATURED_CURRENCIES).toContain("xmr");
   });
 
-  it("should include TRX", () => {
-    expect(FEATURED_CURRENCIES).toContain("trx");
+  it("should include USDT on Ethereum", () => {
+    expect(FEATURED_CURRENCIES).toContain("usdterc20");
   });
 
   it("should include DASH", () => {
     expect(FEATURED_CURRENCIES).toContain("dash");
   });
 
-  it("should include BCH", () => {
-    expect(FEATURED_CURRENCIES).toContain("bch");
+  it("should not include USDT on TRON at the current 2-month minimum", () => {
+    expect(FEATURED_CURRENCIES).not.toContain("usdttrc20");
   });
 
-  it("should include MATIC mainnet", () => {
-    expect(FEATURED_CURRENCIES).toContain("maticmainnet");
-  });
-
-  it("should include BNB Smart Chain", () => {
-    expect(FEATURED_CURRENCIES).toContain("bnbbsc");
-  });
-
-  it("should not include XLM until memo/extra-id handling is implemented", () => {
-    expect(FEATURED_CURRENCIES).not.toContain("xlm");
-  });
-
-  it("should not include XRP until destination-tag handling is implemented", () => {
-    expect(FEATURED_CURRENCIES).not.toContain("xrp");
-  });
-
-  it("should have exactly 9 featured currencies", () => {
-    expect(FEATURED_CURRENCIES).toHaveLength(9);
+  it("should have exactly 6 featured currencies", () => {
+    expect(FEATURED_CURRENCIES).toHaveLength(6);
   });
 
   it("should contain only lowercase strings", () => {
@@ -190,6 +185,11 @@ describe("buildPaymentURI", () => {
     it("should build a monero: URI for XMR", () => {
       const uri = buildPaymentURI("xmr", "84s7JaoGg2v5HS3zLPkqVfdtHS3MpKV1KcZmBK7E4fQ2MiM1HNVZLyuAReUBYEmDN15QF8zYeZutHTD7EZT2AaT3Dea8BBV", 0.1);
       expect(uri).toBe("monero:84s7JaoGg2v5HS3zLPkqVfdtHS3MpKV1KcZmBK7E4fQ2MiM1HNVZLyuAReUBYEmDN15QF8zYeZutHTD7EZT2AaT3Dea8BBV?tx_amount=0.1");
+    });
+
+    it("should include tx_payment_id when XMR has a payinExtraId", () => {
+      const uri = buildPaymentURI("xmr", "84s7JaoGg2v5HS3zLPkqVfdtHS3MpKV1KcZmBK7E4fQ2MiM1HNVZLyuAReUBYEmDN15QF8zYeZutHTD7EZT2AaT3Dea8BBV", 0.1, "abc123");
+      expect(uri).toBe("monero:84s7JaoGg2v5HS3zLPkqVfdtHS3MpKV1KcZmBK7E4fQ2MiM1HNVZLyuAReUBYEmDN15QF8zYeZutHTD7EZT2AaT3Dea8BBV?tx_amount=0.1&tx_payment_id=abc123");
     });
   });
 
@@ -308,11 +308,27 @@ describe("Type exports", () => {
       payAddress: "1addr",
       payAmount: 0.00042,
       payCurrency: "btc",
+      payinExtraId: null,
       priceAmountUsd: 5,
       durationMonths: 1,
       expiresAt: "2026-01-01T00:20:00Z",
     };
     expect(res.paymentId).toBe("pay-123");
+  });
+
+  it("should allow PaymentResponse with a payinExtraId", () => {
+    const res: PaymentResponse = {
+      orderId: "order-1",
+      paymentId: "pay-123",
+      payAddress: "1addr",
+      payAmount: 0.00042,
+      payCurrency: "xmr",
+      payinExtraId: "abc123",
+      priceAmountUsd: 5,
+      durationMonths: 1,
+      expiresAt: "2026-01-01T00:20:00Z",
+    };
+    expect(res.payinExtraId).toBe("abc123");
   });
 
   it("should allow PaymentResponse with a null expiresAt", () => {
@@ -322,6 +338,7 @@ describe("Type exports", () => {
       payAddress: "1addr",
       payAmount: 0.00042,
       payCurrency: "btc",
+      payinExtraId: null,
       priceAmountUsd: 5,
       durationMonths: 1,
       expiresAt: null,

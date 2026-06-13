@@ -14,8 +14,8 @@
  *   - Yearly checkout remains 1 year ($36).
  *
  * Steps:
- *   1. details — identity public key (required), email (optional), duration
- *      quantity, and pay currency
+ *   1. details — identity public key (required), email disabled until Resend
+ *      receipt wiring is complete, duration quantity, and pay currency
  *   2. status  — address + QR + price-lock timer + status polling
  */
 
@@ -37,6 +37,7 @@ const STATUS_POLL_INTERVAL_MS = 10_000;
 const MAX_QUANTITY = 12;
 const MIN_MONTHLY_QUANTITY = 2;
 const MIN_YEARLY_QUANTITY = 1;
+const MAX_SEARCH_RESULTS = 24;
 
 // ─── Debug Logging ───────────────────────────────────────────
 
@@ -60,9 +61,11 @@ const step = ref<Step>("details");
 const selectedPlan = ref<Plan | null>(PLANS.monthly);
 
 const publicKey = ref<string>("");
+// TODO: Wire receipt email through Resend before enabling this field.
 const email = ref<string>("");
 const quantity = ref<number>(MIN_MONTHLY_QUANTITY);
 const selectedCurrency = ref<string>(FEATURED_CURRENCIES[0] ?? "");
+const currencySearch = ref<string>("");
 
 const allCurrencies = ref<string[]>([]);
 const currenciesLoading = ref(false);
@@ -98,21 +101,91 @@ const displayCurrencies = computed(() => {
   );
 });
 
+const featuredCurrencySet = computed(() => {
+  return new Set(FEATURED_CURRENCIES.map((cur) => cur.toLowerCase()));
+});
+
+const searchedCurrencies = computed(() => {
+  const q = currencySearch.value.trim().toLowerCase();
+
+  if (q.length < 2) return [];
+
+  return allCurrencies.value
+    .filter((cur) => !featuredCurrencySet.value.has(cur))
+    .filter((cur) => {
+      const label = currencyLabels[cur] ?? cur.toUpperCase();
+      return cur.includes(q) || label.toLowerCase().includes(q);
+    })
+    .slice(0, MAX_SEARCH_RESULTS);
+});
+
+const selectedCurrencyKnown = computed(() => {
+  if (!selectedCurrency.value) return false;
+  if (displayCurrencies.value.includes(selectedCurrency.value)) return true;
+  if (normalizedAvailableCurrencies.value.size === 0) return true;
+  return normalizedAvailableCurrencies.value.has(selectedCurrency.value);
+});
+
 const currencyLabels: Record<string, string> = {
-  ltc: "Litecoin (LTC)",
   btc: "Bitcoin (BTC)",
   eth: "Ethereum (ETH)",
+  ltc: "Litecoin (LTC)",
   xmr: "Monero (XMR)",
+  usdterc20: "USDT (Ethereum)",
+  dash: "Dash",
   trx: "TRON (TRX)",
   xlm: "Stellar (XLM)",
   xrp: "XRP",
-  dash: "Dash",
   bch: "Bitcoin Cash (BCH)",
   doge: "Dogecoin (DOGE)",
   maticmainnet: "Polygon (MATIC)",
   bnbbsc: "BNB Smart Chain",
   usdttrc20: "USDT (TRC-20)",
   usdcsol: "USDC (Solana)",
+};
+
+const currencySymbols: Record<string, string> = {
+  btc: "₿",
+  eth: "Ξ",
+  ltc: "Ł",
+  xmr: "ɱ",
+  usdterc20: "₮",
+  dash: "D",
+  trx: "T",
+  xlm: "★",
+  xrp: "X",
+  bch: "Ƀ",
+  doge: "Ð",
+  maticmainnet: "M",
+  bnbbsc: "B",
+  usdttrc20: "₮",
+  usdcsol: "$",
+};
+
+const currencyLogoClasses: Record<string, string> = {
+  btc: "bg-orange-500 text-white",
+  eth: "bg-indigo-500 text-white",
+  ltc: "bg-slate-400 text-gray-950",
+  xmr: "bg-orange-600 text-white",
+  usdterc20: "bg-emerald-500 text-white",
+  dash: "bg-blue-500 text-white",
+  trx: "bg-red-600 text-white",
+  xlm: "bg-gray-100 text-gray-950",
+  xrp: "bg-gray-700 text-white",
+  bch: "bg-green-500 text-white",
+  doge: "bg-yellow-500 text-gray-950",
+  maticmainnet: "bg-purple-500 text-white",
+  bnbbsc: "bg-yellow-400 text-gray-950",
+  usdttrc20: "bg-emerald-500 text-white",
+  usdcsol: "bg-blue-600 text-white",
+};
+
+const currencyNetworkLabels: Record<string, string> = {
+  usdterc20: "ETH",
+  usdttrc20: "TRX",
+  usdcsol: "SOL",
+  maticmainnet: "Polygon",
+  bnbbsc: "BSC",
 };
 
 const publicKeyValid = computed(() => /^[0-9a-fA-F]{66}$/.test(publicKey.value.trim()));
@@ -143,8 +216,8 @@ const canSubmit = computed(
     publicKeyValid.value &&
     emailValid.value &&
     !!selectedCurrency.value &&
-    !paymentLoading.value &&
-    displayCurrencies.value.length > 0,
+    selectedCurrencyKnown.value &&
+    !paymentLoading.value,
 );
 
 const isTerminalStatus = computed(() => {
@@ -215,6 +288,23 @@ function ensureSelectedCurrency(): void {
   if (!available.includes(selectedCurrency.value)) {
     selectedCurrency.value = available[0];
   }
+}
+
+function currencyDisplayCode(currency: string): string {
+  if (currency === "usdterc20") return "USDT";
+  if (currency === "usdttrc20") return "USDT";
+  if (currency === "usdcsol") return "USDC";
+  if (currency === "maticmainnet") return "MATIC";
+  if (currency === "bnbbsc") return "BNB";
+  return currency.toUpperCase();
+}
+
+function currencySymbol(currency: string): string {
+  return currencySymbols[currency] ?? currency.slice(0, 1).toUpperCase();
+}
+
+function currencyLogoClass(currency: string): string {
+  return currencyLogoClasses[currency] ?? "bg-gray-700 text-white";
 }
 
 function openErrorDialog(message: string, title = "Payment could not be created"): void {
@@ -333,7 +423,6 @@ async function createPaymentInvoice(): Promise<void> {
       quantity: quantity.value,
       publicKey: publicKey.value.trim().toLowerCase(),
       payCurrency: selectedCurrency.value,
-      email: email.value.trim() || undefined,
     });
     debug("Payment created:", paymentData.value?.paymentId);
 
@@ -531,22 +620,19 @@ onUnmounted(() => {
           <!-- Email -->
           <div class="mt-4">
             <label class="block text-sm font-semibold text-white">
-              Email <span class="font-normal text-gray-500">(optional)</span>
+              Email <span class="font-normal text-gray-500">(coming later)</span>
             </label>
             <p class="mt-1 text-xs text-gray-500">
-              For your receipt only. Never used as your identity.
+              Receipt emails will be enabled after Resend is wired in.
             </p>
             <input
               v-model="email"
               type="email"
-              autocomplete="email"
-              placeholder="you@example.com"
-              class="mt-2 w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2.5 text-sm text-gray-200 placeholder-gray-600 focus:border-amber-600 focus:outline-none"
-              :class="{ 'border-red-700': email && !emailValid }"
+              autocomplete="off"
+              disabled
+              placeholder="Receipt email coming later"
+              class="mt-2 w-full cursor-not-allowed rounded-lg border border-gray-800 bg-gray-900/60 px-3 py-2.5 text-sm text-gray-500 placeholder-gray-600 opacity-70 focus:outline-none"
             />
-            <p v-if="email && !emailValid" class="mt-1 text-xs text-red-400">
-              Please enter a valid email address.
-            </p>
           </div>
 
           <!-- Duration quantity -->
@@ -580,9 +666,7 @@ onUnmounted(() => {
               class="mt-3 rounded-lg border border-amber-900/40 bg-amber-950/20 p-3"
             >
               <p class="text-xs leading-5 text-amber-200">
-                Temporary crypto processor minimum: monthly checkout currently
-                starts at 2 months ($10). Your account receives the full paid
-                duration.
+                2-month minimum for crypto processing.
               </p>
             </div>
           </div>
@@ -600,7 +684,7 @@ onUnmounted(() => {
               <button
                 v-for="cur in displayCurrencies"
                 :key="cur"
-                class="relative rounded-xl border px-3 py-3 text-center text-sm font-semibold transition-all"
+                class="relative rounded-xl border px-3 py-3 text-left text-sm font-semibold transition-all"
                 :class="
                   selectedCurrency === cur
                     ? 'border-amber-400 bg-amber-500/15 text-white shadow-lg shadow-amber-950/40 ring-2 ring-amber-400/70'
@@ -615,9 +699,26 @@ onUnmounted(() => {
                 >
                   ✓
                 </span>
-                <span class="block uppercase">{{ cur }}</span>
-                <span class="mt-0.5 block text-[10px] text-gray-500">
-                  {{ currencyLabels[cur] ?? cur.toUpperCase() }}
+                <span class="flex items-center gap-3">
+                  <span
+                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-base font-black"
+                    :class="currencyLogoClass(cur)"
+                    aria-hidden="true"
+                  >
+                    {{ currencySymbol(cur) }}
+                  </span>
+                  <span class="min-w-0">
+                    <span class="block uppercase">{{ currencyDisplayCode(cur) }}</span>
+                    <span class="mt-0.5 block truncate text-[10px] text-gray-500">
+                      {{ currencyLabels[cur] ?? cur.toUpperCase() }}
+                    </span>
+                    <span
+                      v-if="currencyNetworkLabels[cur]"
+                      class="mt-1 inline-flex rounded-full border border-gray-700 px-1.5 py-0.5 text-[9px] uppercase tracking-wide text-gray-400"
+                    >
+                      {{ currencyNetworkLabels[cur] }}
+                    </span>
+                  </span>
                 </span>
               </button>
             </div>
@@ -626,6 +727,67 @@ onUnmounted(() => {
               <p class="text-sm text-red-400">
                 No supported crypto payment currencies are available right now.
                 Please try again in a few minutes.
+              </p>
+            </div>
+
+            <div class="mt-5 rounded-xl border border-gray-800 bg-gray-900/50 p-4">
+              <label class="block text-xs font-semibold uppercase tracking-widest text-gray-500">
+                More currencies
+              </label>
+              <input
+                v-model="currencySearch"
+                type="search"
+                autocomplete="off"
+                spellcheck="false"
+                placeholder="Search provider-supported currencies..."
+                class="mt-2 w-full rounded-lg border border-gray-800 bg-gray-950 px-3 py-2.5 text-sm text-gray-200 placeholder-gray-600 focus:border-amber-600 focus:outline-none"
+              />
+              <p class="mt-2 text-xs leading-5 text-gray-500">
+                Additional currencies may have higher processor minimums. If one
+                fails, choose a featured option or increase duration.
+              </p>
+
+              <div v-if="searchedCurrencies.length > 0" class="mt-3 max-h-56 overflow-y-auto rounded-lg border border-gray-800">
+                <button
+                  v-for="cur in searchedCurrencies"
+                  :key="cur"
+                  class="flex w-full items-center gap-3 border-b border-gray-800 px-3 py-2.5 text-left text-sm transition last:border-b-0"
+                  :class="
+                    selectedCurrency === cur
+                      ? 'bg-amber-500/15 text-white'
+                      : 'bg-gray-950 text-gray-300 hover:bg-gray-900 hover:text-white'
+                  "
+                  @click="selectCurrency(cur)"
+                >
+                  <span
+                    class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-black"
+                    :class="currencyLogoClass(cur)"
+                    aria-hidden="true"
+                  >
+                    {{ currencySymbol(cur) }}
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block font-semibold uppercase">
+                      {{ currencyDisplayCode(cur) }}
+                    </span>
+                    <span class="block truncate text-xs text-gray-500">
+                      {{ currencyLabels[cur] ?? cur.toUpperCase() }}
+                    </span>
+                  </span>
+                  <span
+                    v-if="selectedCurrency === cur"
+                    class="rounded-full bg-amber-400 px-2 py-0.5 text-xs font-black text-gray-950"
+                  >
+                    Selected
+                  </span>
+                </button>
+              </div>
+
+              <p
+                v-if="currencySearch.trim().length >= 2 && searchedCurrencies.length === 0"
+                class="mt-3 text-xs text-gray-500"
+              >
+                No matching provider-supported currencies found.
               </p>
             </div>
           </div>
@@ -652,7 +814,7 @@ onUnmounted(() => {
           <div class="mt-6 flex flex-col items-center gap-4">
             <div class="rounded-xl border border-gray-800 bg-white p-4">
               <img
-                :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(buildPaymentURI(paymentData.payCurrency, paymentData.payAddress, paymentData.payAmount))}`"
+                :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(buildPaymentURI(paymentData.payCurrency, paymentData.payAddress, paymentData.payAmount, paymentData.payinExtraId))}`"
                 :alt="`QR code for ${paymentData.payCurrency} payment`"
                 class="h-48 w-48"
                 loading="eager"
@@ -672,6 +834,22 @@ onUnmounted(() => {
               <p class="mb-1 text-xs text-gray-500">To address:</p>
               <p class="select-all break-all font-mono text-xs text-gray-300">
                 {{ paymentData.payAddress }}
+              </p>
+            </div>
+
+            <div
+              v-if="paymentData.payinExtraId"
+              class="w-full rounded-lg border border-amber-900/60 bg-amber-950/20 p-3"
+            >
+              <p class="mb-1 text-xs font-semibold uppercase tracking-widest text-amber-300">
+                Payment ID / Memo / Tag required
+              </p>
+              <p class="select-all break-all font-mono text-sm font-bold text-amber-100">
+                {{ paymentData.payinExtraId }}
+              </p>
+              <p class="mt-2 text-xs leading-5 text-amber-200">
+                Include this value with your payment. Missing or incorrect memo/tag
+                information can prevent the payment from being credited.
               </p>
             </div>
 

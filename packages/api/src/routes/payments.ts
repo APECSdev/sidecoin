@@ -353,6 +353,7 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
     pay_currency?: string;
     payment_status?: string;
     expiration_estimate_date?: string;
+    payin_extra_id?: string | number | null;
     outcome_amount?: number;
     outcome_currency?: string;
   };
@@ -360,6 +361,7 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
   console.log("[pay/create] NOWPayments payment created", {
     payment_id: pay.payment_id != null ? String(pay.payment_id) : null,
     pay_currency: pay.pay_currency ?? payCurrencyRaw,
+    payin_extra_id: pay.payin_extra_id != null ? "[present]" : null,
     outcome_currency: pay.outcome_currency ?? null,
     payment_status: pay.payment_status ?? null,
   });
@@ -373,6 +375,9 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
   }
 
   const paymentId = String(pay.payment_id);
+  const payinExtraId = pay.payin_extra_id != null
+    ? String(pay.payin_extra_id)
+    : null;
   const now = Math.floor(Date.now() / 1000);
 
   try {
@@ -407,6 +412,7 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
     payAddress: pay.pay_address,
     payAmount: pay.pay_amount,
     payCurrency: pay.pay_currency ?? payCurrencyRaw,
+    payinExtraId,
     priceAmountUsd: priceAmount,
     durationMonths: months,
     expiresAt: pay.expiration_estimate_date ?? null,

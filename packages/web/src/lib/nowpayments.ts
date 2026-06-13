@@ -65,20 +65,17 @@ export const PLANS: Record<string, Plan> = {
  * Live NOWPayments testing confirmed that $10 direct payments succeed for
  * these currencies while $5 currently fails against the active outcome route.
  *
- * Intentionally excluded for now:
- *   - xlm / xrp: may require memo/tag/extra-id handling, which the current UI
- *     does not yet display.
+ * USDT(ETH) is included because usdterc20 tested successfully at $10.
+ * USDT(TRX) is intentionally excluded because usdttrc20 currently requires a
+ * higher minimum against the active XMR route.
  */
 export const FEATURED_CURRENCIES = [
-  "ltc",
   "btc",
   "eth",
+  "ltc",
   "xmr",
-  "trx",
+  "usdterc20",
   "dash",
-  "bch",
-  "maticmainnet",
-  "bnbbsc",
 ] as const;
 
 /** Request body for POST /v1/pay/create. */
@@ -97,6 +94,8 @@ export interface PaymentResponse {
   payAddress: string;
   payAmount: number;
   payCurrency: string;
+  /** Optional provider memo/tag/payment-id field required by some currencies. */
+  payinExtraId: string | null;
   priceAmountUsd: number;
   durationMonths: number;
   /** ISO 8601 price-lock expiry, or null if upstream didn't provide one. */
@@ -196,9 +195,15 @@ export async function createPayment(
       throw new PaymentApiError(message, code, res.status, details);
     }
 
-    const data: PaymentResponse = await res.json();
-    debug("Payment created", data.paymentId);
-    return data;
+    const data = (await res.json()) as PaymentResponse & {
+      payinExtraId?: string | null;
+    };
+    const normalized: PaymentResponse = {
+      ...data,
+      payinExtraId: data.payinExtraId ?? null,
+    };
+    debug("Payment created", normalized.paymentId);
+    return normalized;
   } catch (err) {
     debugError("createPayment error:", err);
     throw err;
@@ -264,6 +269,7 @@ export function buildPaymentURI(
   currency: string,
   address: string,
   amount: number,
+  payinExtraId?: string | null,
 ): string {
   const lc = currency.toLowerCase();
 
@@ -290,7 +296,11 @@ export function buildPaymentURI(
 
   // Monero
   if (lc === "xmr") {
-    const uri = `monero:${address}?tx_amount=${amount}`;
+    const params = new URLSearchParams({ tx_amount: String(amount) });
+    if (payinExtraId) {
+      params.set("tx_payment_id", payinExtraId);
+    }
+    const uri = `monero:${address}?${params.toString()}`;
     debug("Built payment URI:", uri);
     return uri;
   }
@@ -304,7 +314,8 @@ export function buildPaymentURI(
     return uri;
   }
 
-  // Fallback: just the address
+  // Fallback: just the address. If a memo/tag/payment-id is required, the UI
+  // displays payinExtraId separately so the user can copy it explicitly.
   debug("No URI scheme for", lc, "— returning address");
   return address;
 }

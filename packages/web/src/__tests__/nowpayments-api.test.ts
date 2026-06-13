@@ -143,6 +143,7 @@ describe("createPayment", () => {
       payAddress: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
       payAmount: 0.00042,
       payCurrency: "btc",
+      payinExtraId: null,
       priceAmountUsd: 5,
       durationMonths: 1,
       expiresAt: "2026-05-31T00:20:00Z",
@@ -155,6 +156,49 @@ describe("createPayment", () => {
     expect(result.paymentId).toBe("pay-abc-123");
     expect(result.payAddress).toBe("1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa");
     expect(result.payAmount).toBe(0.00042);
+    expect(result.payinExtraId).toBeNull();
+  });
+
+  it("should normalize missing payinExtraId to null", async () => {
+    const mockPayment = {
+      orderId: "monthly-1234567890",
+      paymentId: "pay-abc-123",
+      payAddress: "1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa",
+      payAmount: 0.00042,
+      payCurrency: "btc",
+      priceAmountUsd: 5,
+      durationMonths: 1,
+      expiresAt: "2026-05-31T00:20:00Z",
+    };
+
+    mockFetchResponse(mockPayment);
+
+    const result = await createPayment(testRequest);
+
+    expect(result.payinExtraId).toBeNull();
+  });
+
+  it("should preserve payinExtraId when returned by the API", async () => {
+    const mockPayment = {
+      orderId: "monthly-1234567890",
+      paymentId: "pay-abc-123",
+      payAddress: "84s7JaoGg2v5HS3zLPkqVfdtHS3MpKV1KcZmBK7E4fQ2MiM1HNVZLyuAReUBYEmDN15QF8zYeZutHTD7EZT2AaT3Dea8BBV",
+      payAmount: 0.028,
+      payCurrency: "xmr",
+      payinExtraId: "abc123",
+      priceAmountUsd: 10,
+      durationMonths: 2,
+      expiresAt: "2026-05-31T00:20:00Z",
+    };
+
+    mockFetchResponse(mockPayment);
+
+    const result = await createPayment({
+      ...testRequest,
+      payCurrency: "xmr",
+    });
+
+    expect(result.payinExtraId).toBe("abc123");
   });
 
   it("should NOT include an api key header (white-label: key stays in the Worker)", async () => {
@@ -164,6 +208,7 @@ describe("createPayment", () => {
       payAddress: "addr",
       payAmount: 1,
       payCurrency: "btc",
+      payinExtraId: null,
       priceAmountUsd: 5,
       durationMonths: 1,
       expiresAt: null,
@@ -185,6 +230,7 @@ describe("createPayment", () => {
       payAddress: "addr",
       payAmount: 1,
       payCurrency: "btc",
+      payinExtraId: null,
       priceAmountUsd: 5,
       durationMonths: 1,
       expiresAt: null,
@@ -205,6 +251,7 @@ describe("createPayment", () => {
       payAddress: "addr",
       payAmount: 1,
       payCurrency: "btc",
+      payinExtraId: null,
       priceAmountUsd: 5,
       durationMonths: 1,
       expiresAt: null,

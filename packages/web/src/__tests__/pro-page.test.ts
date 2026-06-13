@@ -66,42 +66,35 @@ describe("Pro Page — Pricing Integrity", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pro Page — Currency Selection", () => {
-  it("should show temporary $10-tested crypto payment options", () => {
+  it("should show the requested featured crypto payment options", () => {
     expect(FEATURED_CURRENCIES).toEqual([
-      "ltc",
       "btc",
       "eth",
+      "ltc",
       "xmr",
-      "trx",
+      "usdterc20",
       "dash",
-      "bch",
-      "maticmainnet",
-      "bnbbsc",
     ]);
   });
 
-  it("should default to LTC first", () => {
-    expect(FEATURED_CURRENCIES[0]).toBe("ltc");
+  it("should default to BTC first", () => {
+    expect(FEATURED_CURRENCIES[0]).toBe("btc");
   });
 
-  it("should include the core tested currencies", () => {
-    expect(FEATURED_CURRENCIES).toContain("ltc");
+  it("should include the requested core currencies", () => {
     expect(FEATURED_CURRENCIES).toContain("btc");
     expect(FEATURED_CURRENCIES).toContain("eth");
+    expect(FEATURED_CURRENCIES).toContain("ltc");
     expect(FEATURED_CURRENCIES).toContain("xmr");
-    expect(FEATURED_CURRENCIES).toContain("trx");
   });
 
-  it("should include additional tested low-minimum options", () => {
+  it("should include USDT on Ethereum", () => {
+    expect(FEATURED_CURRENCIES).toContain("usdterc20");
+  });
+
+  it("should include DASH instead of USDT on TRON", () => {
     expect(FEATURED_CURRENCIES).toContain("dash");
-    expect(FEATURED_CURRENCIES).toContain("bch");
-    expect(FEATURED_CURRENCIES).toContain("maticmainnet");
-    expect(FEATURED_CURRENCIES).toContain("bnbbsc");
-  });
-
-  it("should not include XLM/XRP until memo/tag handling is implemented", () => {
-    expect(FEATURED_CURRENCIES).not.toContain("xlm");
-    expect(FEATURED_CURRENCIES).not.toContain("xrp");
+    expect(FEATURED_CURRENCIES).not.toContain("usdttrc20");
   });
 
   it("should NOT include fiat currencies in featured list", () => {
