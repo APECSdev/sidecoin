@@ -7,32 +7,20 @@ import type { SidechainSummary } from "../api";
 import { deriveDrivechainAddress } from "@sidecoin/shared";
 import { loadWallet } from "../keystore";
 import { getPlatformById } from "../data/platforms";
+import { canAccessPlatform, isProPlatform } from "../entitlements";
+import ProBadge from "../components/pro/ProBadge.vue";
 
-// Slots whose L2 receive-address derivation has been VERIFIED against
-// thunder-rust (SLIP-0010 m/1'/0'/0'/1' -> blake3 dkLen:20 -> base58):
-//   slot 9 = Thunder, slot 4 = BitAssets.
-// Both share the identical scheme, so the derived address is the same for
-// each. We deliberately do NOT surface an address for unverified chains
-// (zSide, BitNames, Photon, Truthcoin, CoinShift, RISCy) — their derivation
-// schemes are unconfirmed and we will not display an address we cannot
-// stand behind.
 const VERIFIED_ADDRESS_SLOTS = new Set<number>([9, 4]);
 
 const sidechains = ref<SidechainSummary[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
-// L2 drivechain receive address derived from the stored wallet key.
-// Slot-independent (identical for Thunder slot 9 and BitAssets slot 4),
-// so a single derived value is rendered on every verified card.
 const drivechainAddress = ref("");
 const addressError = ref("");
 const copiedSlot = ref<number | null>(null);
 
 onMounted(async () => {
-  // Derive the L2 receive address from the stored mnemonic, mirroring
-  // ReceiveView. If no wallet exists yet, verified cards simply omit the
-  // address block.
   const wallet = loadWallet();
   if (wallet) {
     try {
@@ -66,6 +54,10 @@ function platformUseCase(id: string): string {
   return getPlatformById(id)?.primaryUseCase ?? "Platform";
 }
 
+function platformTagline(id: string): string {
+  return getPlatformById(id)?.tagline ?? "";
+}
+
 async function copyAddress(slot: number) {
   if (!drivechainAddress.value) return;
   try {
@@ -82,10 +74,28 @@ async function copyAddress(slot: number) {
 
 <template>
   <div>
-    <h2 class="mb-2 text-2xl font-bold">Platforms</h2>
-    <p class="mb-6 text-sm text-gray-400">
-      BIP-300 / BIP-301 Drivechain platforms — 7 active at launch, plus RISCy proposed
-    </p>
+    <section class="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-5">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-widest text-ecash-500">
+            Drivechains Financial Hub
+          </p>
+          <h2 class="mt-1 text-3xl font-black">Platforms</h2>
+          <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
+            Basic includes L1, Thunder, and BitNames. Sidecoin PRO unlocks the
+            complete platform suite, historical analysis, hardware signing
+            workflows, and early access to proposed platforms like RISCy.
+          </p>
+        </div>
+
+        <router-link
+          to="/pro"
+          class="rounded-xl bg-amber-500 px-5 py-3 text-sm font-black text-gray-950 transition-colors hover:bg-amber-400"
+        >
+          View PRO benefits
+        </router-link>
+      </div>
+    </section>
 
     <div v-if="addressError" class="mb-4 rounded border border-yellow-800 bg-yellow-950/30 p-3 text-sm text-yellow-400">
       {{ addressError }}
@@ -102,19 +112,26 @@ async function copyAddress(slot: number) {
       <div
         v-for="sc in sidechains"
         :key="sc.slot"
-        class="rounded-lg border border-gray-800 bg-gray-900 p-4"
+        class="rounded-xl border border-gray-800 bg-gray-900 p-4"
       >
-        <div class="flex items-center justify-between gap-3">
-          <h3 class="font-semibold text-white">{{ sc.displayName }}</h3>
-          <span
-            class="rounded-full px-2 py-0.5 text-xs font-medium"
-            :class="sc.status === 'active' ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-500'"
-          >
-            {{ sc.status === "active" ? "Active" : "Pending" }}
-          </span>
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <h3 class="font-semibold text-white">{{ sc.displayName }}</h3>
+            <p class="mt-1 text-xs text-gray-500">{{ platformTagline(sc.id) }}</p>
+          </div>
+
+          <div class="flex shrink-0 flex-col items-end gap-2">
+            <ProBadge v-if="isProPlatform(sc.id)" />
+            <span
+              class="rounded-full px-2 py-0.5 text-xs font-medium"
+              :class="sc.status === 'active' ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-500'"
+            >
+              {{ sc.status === "active" ? "Active" : "Proposed" }}
+            </span>
+          </div>
         </div>
 
-        <p class="mt-1 text-sm text-gray-400">{{ sc.description }}</p>
+        <p class="mt-3 text-sm text-gray-400">{{ sc.description }}</p>
 
         <div class="mt-3 flex items-center justify-between text-xs">
           <p class="font-mono text-gray-600">Slot {{ sc.slot }}</p>
@@ -127,11 +144,9 @@ async function copyAddress(slot: number) {
           :to="platformHref(sc.id)"
           class="mt-4 inline-flex rounded-lg border border-gray-700 px-3 py-2 text-xs font-semibold text-gray-200 hover:border-ecash-500 hover:bg-gray-800 hover:text-white"
         >
-          Open platform
+          {{ canAccessPlatform(sc.id) ? "Open platform" : "Unlock platform" }}
         </router-link>
 
-        <!-- L2 receive address — only on VERIFIED chains (Thunder slot 9,
-             BitAssets slot 4) and only once a wallet key exists. -->
         <div
           v-if="isVerified(sc.slot)"
           class="mt-3 border-t border-gray-800 pt-3"

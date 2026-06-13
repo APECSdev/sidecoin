@@ -4,6 +4,9 @@
 import { computed, ref, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import { getPlatformById } from "../data/platforms";
+import { canAccessPlatform, isProPlatform } from "../entitlements";
+import ProBadge from "../components/pro/ProBadge.vue";
+import ProGate from "../components/pro/ProGate.vue";
 
 const route = useRoute();
 const selectedTabId = ref("");
@@ -11,6 +14,10 @@ const selectedTabId = ref("");
 const platform = computed(() => {
   const id = String(route.params.platformId ?? "");
   return getPlatformById(id);
+});
+
+const locked = computed(() => {
+  return platform.value ? !canAccessPlatform(platform.value.id) : false;
 });
 
 watchEffect(() => {
@@ -28,6 +35,13 @@ watchEffect(() => {
 const selectedTab = computed(() => {
   return platform.value?.featureTabs.find((tab) => tab.id === selectedTabId.value);
 });
+
+const proBenefits = computed(() => [
+  `Unlock ${platform.value?.displayName ?? "this platform"} workflows`,
+  "Historical analysis across platforms",
+  "Hardware signing workflows",
+  "Early access to proposed platforms like RISCy",
+]);
 </script>
 
 <template>
@@ -39,7 +53,7 @@ const selectedTab = computed(() => {
     <div class="mt-6 rounded-xl border border-red-800 bg-red-950/30 p-6">
       <h2 class="text-2xl font-bold text-red-300">Platform not found</h2>
       <p class="mt-2 text-sm text-red-200/80">
-        This platform route does not exist yet.
+        This platform route does not exist.
       </p>
     </div>
   </div>
@@ -55,9 +69,12 @@ const selectedTab = computed(() => {
           <p class="text-xs uppercase tracking-widest text-ecash-500">
             Platform · Slot {{ platform.slot }}
           </p>
-          <h2 class="mt-2 text-3xl font-extrabold text-white">
-            {{ platform.displayName }}
-          </h2>
+          <div class="mt-2 flex flex-wrap items-center gap-3">
+            <h2 class="text-3xl font-extrabold text-white">
+              {{ platform.displayName }}
+            </h2>
+            <ProBadge v-if="isProPlatform(platform.id)" />
+          </div>
           <p class="mt-2 max-w-2xl text-gray-400">
             {{ platform.tagline }}
           </p>
@@ -81,7 +98,19 @@ const selectedTab = computed(() => {
       </p>
     </section>
 
-    <section class="mt-6 rounded-2xl border border-gray-800 bg-gray-900 p-4">
+    <ProGate
+      v-if="locked"
+      class="mt-6"
+      :title="`Unlock ${platform.displayName} with Sidecoin PRO`"
+      :description="`${platform.displayName} is part of the complete Drivechains Financial Hub. Upgrade to access premium platform workflows, analytics, and early platform features.`"
+      :benefits="proBenefits"
+      cta="Unlock with PRO"
+    />
+
+    <section
+      v-else
+      class="mt-6 rounded-2xl border border-gray-800 bg-gray-900 p-4"
+    >
       <div class="overflow-x-auto">
         <div class="flex min-w-max gap-2 border-b border-gray-800 pb-3">
           <button
@@ -107,7 +136,7 @@ const selectedTab = computed(() => {
 
         <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
           <p class="mb-3 text-xs uppercase tracking-widest text-gray-500">
-            Feature scaffold
+            Features
           </p>
           <ul class="space-y-2">
             <li
@@ -121,11 +150,6 @@ const selectedTab = computed(() => {
           </ul>
         </div>
       </div>
-    </section>
-
-    <section class="mt-6 rounded-xl border border-yellow-800 bg-yellow-950/30 p-4 text-sm text-yellow-500">
-      UI scaffold only. Platform-specific signing, validation, and network calls
-      should be wired after the underlying sidechain integration is confirmed.
     </section>
   </div>
 </template>

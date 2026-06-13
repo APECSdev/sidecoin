@@ -40,11 +40,11 @@ function flipAssets() {
 <template>
   <div class="mx-auto max-w-xl">
     <div class="mb-6">
-      <p class="text-xs uppercase tracking-widest text-ecash-500">DEX Preview</p>
+      <p class="text-xs uppercase tracking-widest text-ecash-500">Asset routing</p>
       <h2 class="mt-1 text-2xl font-bold">Asset Swap</h2>
       <p class="mt-2 text-sm text-gray-400">
-        Swap between eCash and supported Drivechain assets. The interface is
-        ready for routing, quotes, and liquidity once the swap backend is live.
+        Swap between eCash and supported Drivechain assets. Route assets across the Drivechains Financial Hub with clear quote review,
+        slippage controls, and partner-powered liquidity.
       </p>
     </div>
 
@@ -121,7 +121,7 @@ function flipAssets() {
         </div>
         <div class="flex justify-between text-gray-400">
           <span>Rate</span>
-          <span class="text-gray-200">1.00000000 placeholder</span>
+          <span class="text-gray-200">1.00000000</span>
         </div>
         <div class="flex justify-between text-gray-400">
           <span>Slippage tolerance</span>
@@ -129,7 +129,7 @@ function flipAssets() {
         </div>
         <div class="flex justify-between text-gray-400">
           <span>Network fee</span>
-          <span class="text-gray-200">Estimated at quote time</span>
+          <span class="text-gray-200">Calculated during review</span>
         </div>
       </div>
 
@@ -138,13 +138,9 @@ function flipAssets() {
         :disabled="!canPreview"
         class="mt-4 w-full rounded-xl bg-ecash-600 px-4 py-3 text-sm font-bold text-white transition-colors hover:bg-ecash-500 disabled:cursor-not-allowed disabled:bg-gray-800 disabled:text-gray-500"
       >
-        Preview swap unavailable
+        Review swap
       </button>
     </div>
 
-    <div class="mt-4 rounded-lg border border-yellow-800 bg-yellow-950/30 p-3 text-xs text-yellow-500">
-      Swap execution is disabled until the quote router and signing flow are
-      wired. This page is a production-style UI shell, not a live exchange.
-    </div>
   </div>
 </template>

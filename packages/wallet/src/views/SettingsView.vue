@@ -146,6 +146,7 @@ function handleSave() {
       <p class="mb-2 text-sm font-semibold text-gray-400">Debug Info</p>
       <div class="space-y-1 font-mono text-xs text-gray-500">
         <p>Version: 26.5.11</p>
+        <p>Product: Drivechains Financial Hub</p>
         <p>Platform: Web</p>
         <p>Adapter: {{ usingDefault ? "Default" : "Custom" }}</p>
         <p>Fork Target: 2026-08-21 15:00Z</p>

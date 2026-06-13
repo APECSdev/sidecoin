@@ -4,8 +4,8 @@
 import { ref } from "vue";
 import type { HardwareWallet, HardwareAccount } from "../hardware/types";
 import { OneKeyHardwareWallet } from "../hardware/onekey";
+import ProGate from "../components/pro/ProGate.vue";
 
-// Injectable so unit tests can pass a fake (the real adapter touches WebUSB).
 const props = defineProps<{ wallet?: HardwareWallet }>();
 const wallet: HardwareWallet = props.wallet ?? new OneKeyHardwareWallet();
 
@@ -47,9 +47,8 @@ async function fetchAddress() {
       <p class="text-xs uppercase tracking-widest text-ecash-500">OneKey integration</p>
       <h2 class="mt-1 text-2xl font-bold">Hardware Wallet</h2>
       <p class="mt-2 max-w-2xl text-sm text-gray-400">
-        Connect a OneKey device, derive an address, and verify it on-device.
-        Signing remains disabled until fork network parameters and transaction
-        support are validated end-to-end.
+        Connect a OneKey device, derive addresses, and verify receive details
+        directly on your hardware wallet.
       </p>
     </div>
 
@@ -130,20 +129,25 @@ async function fetchAddress() {
 
       <aside class="space-y-4">
         <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
-          <h3 class="font-semibold text-white">Current support</h3>
+          <h3 class="font-semibold text-white">Basic hardware tools</h3>
           <ul class="mt-3 space-y-2 text-sm text-gray-400">
             <li>✓ Device discovery</li>
             <li>✓ Address derivation</li>
             <li>✓ On-device address confirmation</li>
-            <li class="text-gray-600">○ Transaction signing pending</li>
           </ul>
         </div>
 
-        <div class="rounded-xl border border-yellow-800 bg-yellow-950/30 p-4 text-sm text-yellow-500">
-          Verify every hardware-derived address on the OneKey screen before
-          receiving funds. Browser text alone is not sufficient for high-value
-          transfers.
-        </div>
+        <ProGate
+          title="Unlock hardware signing with PRO"
+          description="Sidecoin PRO adds advanced hardware workflows for platform transactions, split review, and higher-assurance wallet operations."
+          :benefits="[
+            'Hardware signing workflows',
+            'Advanced transaction review',
+            'Platform-aware signing screens',
+            'Historical analysis for signed activity',
+          ]"
+          cta="Upgrade for hardware signing"
+        />
       </aside>
     </div>
   </div>

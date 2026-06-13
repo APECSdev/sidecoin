@@ -12,6 +12,7 @@ async function mountPlatform(path: string) {
     routes: [
       { path: "/platforms", name: "platforms", component: SidechainsView },
       { path: "/platforms/:platformId", name: "platform-detail", component: PlatformDetailView },
+      { path: "/pro", name: "pro", component: { template: "<div />" } },
     ],
   });
 
@@ -33,11 +34,18 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("Payments");
   });
 
-  it("renders horizontal feature tabs", async () => {
+  it("renders horizontal feature tabs for Basic platforms", async () => {
+    const wrapper = await mountPlatform("/platforms/thunder");
+    expect(wrapper.text()).toContain("Payments");
+    expect(wrapper.text()).toContain("Channels");
+    expect(wrapper.text()).toContain("Liquidity");
+  });
+
+  it("renders a clear PRO CTA for gated platforms", async () => {
     const wrapper = await mountPlatform("/platforms/zside");
-    expect(wrapper.text()).toContain("Shield");
-    expect(wrapper.text()).toContain("Private Send");
-    expect(wrapper.text()).toContain("Unshield");
+    expect(wrapper.text()).toContain("Unlock zSide with Sidecoin PRO");
+    expect(wrapper.text()).toContain("Historical analysis across platforms");
+    expect(wrapper.text()).toContain("Early access to proposed platforms like RISCy");
   });
 
   it("can switch feature tabs", async () => {

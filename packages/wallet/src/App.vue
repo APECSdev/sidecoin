@@ -3,6 +3,7 @@
 <script setup lang="ts">
 import { RouterView } from "vue-router";
 import InstallWallet from "./components/InstallWallet.vue";
+import ProStatusCard from "./components/pro/ProStatusCard.vue";
 
 const links = [
   { to: "/", label: "Home" },
@@ -12,6 +13,7 @@ const links = [
   { to: "/platforms", label: "Platforms" },
   { to: "/hardware", label: "Hardware" },
   { to: "/toolbox", label: "Tools" },
+  { to: "/pro", label: "PRO" },
   { to: "/settings", label: "Settings" },
 ];
 </script>
@@ -28,7 +30,7 @@ const links = [
           <span class="sr-only">Sidecoin</span>
         </h1>
         <p class="text-[10px] uppercase tracking-wider text-gray-600">
-          eCash Drivechains
+          Drivechains Financial Hub
         </p>
       </div>
       <span class="font-mono text-[10px] text-ecash-400">2026·08·21</span>
@@ -43,7 +45,7 @@ const links = [
           <span aria-hidden="true">SidΞcoin</span>
           <span class="sr-only">Sidecoin</span>
         </h1>
-        <p class="text-xs text-gray-500">eCash Drivechains Wallet</p>
+        <p class="text-xs text-gray-500">Drivechains Financial Hub</p>
       </div>
 
       <ul class="space-y-1">
@@ -58,7 +60,9 @@ const links = [
         </li>
       </ul>
 
-      <div class="mt-auto">
+      <div class="mt-auto space-y-3">
+        <ProStatusCard />
+
         <div class="rounded bg-gray-900 p-3 text-xs text-gray-500">
           <p>eCash Hard Fork</p>
           <p class="mt-1 font-mono text-ecash-400">2026-08-21 15:00Z</p>

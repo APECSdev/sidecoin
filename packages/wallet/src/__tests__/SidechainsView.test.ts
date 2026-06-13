@@ -34,6 +34,7 @@ function createTestRouter() {
     routes: [
       { path: "/platforms", name: "platforms", component: SidechainsView },
       { path: "/platforms/:platformId", name: "platform-detail", component: { template: "<div />" } },
+      { path: "/pro", name: "pro", component: { template: "<div />" } },
     ],
   });
 }
@@ -70,7 +71,9 @@ describe("Platforms view", () => {
 
   it("should render BIP-300/301 subtitle", async () => {
     const wrapper = await mountPlatforms();
-    expect(wrapper.text()).toContain("BIP-300 / BIP-301 Drivechain platforms");
+    expect(wrapper.text()).toContain("Drivechains Financial Hub");
+    expect(wrapper.text()).toContain("Sidecoin PRO unlocks");
+    expect(wrapper.text()).toContain("early access to proposed platforms like RISCy");
   });
 
   it("should render all 8 platform cards", async () => {
@@ -110,9 +113,9 @@ describe("Platforms view", () => {
     expect(activeMatches!.length).toBeGreaterThanOrEqual(7);
   });
 
-  it("should show 'Pending' badge for inactive platforms", async () => {
+  it("should show 'Proposed' badge for proposed platforms", async () => {
     const wrapper = await mountPlatforms();
-    expect(wrapper.text()).toContain("Pending");
+    expect(wrapper.text()).toContain("Proposed");
   });
 
   it("should call getSidechains on mount", async () => {

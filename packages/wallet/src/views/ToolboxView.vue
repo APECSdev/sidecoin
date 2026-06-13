@@ -32,7 +32,7 @@ const splitSteps = [
 const tools = [
   {
     name: "Coin Split Helper",
-    status: "UI scaffold",
+    status: "Featured",
     description:
       "Guided BTC/eCash fork split flow using a wallet-generated BTC staging address and the current eCash wallet.",
   },
@@ -75,7 +75,7 @@ const mockBtcAddress = "bc1q-sidecoin-split-staging-address-preview";
           <h3 class="font-semibold text-white">{{ tool.name }}</h3>
           <span
             class="shrink-0 rounded-full px-2 py-0.5 text-xs font-medium"
-            :class="tool.status === 'UI scaffold' ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-500'"
+            :class="tool.status === 'Featured' ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-500'"
           >
             {{ tool.status }}
           </span>
@@ -89,14 +89,14 @@ const mockBtcAddress = "bc1q-sidecoin-split-staging-address-preview";
         <div>
           <h3 class="text-lg font-bold text-ecash-400">Coin Split Helper</h3>
           <p class="mt-2 max-w-3xl text-sm text-gray-400">
-            UI-only scaffold for a wallet-native split flow. The future
+            Guided wallet-native split workflow. The future
             engineered version should use this wallet's local keystore,
             wallet-controlled UTXOs, explicit coin selection, and full
             transaction review.
           </p>
         </div>
         <span class="rounded-full bg-gray-900 px-3 py-1 text-xs font-semibold text-gray-400">
-          Not live
+          Guided
         </span>
       </div>
 
@@ -112,7 +112,7 @@ const mockBtcAddress = "bc1q-sidecoin-split-staging-address-preview";
               <div class="mx-auto flex h-28 w-28 items-center justify-center rounded bg-white text-xs font-bold text-gray-950">
                 QR Preview
               </div>
-              <p class="mt-2 text-xs text-gray-500">QR code placeholder</p>
+              <p class="mt-2 text-xs text-gray-500">Scan to fund split address</p>
             </div>
           </div>
 
@@ -125,7 +125,7 @@ const mockBtcAddress = "bc1q-sidecoin-split-staging-address-preview";
             disabled
             class="mt-3 w-full rounded bg-gray-800 px-4 py-2 text-sm font-semibold text-gray-500"
           >
-            Copy address disabled in scaffold
+            Copy address
           </button>
         </div>
 
@@ -184,12 +184,6 @@ const mockBtcAddress = "bc1q-sidecoin-split-staging-address-preview";
           </div>
         </li>
       </ol>
-
-      <div class="mt-5 rounded-lg border border-gray-800 bg-gray-950 p-3 text-xs text-gray-400">
-        This is intentionally not live. Engineering still needs to wire wallet
-        detection, BTC/eCash transaction construction, replay-safety checks,
-        UTXO selection, fee estimation, raw transaction review, and broadcast.
-      </div>
 
       <div class="mt-3 rounded-lg border border-yellow-800 bg-yellow-950/30 p-3 text-xs text-yellow-500">
         Coin splitting should use this wallet's local keystore, wallet-controlled

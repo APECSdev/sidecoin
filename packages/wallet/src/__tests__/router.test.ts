@@ -1,16 +1,12 @@
 // packages/wallet/src/__tests__/router.test.ts
-//
-// Tests for the Vue Router configuration.
-// Verifies that all routes are correctly defined, named,
-// and resolve to the expected components.
 
 import { describe, it, expect } from "vitest";
 import router from "../router";
 
 describe("Router Configuration", () => {
-  it("should have exactly 10 routes", () => {
+  it("should have exactly 11 routes", () => {
     const routes = router.getRoutes();
-    expect(routes).toHaveLength(10);
+    expect(routes).toHaveLength(11);
   });
 
   it.each([
@@ -23,6 +19,7 @@ describe("Router Configuration", () => {
     ["/platforms/:platformId", "platform-detail"],
     ["/hardware", "hardware"],
     ["/toolbox", "toolbox"],
+    ["/pro", "pro"],
     ["/settings", "settings"],
   ])("should have route %s named %s", (path, name) => {
     const route = router.getRoutes().find((r) => r.path === path);

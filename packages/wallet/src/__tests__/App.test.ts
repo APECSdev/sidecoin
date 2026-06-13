@@ -30,6 +30,7 @@ function createTestRouter() {
       { path: "/platforms", name: "platforms", component: createStubComponent("Platforms") },
       { path: "/hardware", name: "hardware", component: createStubComponent("Hardware") },
       { path: "/toolbox", name: "toolbox", component: createStubComponent("Toolbox") },
+      { path: "/pro", name: "pro", component: createStubComponent("Pro") },
       { path: "/settings", name: "settings", component: createStubComponent("Settings") },
     ],
   });
@@ -55,9 +56,9 @@ describe("App.vue", () => {
     expect(wrapper.text()).toContain("Sidecoin");
   });
 
-  it("should render the subtitle 'eCash Drivechains Wallet'", async () => {
+  it("should render the subtitle 'Drivechains Financial Hub'", async () => {
     const wrapper = await mountApp();
-    expect(wrapper.text()).toContain("eCash Drivechains Wallet");
+    expect(wrapper.text()).toContain("Drivechains Financial Hub");
   });
 
   it("should not render the 'Web Edition' label", async () => {
@@ -70,7 +71,7 @@ describe("App.vue", () => {
     expect(wrapper.text()).toContain("2026-08-21 15:00Z");
   });
 
-  it("should render navigation links for all 8 wallet routes", async () => {
+  it("should render navigation links for all 9 wallet routes", async () => {
     const wrapper = await mountApp();
     const hrefs = wrapper.findAll("a").map((l) => l.attributes("href"));
 
@@ -81,6 +82,7 @@ describe("App.vue", () => {
     expect(hrefs).toContain("#/platforms");
     expect(hrefs).toContain("#/hardware");
     expect(hrefs).toContain("#/toolbox");
+    expect(hrefs).toContain("#/pro");
     expect(hrefs).toContain("#/settings");
   });
 
@@ -95,6 +97,7 @@ describe("App.vue", () => {
     expect(nav.text()).toContain("Platforms");
     expect(nav.text()).toContain("Hardware");
     expect(nav.text()).toContain("Tools");
+    expect(nav.text()).toContain("PRO");
     expect(nav.text()).toContain("Settings");
   });
 

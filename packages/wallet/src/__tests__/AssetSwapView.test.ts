@@ -8,7 +8,7 @@ describe("AssetSwapView.vue", () => {
   it("renders the Asset Swap page", () => {
     const wrapper = mount(AssetSwapView);
     expect(wrapper.text()).toContain("Asset Swap");
-    expect(wrapper.text()).toContain("DEX Preview");
+    expect(wrapper.text()).toContain("Asset routing");
   });
 
   it("renders standard DEX-style swap fields", () => {
@@ -19,9 +19,9 @@ describe("AssetSwapView.vue", () => {
     expect(wrapper.text()).toContain("Slippage tolerance");
   });
 
-  it("starts with swap execution unavailable", () => {
+  it("renders a polished swap review action", () => {
     const wrapper = mount(AssetSwapView);
-    expect(wrapper.text()).toContain("Preview swap unavailable");
-    expect(wrapper.text()).toContain("not a live exchange");
+    expect(wrapper.text()).toContain("Review swap");
+    expect(wrapper.text()).toContain("Route");
   });
 });

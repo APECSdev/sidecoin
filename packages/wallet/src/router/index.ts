@@ -10,6 +10,7 @@ import SidechainsView from "../views/SidechainsView.vue";
 import PlatformDetailView from "../views/PlatformDetailView.vue";
 import HardwareWalletView from "../views/HardwareWalletView.vue";
 import ToolboxView from "../views/ToolboxView.vue";
+import ProBenefitsView from "../views/ProBenefitsView.vue";
 import SettingsView from "../views/SettingsView.vue";
 import OnboardingView from "../views/OnboardingView.vue";
 
@@ -32,6 +33,7 @@ const router = createRouter({
     },
     { path: "/hardware", name: "hardware", component: HardwareWalletView },
     { path: "/toolbox", name: "toolbox", component: ToolboxView },
+    { path: "/pro", name: "pro", component: ProBenefitsView },
     { path: "/settings", name: "settings", component: SettingsView },
   ],
 });
