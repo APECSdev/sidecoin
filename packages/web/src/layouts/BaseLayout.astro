@@ -4,6 +4,7 @@
 // Root layout shared by all pages on sidecoin.app.
 
 import Header from "../components/Header.astro";
+import Footer from "../components/Footer.astro";
 
 interface Props {
   title?: string;
@@ -63,5 +64,6 @@ const ogImage = new URL("/og-image.png", Astro.site);
   <body class="min-h-screen bg-gray-950 text-gray-100 antialiased">
     <Header />
     <slot />
+    <Footer />
   </body>
 </html>

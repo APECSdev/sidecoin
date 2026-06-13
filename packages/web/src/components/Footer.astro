@@ -1,0 +1,104 @@
+---
+// packages/web/src/components/Footer.astro
+//
+// Global marketing-site footer. Links every top-level page plus the main
+// product/download destinations so users can navigate the whole site from
+// the footer.
+
+const WALLET_URL = "https://wallet.sidecoin.app/";
+
+const pageLinks = [
+  { href: "/", label: "Home" },
+  { href: "/chains", label: "Sidechains" },
+  { href: "/founders", label: "Founders" },
+  { href: "/pro", label: "Sidecoin Pro" },
+];
+
+const productLinks = [
+  { href: "/#platforms", label: "Downloads" },
+  { href: WALLET_URL, label: "Launch Wallet", external: true },
+  { href: "/#tech", label: "Technical" },
+];
+
+const communityLinks = [
+  { href: "https://github.com/APECSdev/sidecoin", label: "GitHub", external: true },
+];
+---
+
+<footer class="border-t border-gray-800 bg-gray-950">
+  <div class="mx-auto max-w-5xl px-6 py-12">
+    <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+      <div>
+        <a href="/" class="text-lg font-bold text-ecash-400">
+          <span aria-hidden="true">SidΞcoin</span>
+          <span class="sr-only">Sidecoin</span>
+        </a>
+        <p class="mt-3 max-w-sm text-sm leading-6 text-gray-400">
+          Open-source wallet for the eCash hard fork. BIP-300/301 Drivechains
+          with sidechains live at launch.
+        </p>
+        <a
+          href={WALLET_URL}
+          class="mt-5 inline-flex rounded-lg bg-ecash-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ecash-500"
+        >
+          Launch Wallet
+        </a>
+      </div>
+
+      <div>
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-gray-500">
+          Pages
+        </h2>
+        <nav class="mt-4 space-y-2" aria-label="Footer pages">
+          {pageLinks.map((l) => (
+            <a
+              href={l.href}
+              class="block text-sm text-gray-300 transition-colors hover:text-white"
+            >
+              {l.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      <div>
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-gray-500">
+          Product
+        </h2>
+        <nav class="mt-4 space-y-2" aria-label="Footer product">
+          {productLinks.map((l) => (
+            <a
+              href={l.href}
+              class="block text-sm text-gray-300 transition-colors hover:text-white"
+              {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
+            >
+              {l.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+
+      <div>
+        <h2 class="text-sm font-semibold uppercase tracking-widest text-gray-500">
+          Community
+        </h2>
+        <nav class="mt-4 space-y-2" aria-label="Footer community">
+          {communityLinks.map((l) => (
+            <a
+              href={l.href}
+              class="block text-sm text-gray-300 transition-colors hover:text-white"
+              {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
+            >
+              {l.label}
+            </a>
+          ))}
+        </nav>
+      </div>
+    </div>
+
+    <div class="mt-10 flex flex-col gap-3 border-t border-gray-800 pt-6 text-xs text-gray-500 sm:flex-row sm:items-center sm:justify-between">
+      <p>© {new Date().getFullYear()} Sidecoin. All rights reserved.</p>
+      <p>Built for eCash Drivechains.</p>
+    </div>
+  </div>
+</footer>
