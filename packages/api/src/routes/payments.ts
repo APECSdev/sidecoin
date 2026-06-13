@@ -26,6 +26,10 @@ const IPN_CALLBACK_URL = "https://sidecoin.app/v1/webhook/nowpayments";
 const PRICE_MONTHLY_USD = 5;
 const PRICE_YEARLY_USD = 36;
 
+// Temporary production minimum while NOWPayments is effectively routing to
+// XMR outcome, where $5 is below the current provider minimum.
+const MIN_MONTHLY_QUANTITY = 2;
+
 // Seconds in an average month (30.44 days). Used to extend paid_through.
 const SECONDS_PER_MONTH = 2_629_800;
 
@@ -81,13 +85,28 @@ function durationMonths(plan: Plan, quantity: number): number {
   return plan === "monthly" ? quantity : quantity * 12;
 }
 
+function minimumQuantityFor(plan: Plan): number {
+  return plan === "monthly" ? MIN_MONTHLY_QUANTITY : 1;
+}
+
 function currencyDisplayName(currency: string): string {
   const labels: Record<string, string> = {
     btc: "BTC",
     eth: "ETH",
     ltc: "LTC",
+    xmr: "XMR",
+    trx: "TRX",
+    xlm: "XLM",
+    xrp: "XRP",
+    dash: "DASH",
+    bch: "BCH",
+    doge: "DOGE",
+    maticmainnet: "MATIC",
+    bnbbsc: "BNB Smart Chain",
     usdcerc20: "USDC ERC-20",
     usdterc20: "USDT ERC-20",
+    usdttrc20: "USDT TRC-20",
+    usdcsol: "USDC Solana",
     xec: "XEC",
     sol: "SOL",
   };
@@ -95,31 +114,51 @@ function currencyDisplayName(currency: string): string {
   return labels[currency.toLowerCase()] ?? currency.toUpperCase();
 }
 
+interface ProviderErrorBody {
+  status?: boolean;
+  statusCode?: number;
+  code?: string;
+  message?: string;
+  error?: {
+    code?: string;
+    message?: string;
+    details?: unknown;
+  };
+}
+
+function parseProviderError(detail: string): ProviderErrorBody | null {
+  if (!detail) return null;
+
+  try {
+    return JSON.parse(detail) as ProviderErrorBody;
+  } catch {
+    return null;
+  }
+}
+
+function extractProviderCode(detail: string): string {
+  const parsed = parseProviderError(detail);
+  return (
+    parsed?.code ??
+    parsed?.error?.code ??
+    ""
+  );
+}
+
 function extractProviderMessage(detail: string): string {
   if (!detail) return "";
 
-  try {
-    const parsed = JSON.parse(detail) as {
-      message?: unknown;
-      error?: {
-        message?: unknown;
-        details?: unknown;
-      };
-    };
+  const parsed = parseProviderError(detail);
+  if (typeof parsed?.message === "string") {
+    return parsed.message;
+  }
 
-    if (typeof parsed.message === "string") {
-      return parsed.message;
-    }
+  if (typeof parsed?.error?.message === "string") {
+    return parsed.error.message;
+  }
 
-    if (typeof parsed.error?.message === "string") {
-      return parsed.error.message;
-    }
-
-    if (typeof parsed.error?.details === "string") {
-      return extractProviderMessage(parsed.error.details);
-    }
-  } catch {
-    // Fall through to raw text matching.
+  if (typeof parsed?.error?.details === "string") {
+    return extractProviderMessage(parsed.error.details);
   }
 
   return detail;
@@ -134,6 +173,28 @@ function isUnsupportedProviderCurrency(detail: string, currency: string): boolea
     message.includes(lc) &&
     message.includes("not found")
   );
+}
+
+function isAmountMinimalError(detail: string): boolean {
+  const code = extractProviderCode(detail).toUpperCase();
+  const message = extractProviderMessage(detail).toLowerCase();
+
+  return (
+    code === "AMOUNT_MINIMAL_ERROR" ||
+    (message.includes("less than minimal") || message.includes("minimum"))
+  );
+}
+
+function sanitizedProviderDetails(detail: string, payCurrency: string, priceAmount: number) {
+  const parsed = parseProviderError(detail);
+
+  return {
+    payCurrency,
+    priceAmountUsd: priceAmount,
+    providerCode: extractProviderCode(detail) || undefined,
+    providerMessage: extractProviderMessage(detail) || undefined,
+    providerStatusCode: parsed?.statusCode,
+  };
 }
 
 export async function handlePayments(
@@ -174,20 +235,33 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
   if (plan !== "monthly" && plan !== "yearly") {
     return err("bad_plan", 'plan must be "monthly" or "yearly"', 400);
   }
+
   const quantity = Number(body.quantity);
-  if (!Number.isInteger(quantity) || quantity < 1 || quantity > MAX_QUANTITY) {
-    return err("bad_quantity", `quantity must be an integer 1..${MAX_QUANTITY}`, 400);
+  const minQuantity = minimumQuantityFor(plan);
+
+  if (!Number.isInteger(quantity) || quantity < minQuantity || quantity > MAX_QUANTITY) {
+    return err(
+      "bad_quantity",
+      plan === "monthly"
+        ? `monthly checkout currently requires at least ${MIN_MONTHLY_QUANTITY} months`
+        : `quantity must be an integer ${minQuantity}..${MAX_QUANTITY}`,
+      400,
+    );
   }
+
   const rawKey = typeof body.publicKey === "string" ? body.publicKey.trim() : "";
   if (!/^[0-9a-fA-F]{66}$/.test(rawKey)) {
     return err("bad_public_key", "publicKey must be a 66-char hex string", 400);
   }
+
   const publicKey = rawKey.toLowerCase();
+
   const payCurrencyRaw =
     typeof body.payCurrency === "string" ? body.payCurrency.trim().toLowerCase() : "";
   if (!/^[a-z0-9]+$/.test(payCurrencyRaw)) {
     return err("bad_currency", "payCurrency must be a currency code", 400);
   }
+
   const email =
     typeof body.email === "string" && body.email.trim() !== ""
       ? body.email.trim()
@@ -201,10 +275,24 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
       ? `Sidecoin PRO — ${quantity} month(s)`
       : `Sidecoin PRO — ${quantity} year(s)`;
 
-  // Direct Payments API: mint a deposit address + exact pay_amount in the
-  // chosen crypto. Confirmation arrives async via the IPN webhook, which
-  // mints/credits the Founder by the public key in order_id. The user sees
-  // ONLY our UI — never NOWPayments.
+  const npRequestBody = {
+    price_amount: priceAmount,
+    price_currency: "usd",
+    pay_currency: payCurrencyRaw,
+    order_id: orderId,
+    order_description: description,
+    ipn_callback_url: IPN_CALLBACK_URL,
+  };
+
+  console.log("[pay/create] creating NOWPayments payment", {
+    price_amount: priceAmount,
+    price_currency: "usd",
+    pay_currency: payCurrencyRaw,
+    plan,
+    quantity,
+    order_id_prefix: `sc.${plan}.${quantity}`,
+  });
+
   let np: Response;
   try {
     np = await fetch(`${NOWPAYMENTS_API}/payment`, {
@@ -213,14 +301,7 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
         "x-api-key": env.NOWPAYMENTS_API_KEY,
         "content-type": "application/json",
       },
-      body: JSON.stringify({
-        price_amount: priceAmount,
-        price_currency: "usd",
-        pay_currency: payCurrencyRaw,
-        order_id: orderId,
-        order_description: description,
-        ipn_callback_url: IPN_CALLBACK_URL,
-      }),
+      body: JSON.stringify(npRequestBody),
     });
   } catch (e) {
     return err(
@@ -232,22 +313,36 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
 
   if (!np.ok) {
     const detail = await np.text().catch(() => "");
-    console.error("[pay/create] NOWPayments payment failed", np.status, detail);
+    console.error("[pay/create] NOWPayments payment failed", {
+      status: np.status,
+      detail,
+      pay_currency: payCurrencyRaw,
+      price_amount: priceAmount,
+    });
 
     if (np.status === 400 && isUnsupportedProviderCurrency(detail, payCurrencyRaw)) {
       return err(
         "unsupported_currency",
-        `${currencyDisplayName(payCurrencyRaw)} is temporarily unavailable. Please choose BTC, ETH, or LTC.`,
+        `${currencyDisplayName(payCurrencyRaw)} is temporarily unavailable. Please choose another payment option.`,
         400,
-        detail || undefined,
+        sanitizedProviderDetails(detail, payCurrencyRaw, priceAmount),
+      );
+    }
+
+    if (np.status === 400 && isAmountMinimalError(detail)) {
+      return err(
+        "amount_below_minimum",
+        `The selected payment option is below the crypto processor minimum. Monthly checkout currently starts at ${MIN_MONTHLY_QUANTITY} months ($${PRICE_MONTHLY_USD * MIN_MONTHLY_QUANTITY}). Please choose the minimum duration or try another currency.`,
+        400,
+        sanitizedProviderDetails(detail, payCurrencyRaw, priceAmount),
       );
     }
 
     return err(
       "payment_provider_error",
-      `NOWPayments returned ${np.status}`,
+      "The crypto payment processor could not create this payment. Please try another currency or try again in a few minutes.",
       502,
-      detail || undefined,
+      sanitizedProviderDetails(detail, payCurrencyRaw, priceAmount),
     );
   }
 
@@ -258,7 +353,17 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
     pay_currency?: string;
     payment_status?: string;
     expiration_estimate_date?: string;
+    outcome_amount?: number;
+    outcome_currency?: string;
   };
+
+  console.log("[pay/create] NOWPayments payment created", {
+    payment_id: pay.payment_id != null ? String(pay.payment_id) : null,
+    pay_currency: pay.pay_currency ?? payCurrencyRaw,
+    outcome_currency: pay.outcome_currency ?? null,
+    payment_status: pay.payment_status ?? null,
+  });
+
   if (!pay.payment_id || !pay.pay_address || pay.pay_amount == null) {
     return err(
       "payment_provider_error",
@@ -266,13 +371,10 @@ async function createPayment(req: Request, env: Env): Promise<Response> {
       502,
     );
   }
-  const paymentId = String(pay.payment_id);
 
-  // Record the ledger row keyed by the REAL payment_id (we get it immediately
-  // in the direct model). The webhook later upserts this same row. The
-  // optional receipt email is captured here and survives until the IPN
-  // confirms. Non-fatal: the IPN is the source of truth for crediting.
+  const paymentId = String(pay.payment_id);
   const now = Math.floor(Date.now() / 1000);
+
   try {
     await env.DB.prepare(
       `INSERT INTO payments
@@ -319,8 +421,6 @@ async function paymentStatus(env: Env, url: URL): Promise<Response> {
     return err("missing_payment_id", "paymentId query param required", 400);
   }
 
-  // Our own ledger row first (founder number + confirmation come from here,
-  // written by the webhook — the source of truth for crediting).
   const row = await env.DB.prepare(
     `SELECT order_id, status, confirmed_at, founder_number, pay_currency
        FROM payments WHERE payment_id = ?`,
@@ -334,9 +434,6 @@ async function paymentStatus(env: Env, url: URL): Promise<Response> {
       pay_currency: string | null;
     }>();
 
-  // Live status proxied from NOWPayments for responsive UI (waiting ->
-  // confirming -> finished). Best-effort: if it fails, fall back to our DB
-  // row so the UI still progresses off webhook updates.
   let liveStatus: string | null = null;
   let actuallyPaid: number | null = null;
   let payAmount: number | null = null;
@@ -379,12 +476,10 @@ async function paymentStatus(env: Env, url: URL): Promise<Response> {
   return json({
     paymentId,
     orderId: row?.order_id ?? null,
-    // Prefer the live provider status; fall back to our last-known DB status.
     paymentStatus: liveStatus ?? row?.status ?? "unknown",
     payAmount,
     actuallyPaid,
     payCurrency,
-    // Crediting is authoritative from our webhook, never the live poll.
     confirmed: row?.confirmed_at != null,
     founderNumber: row?.founder_number ?? null,
   });
@@ -438,12 +533,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
     return err("bad_request", "body must be JSON", 400);
   }
 
-  // NOWPayments signs HMAC-SHA512 over the JSON body with keys sorted
-  // alphabetically (recursively), using the IPN secret. We recompute from the
-  // PARSED+RE-SORTED payload (not the raw bytes) and compare in constant time.
-  // Caveat: if a future signature mismatch is ever observed, the usual culprit
-  // is forward-slash escaping (PHP json_encode escapes "/" by default); revisit
-  // sortedJson() here if NOWPayments changes their encoding.
   const expected = await hmacSha512Hex(env.NOWPAYMENTS_IPN_SECRET, sortedJson(payload));
   if (!timingSafeEqual(expected, sig.toLowerCase())) {
     console.error("[webhook] signature mismatch");
@@ -456,8 +545,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
   const payCurrency = payload.pay_currency != null ? String(payload.pay_currency) : null;
   const actuallyPaid = payload.actually_paid != null ? Number(payload.actually_paid) : null;
 
-  // Permanent malformed-input cases: ACK with 200 so NOWPayments stops
-  // retrying (a retry can never fix them), but log loudly.
   if (!paymentId || !orderId) {
     console.error("[webhook] missing payment_id/order_id", paymentId, orderId);
     return json({ ok: true });
@@ -473,8 +560,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
   const priceAmount = priceFor(plan, quantity);
   const now = Math.floor(Date.now() / 1000);
 
-  // Idempotency: has THIS payment_id already been credited? NOWPayments retries
-  // IPNs, so we credit exactly once.
   const existing = await env.DB.prepare(
     `SELECT confirmed_at FROM payments WHERE payment_id = ?`,
   )
@@ -482,8 +567,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
     .first<{ confirmed_at: number | null }>();
   const alreadyConfirmed = existing?.confirmed_at != null;
 
-  // Upsert the payment_id ledger row (keeps last-seen status fresh). The row
-  // usually already exists from /pay/create; this keeps status/amounts live.
   await env.DB.prepare(
     `INSERT INTO payments
        (payment_id, identity, order_id, plan, quantity, duration_months,
@@ -509,15 +592,10 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
     )
     .run();
 
-  // Credit only on the terminal "finished" status, and only once.
   if (status === "finished" && !alreadyConfirmed) {
     const durationSecs = months * SECONDS_PER_MONTH;
-    // avatar_seed is sha256(pubkey): a stable, uniform-length seed for
-    // deterministic identicon avatars on the public leaderboard.
     const avatarSeed = await sha256Hex(publicKey);
 
-    // Mint the founder on first confirmed payment. Gap-free, race-free:
-    // AUTOINCREMENT + ON CONFLICT(identity) DO NOTHING (D1 serializes writes).
     const mint = await env.DB.prepare(
       `INSERT INTO founders
          (identity, avatar_seed, paid_through, created_at, updated_at)
@@ -528,8 +606,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
       .run();
 
     if (mint.meta.changes === 0) {
-      // Existing founder (top-up): extend from the later of now/paid_through so
-      // stacked purchases never burn unused time.
       await env.DB.prepare(
         `UPDATE founders
             SET paid_through = MAX(?, paid_through) + ?,
@@ -540,8 +616,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
         .run();
     }
 
-    // Backfill the optional receipt email captured at checkout (provisional
-    // row), only if the founder doesn't already have one.
     const provis = await env.DB.prepare(
       `SELECT email FROM payments
         WHERE order_id = ? AND email IS NOT NULL
@@ -557,7 +631,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
         .run();
     }
 
-    // Link founder_number back onto this payment + stamp confirmation.
     const fn = await env.DB.prepare(
       `SELECT founder_number FROM founders WHERE identity = ?`,
     )
@@ -573,8 +646,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
       .bind(now, founderNumber, paymentId)
       .run();
 
-    // Best-effort receipt email (no-op unless RESEND_API_KEY + email present).
-    // Never fail the webhook on email problems.
     try {
       await maybeSendReceipt(env, provis?.email ?? null, founderNumber, plan, quantity);
     } catch (e) {
@@ -593,10 +664,6 @@ async function handleWebhook(req: Request, env: Env): Promise<Response> {
 
 // --- crypto helpers --------------------------------------------------------
 
-/**
- * Recursively key-sort an object (arrays keep order) so JSON.stringify matches
- * NOWPayments' ksort-then-encode signing input.
- */
 function sortObject(value: unknown): unknown {
   if (Array.isArray(value)) {
     return value.map(sortObject);
@@ -640,7 +707,6 @@ async function sha256Hex(input: string): Promise<string> {
     .join("");
 }
 
-/** Constant-time comparison of two equal-length hex strings. */
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
   let diff = 0;
@@ -650,14 +716,8 @@ function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-// --- receipt email (deferred / best-effort) --------------------------------
+// --- receipt email ---------------------------------------------------------
 
-/**
- * Resend wiring is optional and deferred; this is a guarded best-effort path.
- * It no-ops (with a debug log) until RESEND_API_KEY is set and an email was
- * collected at checkout. Throwing here is caught by the caller so it can NEVER
- * fail the webhook. Note: the "from" domain must be verified in Resend.
- */
 async function maybeSendReceipt(
   env: Env,
   email: string | null,

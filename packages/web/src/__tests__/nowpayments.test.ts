@@ -47,8 +47,8 @@ describe("PLANS", () => {
   });
 
   it("should price the yearly plan lower per-month than monthly", () => {
-    const perMonthMonthly = PLANS["monthly"].priceUSD; // 5 / month
-    const perMonthYearly = PLANS["yearly"].priceUSD / 12; // 36 / 12 = 3 / month
+    const perMonthMonthly = PLANS["monthly"].priceUSD;
+    const perMonthYearly = PLANS["yearly"].priceUSD / 12;
     expect(perMonthYearly).toBeLessThan(perMonthMonthly);
   });
 
@@ -82,6 +82,10 @@ describe("PLANS", () => {
 // ---------------------------------------------------------------------------
 
 describe("FEATURED_CURRENCIES", () => {
+  it("should default to LTC first during the temporary low-minimum checkout period", () => {
+    expect(FEATURED_CURRENCIES[0]).toBe("ltc");
+  });
+
   it("should include BTC", () => {
     expect(FEATURED_CURRENCIES).toContain("btc");
   });
@@ -90,24 +94,40 @@ describe("FEATURED_CURRENCIES", () => {
     expect(FEATURED_CURRENCIES).toContain("eth");
   });
 
-  it("should include LTC", () => {
-    expect(FEATURED_CURRENCIES).toContain("ltc");
+  it("should include XMR", () => {
+    expect(FEATURED_CURRENCIES).toContain("xmr");
   });
 
-  it("should not include USDC ERC-20 by default until live availability is confirmed", () => {
-    expect(FEATURED_CURRENCIES).not.toContain("usdcerc20");
+  it("should include TRX", () => {
+    expect(FEATURED_CURRENCIES).toContain("trx");
   });
 
-  it("should not include XEC by default until live availability is confirmed", () => {
-    expect(FEATURED_CURRENCIES).not.toContain("xec");
+  it("should include DASH", () => {
+    expect(FEATURED_CURRENCIES).toContain("dash");
   });
 
-  it("should not include SOL by default until live availability is confirmed", () => {
-    expect(FEATURED_CURRENCIES).not.toContain("sol");
+  it("should include BCH", () => {
+    expect(FEATURED_CURRENCIES).toContain("bch");
   });
 
-  it("should have exactly 3 featured currencies", () => {
-    expect(FEATURED_CURRENCIES).toHaveLength(3);
+  it("should include MATIC mainnet", () => {
+    expect(FEATURED_CURRENCIES).toContain("maticmainnet");
+  });
+
+  it("should include BNB Smart Chain", () => {
+    expect(FEATURED_CURRENCIES).toContain("bnbbsc");
+  });
+
+  it("should not include XLM until memo/extra-id handling is implemented", () => {
+    expect(FEATURED_CURRENCIES).not.toContain("xlm");
+  });
+
+  it("should not include XRP until destination-tag handling is implemented", () => {
+    expect(FEATURED_CURRENCIES).not.toContain("xrp");
+  });
+
+  it("should have exactly 9 featured currencies", () => {
+    expect(FEATURED_CURRENCIES).toHaveLength(9);
   });
 
   it("should contain only lowercase strings", () => {
@@ -159,6 +179,20 @@ describe("buildPaymentURI", () => {
     });
   });
 
+  describe("Dash URIs", () => {
+    it("should build a dash: URI for DASH", () => {
+      const uri = buildPaymentURI("dash", "XyMk5tMDupZex7tKTBe3UF93yBeN4WV6eq", 0.25);
+      expect(uri).toBe("dash:XyMk5tMDupZex7tKTBe3UF93yBeN4WV6eq?amount=0.25");
+    });
+  });
+
+  describe("Monero URIs", () => {
+    it("should build a monero: URI for XMR", () => {
+      const uri = buildPaymentURI("xmr", "84s7JaoGg2v5HS3zLPkqVfdtHS3MpKV1KcZmBK7E4fQ2MiM1HNVZLyuAReUBYEmDN15QF8zYeZutHTD7EZT2AaT3Dea8BBV", 0.1);
+      expect(uri).toBe("monero:84s7JaoGg2v5HS3zLPkqVfdtHS3MpKV1KcZmBK7E4fQ2MiM1HNVZLyuAReUBYEmDN15QF8zYeZutHTD7EZT2AaT3Dea8BBV?tx_amount=0.1");
+    });
+  });
+
   describe("Ethereum-family URIs", () => {
     it("should build an ethereum: URI for ETH", () => {
       const uri = buildPaymentURI("eth", "0x742d35Cc6634C0532925a3b844Bc9e7595f2bD28", 0.015);
@@ -181,9 +215,9 @@ describe("buildPaymentURI", () => {
     });
   });
 
-  describe("Fallback (unknown currencies)", () => {
+  describe("Fallback (unknown or raw-address currencies)", () => {
     it("should return the raw address for unknown currencies", () => {
-      const uri = buildPaymentURI("xmr", "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A", 1.5);
+      const uri = buildPaymentURI("xmrlegacy", "44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A", 1.5);
       expect(uri).toBe("44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A");
     });
 
@@ -195,6 +229,16 @@ describe("buildPaymentURI", () => {
     it("should return the raw address for trx", () => {
       const uri = buildPaymentURI("trx", "TN2YqTv5e6bkBR7DpKaeHLGq1hKhVsqWZX", 500);
       expect(uri).toBe("TN2YqTv5e6bkBR7DpKaeHLGq1hKhVsqWZX");
+    });
+
+    it("should return the raw address for maticmainnet to avoid wrong-chain ethereum URI", () => {
+      const uri = buildPaymentURI("maticmainnet", "0x1d0CAfBE61ea545b953377aAf56cDF9896517237", 133.5);
+      expect(uri).toBe("0x1d0CAfBE61ea545b953377aAf56cDF9896517237");
+    });
+
+    it("should return the raw address for bnbbsc to avoid wrong-chain ethereum URI", () => {
+      const uri = buildPaymentURI("bnbbsc", "0xAC30843a085b17A93204B97cdb6922463A417E4C", 0.016);
+      expect(uri).toBe("0xAC30843a085b17A93204B97cdb6922463A417E4C");
     });
   });
 

@@ -47,8 +47,8 @@ describe("Pro Page — Pricing Integrity", () => {
   });
 
   it("should have the yearly plan as best value (lower per-month)", () => {
-    const monthlyPerMonth = PLANS["monthly"].priceUSD; // 5 / month
-    const yearlyPerMonth = PLANS["yearly"].priceUSD / 12; // 36 / 12 = 3 / month
+    const monthlyPerMonth = PLANS["monthly"].priceUSD;
+    const yearlyPerMonth = PLANS["yearly"].priceUSD / 12;
     expect(yearlyPerMonth).toBeLessThan(monthlyPerMonth);
     expect(yearlyPerMonth).toBeCloseTo(3, 2);
     expect(monthlyPerMonth).toBe(5);
@@ -66,14 +66,42 @@ describe("Pro Page — Pricing Integrity", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pro Page — Currency Selection", () => {
-  it("should show BTC, ETH, and LTC as conservative default featured currencies", () => {
-    expect(FEATURED_CURRENCIES).toEqual(["btc", "eth", "ltc"]);
+  it("should show temporary $10-tested crypto payment options", () => {
+    expect(FEATURED_CURRENCIES).toEqual([
+      "ltc",
+      "btc",
+      "eth",
+      "xmr",
+      "trx",
+      "dash",
+      "bch",
+      "maticmainnet",
+      "bnbbsc",
+    ]);
   });
 
-  it("should not statically feature provider-sensitive currencies", () => {
-    expect(FEATURED_CURRENCIES).not.toContain("usdcerc20");
-    expect(FEATURED_CURRENCIES).not.toContain("xec");
-    expect(FEATURED_CURRENCIES).not.toContain("sol");
+  it("should default to LTC first", () => {
+    expect(FEATURED_CURRENCIES[0]).toBe("ltc");
+  });
+
+  it("should include the core tested currencies", () => {
+    expect(FEATURED_CURRENCIES).toContain("ltc");
+    expect(FEATURED_CURRENCIES).toContain("btc");
+    expect(FEATURED_CURRENCIES).toContain("eth");
+    expect(FEATURED_CURRENCIES).toContain("xmr");
+    expect(FEATURED_CURRENCIES).toContain("trx");
+  });
+
+  it("should include additional tested low-minimum options", () => {
+    expect(FEATURED_CURRENCIES).toContain("dash");
+    expect(FEATURED_CURRENCIES).toContain("bch");
+    expect(FEATURED_CURRENCIES).toContain("maticmainnet");
+    expect(FEATURED_CURRENCIES).toContain("bnbbsc");
+  });
+
+  it("should not include XLM/XRP until memo/tag handling is implemented", () => {
+    expect(FEATURED_CURRENCIES).not.toContain("xlm");
+    expect(FEATURED_CURRENCIES).not.toContain("xrp");
   });
 
   it("should NOT include fiat currencies in featured list", () => {
@@ -91,13 +119,32 @@ describe("Pro Page — Currency Selection", () => {
 });
 
 // ---------------------------------------------------------------------------
+// Temporary Monthly Minimum
+// ---------------------------------------------------------------------------
+
+describe("Pro Page — Temporary Monthly Minimum", () => {
+  it("should require a temporary 2-month minimum for monthly crypto checkout", () => {
+    const monthlyMinimumQuantity = 2;
+    const monthlyPriceUsd = PLANS["monthly"].priceUSD;
+    expect(monthlyMinimumQuantity).toBe(2);
+    expect(monthlyPriceUsd * monthlyMinimumQuantity).toBe(10);
+  });
+
+  it("should keep yearly checkout at one year", () => {
+    const yearlyMinimumQuantity = 1;
+    expect(yearlyMinimumQuantity).toBe(1);
+    expect(PLANS["yearly"].priceUSD * yearlyMinimumQuantity).toBe(36);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Fork Date / Countdown Logic
 // ---------------------------------------------------------------------------
 
 describe("Pro Page — Fork Date & Countdown", () => {
   it("should target August 21, 2026 at 15:00 UTC", () => {
     expect(FORK_DATE.getUTCFullYear()).toBe(2026);
-    expect(FORK_DATE.getUTCMonth()).toBe(7); // 0-indexed, 7 = August
+    expect(FORK_DATE.getUTCMonth()).toBe(7);
     expect(FORK_DATE.getUTCDate()).toBe(21);
     expect(FORK_DATE.getUTCHours()).toBe(15);
     expect(FORK_DATE.getUTCMinutes()).toBe(0);
@@ -105,7 +152,6 @@ describe("Pro Page — Fork Date & Countdown", () => {
   });
 
   it("should be in the future (test written before fork)", () => {
-    // This test will naturally fail after the fork — that's expected.
     const now = new Date("2026-05-31T00:00:00Z");
     expect(FORK_DATE.getTime()).toBeGreaterThan(now.getTime());
   });
@@ -122,13 +168,11 @@ describe("Pro Page — Fork Date & Countdown", () => {
     const diff = FORK_DATE.getTime() - after.getTime();
     expect(diff).toBeLessThan(0);
 
-    // The UrgencyBanner script should clamp to 0.
     const d = Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
     expect(d).toBe(0);
   });
 
   it("should compute correct hours/minutes/seconds breakdown", () => {
-    // 2 days, 3 hours, 45 minutes, 30 seconds before fork.
     const from = new Date(FORK_DATE.getTime() - (2 * 86400000 + 3 * 3600000 + 45 * 60000 + 30000));
     const diff = FORK_DATE.getTime() - from.getTime();
 
@@ -149,9 +193,6 @@ describe("Pro Page — Fork Date & Countdown", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pro Page — FAQ Contracts", () => {
-  // These verify the FAQ content that the Astro component renders.
-  // If FAQ questions change, these tests should be updated.
-
   const expectedQuestions = [
     "What is Sidecoin Pro?",
     "What is a Founding Member?",
@@ -194,13 +235,11 @@ describe("Pro Page — FAQ Contracts", () => {
 
 describe("Pro Page — Alpha Circle", () => {
   it("should define Alpha Circle as top 10%", () => {
-    // Contract: the Alpha Circle is the top 10% of Founding Members.
     const topPercent = 10;
     expect(topPercent).toBe(10);
   });
 
   it("should compute cut line from total founders", () => {
-    // If there are 100 founders, the cut line is position 10.
     const totalFounders = 100;
     const cutLine = Math.ceil(totalFounders * 0.10);
     expect(cutLine).toBe(10);

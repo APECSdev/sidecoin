@@ -60,18 +60,25 @@ export const PLANS: Record<string, Plan> = {
 };
 
 /**
- * Conservative default currencies shown before the live provider list loads.
+ * Curated low-minimum payment options for the temporary XMR-outcome period.
  *
- * NOTE:
- * USDC/XEC/SOL are intentionally NOT featured by default. Production proved
- * that static currency lists can drift from the live NOWPayments account
- * configuration. The checkout now fetches /v1/pay/currencies and only shows
- * live-supported options.
+ * Live NOWPayments testing confirmed that $10 direct payments succeed for
+ * these currencies while $5 currently fails against the active outcome route.
+ *
+ * Intentionally excluded for now:
+ *   - xlm / xrp: may require memo/tag/extra-id handling, which the current UI
+ *     does not yet display.
  */
 export const FEATURED_CURRENCIES = [
+  "ltc",
   "btc",
   "eth",
-  "ltc",
+  "xmr",
+  "trx",
+  "dash",
+  "bch",
+  "maticmainnet",
+  "bnbbsc",
 ] as const;
 
 /** Request body for POST /v1/pay/create. */
@@ -127,6 +134,20 @@ interface ApiErrorBody {
   message?: string;
 }
 
+export class PaymentApiError extends Error {
+  code: string;
+  status: number;
+  details: unknown;
+
+  constructor(message: string, code: string, status: number, details?: unknown) {
+    super(message);
+    this.name = "PaymentApiError";
+    this.code = code;
+    this.status = status;
+    this.details = details;
+  }
+}
+
 // ─── API Client (our API only) ───────────────────────────────
 
 /**
@@ -154,6 +175,8 @@ export async function createPayment(
       debugError("Create payment failed", res.status, body);
 
       let message = `Create payment failed: ${res.status}`;
+      let code = "payment_create_failed";
+      let details: unknown;
 
       try {
         const parsed = JSON.parse(body) as ApiErrorBody;
@@ -162,11 +185,15 @@ export async function createPayment(
         } else if (parsed.message) {
           message = parsed.message;
         }
+        if (parsed.error?.code) {
+          code = parsed.error.code;
+        }
+        details = parsed.error?.details;
       } catch {
         // Keep the generic status-based message if the response is not JSON.
       }
 
-      throw new Error(message);
+      throw new PaymentApiError(message, code, res.status, details);
     }
 
     const data: PaymentResponse = await res.json();
@@ -231,11 +258,7 @@ export async function getAvailableCurrencies(): Promise<string[]> {
 }
 
 /**
- * Generate a BIP-21 / EIP-681 payment URI for QR code display.
- *
- * Produces URIs like:
- *   bitcoin:1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa?amount=0.00042
- *   ethereum:0x123...?value=15000000000000000
+ * Generate a payment URI for QR code display.
  */
 export function buildPaymentURI(
   currency: string,
@@ -258,10 +281,24 @@ export function buildPaymentURI(
     return uri;
   }
 
-  // Ethereum-family (ETH, ERC-20 tokens)
+  // Dash
+  if (lc === "dash") {
+    const uri = `dash:${address}?amount=${amount}`;
+    debug("Built payment URI:", uri);
+    return uri;
+  }
+
+  // Monero
+  if (lc === "xmr") {
+    const uri = `monero:${address}?tx_amount=${amount}`;
+    debug("Built payment URI:", uri);
+    return uri;
+  }
+
+  // Ethereum-family (ETH, ERC-20 tokens). For non-Ethereum EVM chains like
+  // maticmainnet/bnbbsc, return the raw address so wallets do not accidentally
+  // open the wrong chain.
   if (["eth", "usdcerc20", "usdterc20"].includes(lc)) {
-    // For native ETH: ethereum:<address>?value=<wei>
-    // For ERC-20 display purposes we just use the address + amount.
     const uri = `ethereum:${address}?value=${amount}`;
     debug("Built payment URI:", uri);
     return uri;

@@ -8,19 +8,22 @@
  * NOWPayments — every call goes to OUR API (/v1/pay/*), and the
  * QR/address/timer/status are rendered here under Sidecoin branding.
  *
+ * Temporary production policy:
+ *   - Monthly checkout minimum is 2 months ($10) while NOWPayments outcome
+ *     routing is still effectively XMR and $5 is below the processor minimum.
+ *   - Yearly checkout remains 1 year ($36).
+ *
  * Steps:
  *   1. details — identity public key (required), email (optional), duration
  *      quantity, and pay currency
  *   2. status  — address + QR + price-lock timer + status polling
- *
- * The identity public key (66-char hex, m/44'/1237'/0'/0/0) is the canonical
- * Founder identity; it is embedded in the order on the server.
  */
 
 import { ref, computed, nextTick, onMounted, onUnmounted } from "vue";
 import {
   PLANS,
   FEATURED_CURRENCIES,
+  PaymentApiError,
   createPayment,
   getPaymentStatus,
   getAvailableCurrencies,
@@ -32,6 +35,8 @@ import type { Plan, PaymentResponse, PaymentStatus } from "@/lib/nowpayments";
 
 const STATUS_POLL_INTERVAL_MS = 10_000;
 const MAX_QUANTITY = 12;
+const MIN_MONTHLY_QUANTITY = 2;
+const MIN_YEARLY_QUANTITY = 1;
 
 // ─── Debug Logging ───────────────────────────────────────────
 
@@ -56,17 +61,20 @@ const selectedPlan = ref<Plan | null>(PLANS.monthly);
 
 const publicKey = ref<string>("");
 const email = ref<string>("");
-const quantity = ref<number>(1);
+const quantity = ref<number>(MIN_MONTHLY_QUANTITY);
 const selectedCurrency = ref<string>(FEATURED_CURRENCIES[0] ?? "");
 
 const allCurrencies = ref<string[]>([]);
-const showAllCurrencies = ref(false);
 const currenciesLoading = ref(false);
 
 const paymentData = ref<PaymentResponse | null>(null);
 const paymentStatus = ref<PaymentStatus | null>(null);
 const paymentError = ref<string | null>(null);
 const paymentLoading = ref(false);
+
+const errorDialogOpen = ref(false);
+const errorDialogTitle = ref("Payment could not be created");
+const errorDialogMessage = ref("");
 
 const priceLockCountdown = ref("");
 
@@ -79,8 +87,8 @@ const normalizedAvailableCurrencies = computed(() => {
   return new Set(allCurrencies.value.map((cur) => cur.toLowerCase()));
 });
 
-const featuredAvailableCurrencies = computed(() => {
-  // Before live currencies load, show the conservative hardcoded defaults.
+const displayCurrencies = computed(() => {
+  // Before live currencies load, show the curated temporary-safe list.
   if (normalizedAvailableCurrencies.value.size === 0) {
     return [...FEATURED_CURRENCIES];
   }
@@ -90,30 +98,33 @@ const featuredAvailableCurrencies = computed(() => {
   );
 });
 
-const displayCurrencies = computed(() => {
-  if (showAllCurrencies.value) {
-    return allCurrencies.value;
-  }
-
-  return featuredAvailableCurrencies.value;
-});
-
 const currencyLabels: Record<string, string> = {
+  ltc: "Litecoin (LTC)",
   btc: "Bitcoin (BTC)",
   eth: "Ethereum (ETH)",
-  usdcerc20: "USDC (ERC-20)",
-  usdterc20: "USDT (ERC-20)",
-  ltc: "Litecoin (LTC)",
-  xec: "eCash (XEC)",
-  sol: "Solana (SOL)",
+  xmr: "Monero (XMR)",
+  trx: "TRON (TRX)",
+  xlm: "Stellar (XLM)",
+  xrp: "XRP",
+  dash: "Dash",
+  bch: "Bitcoin Cash (BCH)",
+  doge: "Dogecoin (DOGE)",
+  maticmainnet: "Polygon (MATIC)",
+  bnbbsc: "BNB Smart Chain",
+  usdttrc20: "USDT (TRC-20)",
+  usdcsol: "USDC (Solana)",
 };
 
-// 66-char hex compressed secp256k1 identity public key.
 const publicKeyValid = computed(() => /^[0-9a-fA-F]{66}$/.test(publicKey.value.trim()));
 
 const emailValid = computed(() => {
   const v = email.value.trim();
   return v === "" || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v);
+});
+
+const minQuantity = computed(() => {
+  if (selectedPlan.value?.id === "yearly") return MIN_YEARLY_QUANTITY;
+  return MIN_MONTHLY_QUANTITY;
 });
 
 const unitLabel = computed(() => {
@@ -177,56 +188,10 @@ const statusColor = computed(() => {
   return colors[paymentStatus.value.paymentStatus] ?? "text-gray-400";
 });
 
-// ─── Actions ─────────────────────────────────────────────────
+// ─── Helpers ─────────────────────────────────────────────────
 
-/** Open the payment flow with a specific plan */
-function openWithPlan(planId: string): void {
-  const plan = PLANS[planId];
-  if (!plan) {
-    debugError("Unknown plan:", planId);
-    return;
-  }
-
-  debug("Opening payment flow for plan:", planId);
-  selectedPlan.value = plan;
-  quantity.value = 1;
-  paymentData.value = null;
-  paymentStatus.value = null;
-  paymentError.value = null;
-  step.value = "details";
-  ensureSelectedCurrency();
-
-  nextTick(() => {
-    document.getElementById("pro-checkout")?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
-  });
-}
-
-/** Reset the full-page checkout back to the details step */
-function resetCheckout(): void {
-  debug("Resetting payment flow");
-  paymentData.value = null;
-  paymentStatus.value = null;
-  paymentError.value = null;
-  priceLockCountdown.value = "";
-  step.value = "details";
-  stopStatusPolling();
-  stopPriceLockTimer();
-}
-
-/** Select a cryptocurrency (no network — amount is set at create time) */
-function selectCurrency(currency: string): void {
-  debug("Selected currency:", currency);
-  selectedCurrency.value = currency;
-  paymentError.value = null;
-}
-
-/** Clamp the duration quantity into [1, MAX_QUANTITY] */
-function bumpQuantity(delta: number): void {
-  const next = quantity.value + delta;
-  quantity.value = Math.min(MAX_QUANTITY, Math.max(1, next));
+function minQuantityForPlan(plan: Plan): number {
+  return plan.id === "yearly" ? MIN_YEARLY_QUANTITY : MIN_MONTHLY_QUANTITY;
 }
 
 function normalizeCurrencyList(currencies: string[]): string[] {
@@ -252,6 +217,93 @@ function ensureSelectedCurrency(): void {
   }
 }
 
+function openErrorDialog(message: string, title = "Payment could not be created"): void {
+  errorDialogTitle.value = title;
+  errorDialogMessage.value = message;
+  errorDialogOpen.value = true;
+}
+
+function closeErrorDialog(): void {
+  errorDialogOpen.value = false;
+}
+
+function userMessageForPaymentError(err: unknown): string {
+  if (err instanceof PaymentApiError) {
+    if (err.code === "amount_below_minimum") {
+      return err.message;
+    }
+
+    if (err.code === "unsupported_currency") {
+      return err.message;
+    }
+
+    if (err.code === "payment_provider_error") {
+      return "The crypto payment processor could not create this payment. Please try another currency or try again in a few minutes.";
+    }
+
+    return err.message;
+  }
+
+  if (err instanceof Error) {
+    return err.message;
+  }
+
+  return "Failed to create payment. Please try again.";
+}
+
+// ─── Actions ─────────────────────────────────────────────────
+
+/** Open the payment flow with a specific plan */
+function openWithPlan(planId: string): void {
+  const plan = PLANS[planId];
+  if (!plan) {
+    debugError("Unknown plan:", planId);
+    return;
+  }
+
+  debug("Opening payment flow for plan:", planId);
+  selectedPlan.value = plan;
+  quantity.value = minQuantityForPlan(plan);
+  paymentData.value = null;
+  paymentStatus.value = null;
+  paymentError.value = null;
+  priceLockCountdown.value = "";
+  step.value = "details";
+  ensureSelectedCurrency();
+
+  nextTick(() => {
+    document.getElementById("pro-checkout")?.scrollIntoView({
+      behavior: "smooth",
+      block: "start",
+    });
+  });
+}
+
+/** Reset the full-page checkout back to the details step */
+function resetCheckout(): void {
+  debug("Resetting payment flow");
+  paymentData.value = null;
+  paymentStatus.value = null;
+  paymentError.value = null;
+  priceLockCountdown.value = "";
+  step.value = "details";
+  stopStatusPolling();
+  stopPriceLockTimer();
+}
+
+/** Select a cryptocurrency */
+function selectCurrency(currency: string): void {
+  debug("Selected currency:", currency);
+  selectedCurrency.value = currency;
+  paymentError.value = null;
+}
+
+/** Clamp the duration quantity into [minQuantity, MAX_QUANTITY] */
+function bumpQuantity(delta: number): void {
+  const next = quantity.value + delta;
+  quantity.value = Math.min(MAX_QUANTITY, Math.max(minQuantity.value, next));
+}
+
 async function loadAvailableCurrencies(): Promise<void> {
   currenciesLoading.value = true;
 
@@ -261,7 +313,6 @@ async function loadAvailableCurrencies(): Promise<void> {
     debug("Loaded", allCurrencies.value.length, "available currencies");
   } catch (err) {
     debugError("Failed to load available currencies:", err);
-    // Keep conservative defaults if the currency endpoint is temporarily down.
     ensureSelectedCurrency();
   } finally {
     currenciesLoading.value = false;
@@ -291,10 +342,9 @@ async function createPaymentInvoice(): Promise<void> {
     startPriceLockTimer();
   } catch (err) {
     debugError("createPaymentInvoice error:", err);
-    paymentError.value =
-      err instanceof Error
-        ? err.message
-        : "Failed to create payment. Please try again.";
+    const message = userMessageForPaymentError(err);
+    paymentError.value = message;
+    openErrorDialog(message);
   } finally {
     paymentLoading.value = false;
   }
@@ -318,21 +368,11 @@ async function pollStatus(): Promise<void> {
   }
 }
 
-/** Load all available currencies (proxied through our API) */
-async function loadAllCurrencies(): Promise<void> {
-  if (allCurrencies.value.length === 0) {
-    await loadAvailableCurrencies();
-  }
-
-  showAllCurrencies.value = true;
-  ensureSelectedCurrency();
-}
-
 // ─── Timers ──────────────────────────────────────────────────
 
 function startStatusPolling(): void {
   stopStatusPolling();
-  pollStatus(); // immediate first poll
+  pollStatus();
   statusPollTimer = setInterval(pollStatus, STATUS_POLL_INTERVAL_MS);
   debug("Status polling started");
 }
@@ -379,10 +419,6 @@ function stopPriceLockTimer(): void {
 
 // ─── Global Event Listener ───────────────────────────────────
 
-/**
- * Listen for plan selection events from PricingCard buttons.
- * Buttons dispatch a custom event with the plan ID.
- */
 function handlePlanSelect(event: Event): void {
   const target = event.target as HTMLElement;
   const button = target.closest("[data-action='select-plan']") as HTMLElement | null;
@@ -406,6 +442,46 @@ onUnmounted(() => {
 </script>
 
 <template>
+  <!-- Error popup -->
+  <Teleport to="body">
+    <div
+      v-if="errorDialogOpen"
+      class="fixed inset-0 z-[70] flex items-center justify-center bg-black/75 px-4 backdrop-blur-sm"
+      role="dialog"
+      aria-modal="true"
+      @click.self="closeErrorDialog"
+    >
+      <div class="w-full max-w-md rounded-2xl border border-red-900/60 bg-gray-950 p-6 shadow-2xl">
+        <div class="flex items-start gap-4">
+          <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-red-950 text-red-300">
+            !
+          </div>
+          <div class="min-w-0 flex-1">
+            <h3 class="text-lg font-bold text-white">{{ errorDialogTitle }}</h3>
+            <p class="mt-2 text-sm leading-6 text-gray-300">
+              {{ errorDialogMessage }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-6 flex justify-end gap-3">
+          <button
+            class="rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 transition hover:border-gray-500 hover:text-white"
+            @click="closeErrorDialog"
+          >
+            Close
+          </button>
+          <button
+            class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-bold text-gray-950 transition hover:bg-amber-400"
+            @click="closeErrorDialog"
+          >
+            Choose another option
+          </button>
+        </div>
+      </div>
+    </div>
+  </Teleport>
+
   <!-- Full-page checkout section -->
   <section id="pro-checkout" class="border-y border-gray-800 bg-gray-950/80">
     <div class="mx-auto max-w-5xl px-6 py-16">
@@ -429,7 +505,7 @@ onUnmounted(() => {
             {{ selectedPlan?.label }} — ${{ selectedPlan?.priceUSD }} USD / {{ selectedPlan?.periodUnit }}
           </p>
 
-          <!-- Identity public key (required) -->
+          <!-- Identity public key -->
           <div class="mt-6">
             <label class="block text-sm font-semibold text-white">
               Identity public key
@@ -452,7 +528,7 @@ onUnmounted(() => {
             </p>
           </div>
 
-          <!-- Email (optional) -->
+          <!-- Email -->
           <div class="mt-4">
             <label class="block text-sm font-semibold text-white">
               Email <span class="font-normal text-gray-500">(optional)</span>
@@ -480,7 +556,7 @@ onUnmounted(() => {
               <div class="flex items-center rounded-lg border border-gray-800 bg-gray-900">
                 <button
                   class="px-4 py-2 text-lg text-gray-400 hover:text-white disabled:opacity-40"
-                  :disabled="quantity <= 1"
+                  :disabled="quantity <= minQuantity"
                   @click="bumpQuantity(-1)"
                   aria-label="Decrease duration"
                 >−</button>
@@ -498,6 +574,17 @@ onUnmounted(() => {
                 <span class="text-xs text-gray-500"> USD total</span>
               </span>
             </div>
+
+            <div
+              v-if="selectedPlan?.id === 'monthly'"
+              class="mt-3 rounded-lg border border-amber-900/40 bg-amber-950/20 p-3"
+            >
+              <p class="text-xs leading-5 text-amber-200">
+                Temporary crypto processor minimum: monthly checkout currently
+                starts at 2 months ($10). Your account receives the full paid
+                duration.
+              </p>
+            </div>
           </div>
 
           <!-- Currency selection -->
@@ -505,7 +592,7 @@ onUnmounted(() => {
             <div class="flex items-center justify-between gap-3">
               <label class="block text-sm font-semibold text-white">Pay with</label>
               <span v-if="currenciesLoading" class="text-xs text-gray-500">
-                Checking live availability…
+                Checking availability…
               </span>
             </div>
 
@@ -513,10 +600,21 @@ onUnmounted(() => {
               <button
                 v-for="cur in displayCurrencies"
                 :key="cur"
-                class="rounded-xl border border-gray-800 bg-gray-900 px-3 py-3 text-center text-sm font-semibold text-white transition-all hover:border-amber-700 hover:bg-gray-800"
-                :class="{ 'border-amber-500 bg-amber-950/20': selectedCurrency === cur }"
+                class="relative rounded-xl border px-3 py-3 text-center text-sm font-semibold transition-all"
+                :class="
+                  selectedCurrency === cur
+                    ? 'border-amber-400 bg-amber-500/15 text-white shadow-lg shadow-amber-950/40 ring-2 ring-amber-400/70'
+                    : 'border-gray-800 bg-gray-900 text-white hover:border-amber-700 hover:bg-gray-800'
+                "
                 @click="selectCurrency(cur)"
               >
+                <span
+                  v-if="selectedCurrency === cur"
+                  class="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-amber-400 text-xs font-black text-gray-950"
+                  aria-hidden="true"
+                >
+                  ✓
+                </span>
                 <span class="block uppercase">{{ cur }}</span>
                 <span class="mt-0.5 block text-[10px] text-gray-500">
                   {{ currencyLabels[cur] ?? cur.toUpperCase() }}
@@ -530,17 +628,6 @@ onUnmounted(() => {
                 Please try again in a few minutes.
               </p>
             </div>
-
-            <!-- More options -->
-            <div class="mt-3 text-center" v-if="!showAllCurrencies">
-              <button
-                class="text-sm text-amber-400 transition-colors hover:text-amber-300 disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="currenciesLoading"
-                @click="loadAllCurrencies"
-              >
-                {{ currenciesLoading ? "Loading..." : "More options →" }}
-              </button>
-            </div>
           </div>
 
           <!-- Submit -->
@@ -552,7 +639,7 @@ onUnmounted(() => {
             {{ paymentLoading ? "Creating Invoice..." : "Generate Payment Address" }}
           </button>
 
-          <!-- Payment error -->
+          <!-- Payment error inline backup -->
           <div v-if="paymentError" class="mt-4 rounded-lg border border-red-900/50 bg-red-950/30 p-3">
             <p class="text-sm text-red-400">{{ paymentError }}</p>
           </div>
@@ -562,11 +649,7 @@ onUnmounted(() => {
         <div v-if="step === 'status' && paymentData">
           <h3 class="text-xl font-bold text-white">Send Payment</h3>
 
-          <!-- QR code (address URI) -->
           <div class="mt-6 flex flex-col items-center gap-4">
-            <!-- NOTE: QR rendered via a generic QR image service (NOT
-                 NOWPayments). Consider a client-side QR lib later to avoid
-                 sending the pay address to a third party. -->
             <div class="rounded-xl border border-gray-800 bg-white p-4">
               <img
                 :src="`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(buildPaymentURI(paymentData.payCurrency, paymentData.payAddress, paymentData.payAmount))}`"
@@ -576,7 +659,6 @@ onUnmounted(() => {
               />
             </div>
 
-            <!-- Amount -->
             <div class="text-center">
               <p class="text-xs uppercase tracking-widest text-gray-500">Send exactly</p>
               <p class="mt-1 font-mono text-2xl font-bold text-white">
@@ -586,7 +668,6 @@ onUnmounted(() => {
               <p class="mt-1 text-xs text-gray-500">≈ ${{ paymentData.priceAmountUsd }} USD</p>
             </div>
 
-            <!-- Address -->
             <div class="w-full rounded-lg border border-gray-800 bg-gray-900 p-3">
               <p class="mb-1 text-xs text-gray-500">To address:</p>
               <p class="select-all break-all font-mono text-xs text-gray-300">
@@ -594,7 +675,6 @@ onUnmounted(() => {
               </p>
             </div>
 
-            <!-- Price lock timer -->
             <div v-if="priceLockCountdown" class="text-center">
               <p class="text-xs text-gray-500">Price locked for</p>
               <p
@@ -606,22 +686,18 @@ onUnmounted(() => {
             </div>
           </div>
 
-          <!-- Status -->
           <div class="mt-6 rounded-lg border border-gray-800 bg-gray-900 p-4 text-center">
             <p class="mb-2 text-xs uppercase tracking-widest text-gray-500">Status</p>
 
-            <!-- Loading spinner while no status yet -->
             <div v-if="!paymentStatus" class="flex items-center justify-center gap-2">
               <div class="h-4 w-4 animate-spin rounded-full border-2 border-gray-700 border-t-amber-400"></div>
               <span class="text-sm text-gray-400">Waiting for payment...</span>
             </div>
 
-            <!-- Status display -->
             <p v-else class="text-lg font-semibold" :class="statusColor">
               {{ statusLabel }}
             </p>
 
-            <!-- Partial payment info -->
             <p
               v-if="paymentStatus?.paymentStatus === 'partially_paid'"
               class="mt-2 text-xs text-orange-400"
@@ -631,7 +707,6 @@ onUnmounted(() => {
             </p>
           </div>
 
-          <!-- Success message -->
           <div
             v-if="paymentStatus?.paymentStatus === 'finished'"
             class="mt-6 rounded-lg border border-green-900/50 bg-green-950/20 p-4 text-center"
@@ -650,7 +725,6 @@ onUnmounted(() => {
             </a>
           </div>
 
-          <!-- Failure message -->
           <div
             v-if="paymentStatus?.paymentStatus === 'failed' || paymentStatus?.paymentStatus === 'expired'"
             class="mt-4 text-center"
@@ -663,7 +737,6 @@ onUnmounted(() => {
             </button>
           </div>
 
-          <!-- Payment ID (debug) -->
           <p class="mt-4 text-center text-xs text-gray-600">
             Payment ID: {{ paymentData.paymentId }}
           </p>
