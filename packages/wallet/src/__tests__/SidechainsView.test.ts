@@ -83,6 +83,18 @@ describe("Platforms view", () => {
     }
   });
 
+  it("should display BitNames before Thunder while preserving the rest of the API order", async () => {
+    const wrapper = await mountPlatforms();
+    const headings = wrapper.findAll("h3").map((heading) => heading.text());
+
+    expect(headings.slice(0, 4)).toEqual([
+      "BitNames",
+      "Thunder Network",
+      "zSide",
+      "BitAssets",
+    ]);
+  });
+
   it("should display platform descriptions", async () => {
     const wrapper = await mountPlatforms();
     for (const sc of MOCK_SIDECHAINS) {

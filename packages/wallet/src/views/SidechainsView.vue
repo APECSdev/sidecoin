@@ -1,7 +1,7 @@
 <!-- packages/wallet/src/views/SidechainsView.vue -->
 
 <script setup lang="ts">
-import { ref, onMounted } from "vue";
+import { computed, ref, onMounted } from "vue";
 import { getSidechains } from "../api";
 import type { SidechainSummary } from "../api";
 import { deriveDrivechainAddress } from "@sidecoin/shared";
@@ -11,6 +11,10 @@ import { canAccessPlatform, isProPlatform } from "../entitlements";
 import ProBadge from "../components/pro/ProBadge.vue";
 
 const VERIFIED_ADDRESS_SLOTS = new Set<number>([9, 4]);
+const PLATFORM_DISPLAY_PRIORITY: Record<string, number> = {
+  bitnames: 0,
+  thunder: 1,
+};
 
 const sidechains = ref<SidechainSummary[]>([]);
 const loading = ref(true);
@@ -19,6 +23,17 @@ const error = ref<string | null>(null);
 const drivechainAddress = ref("");
 const addressError = ref("");
 const copiedSlot = ref<number | null>(null);
+
+const orderedSidechains = computed(() => {
+  return sidechains.value
+    .map((sidechain, index) => ({ sidechain, index }))
+    .sort((a, b) => {
+      const aPriority = PLATFORM_DISPLAY_PRIORITY[a.sidechain.id] ?? 100 + a.index;
+      const bPriority = PLATFORM_DISPLAY_PRIORITY[b.sidechain.id] ?? 100 + b.index;
+      return aPriority - bPriority;
+    })
+    .map((entry) => entry.sidechain);
+});
 
 onMounted(async () => {
   const wallet = loadWallet();
@@ -110,7 +125,7 @@ async function copyAddress(slot: number) {
 
     <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div
-        v-for="sc in sidechains"
+        v-for="sc in orderedSidechains"
         :key="sc.slot"
         class="rounded-xl border border-gray-800 bg-gray-900 p-4"
       >
