@@ -8,9 +8,9 @@ import { describe, it, expect } from "vitest";
 import router from "../router";
 
 describe("Router Configuration", () => {
-  it("should have exactly 9 routes", () => {
+  it("should have exactly 10 routes", () => {
     const routes = router.getRoutes();
-    expect(routes).toHaveLength(9);
+    expect(routes).toHaveLength(10);
   });
 
   it.each([
@@ -19,7 +19,8 @@ describe("Router Configuration", () => {
     ["/send", "send"],
     ["/receive", "receive"],
     ["/swap", "swap"],
-    ["/sidechains", "sidechains"],
+    ["/platforms", "platforms"],
+    ["/platforms/:platformId", "platform-detail"],
     ["/hardware", "hardware"],
     ["/toolbox", "toolbox"],
     ["/settings", "settings"],

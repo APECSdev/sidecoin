@@ -6,6 +6,7 @@ import { getSidechains } from "../api";
 import type { SidechainSummary } from "../api";
 import { deriveDrivechainAddress } from "@sidecoin/shared";
 import { loadWallet } from "../keystore";
+import { getPlatformById } from "../data/platforms";
 
 // Slots whose L2 receive-address derivation has been VERIFIED against
 // thunder-rust (SLIP-0010 m/1'/0'/0'/1' -> blake3 dkLen:20 -> base58):
@@ -57,6 +58,14 @@ function isVerified(slot: number): boolean {
   return VERIFIED_ADDRESS_SLOTS.has(slot) && drivechainAddress.value !== "";
 }
 
+function platformHref(id: string): string {
+  return `/platforms/${id}`;
+}
+
+function platformUseCase(id: string): string {
+  return getPlatformById(id)?.primaryUseCase ?? "Platform";
+}
+
 async function copyAddress(slot: number) {
   if (!drivechainAddress.value) return;
   try {
@@ -73,15 +82,19 @@ async function copyAddress(slot: number) {
 
 <template>
   <div>
-    <h2 class="mb-2 text-2xl font-bold">Sidechains</h2>
+    <h2 class="mb-2 text-2xl font-bold">Platforms</h2>
     <p class="mb-6 text-sm text-gray-400">
-      BIP-300 / BIP-301 Drivechains — 7 sidechains at launch
+      BIP-300 / BIP-301 Drivechain platforms — 7 active at launch, plus RISCy proposed
     </p>
 
-    <div v-if="loading" class="text-gray-400">Loading sidechains…</div>
+    <div v-if="addressError" class="mb-4 rounded border border-yellow-800 bg-yellow-950/30 p-3 text-sm text-yellow-400">
+      {{ addressError }}
+    </div>
+
+    <div v-if="loading" class="text-gray-400">Loading platforms…</div>
 
     <div v-else-if="error" class="rounded bg-red-900/30 p-4 text-red-400">
-      <p class="font-semibold">Error loading sidechains</p>
+      <p class="font-semibold">Error loading platforms</p>
       <p class="mt-1 text-sm">{{ error }}</p>
     </div>
 
@@ -91,7 +104,7 @@ async function copyAddress(slot: number) {
         :key="sc.slot"
         class="rounded-lg border border-gray-800 bg-gray-900 p-4"
       >
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between gap-3">
           <h3 class="font-semibold text-white">{{ sc.displayName }}</h3>
           <span
             class="rounded-full px-2 py-0.5 text-xs font-medium"
@@ -100,8 +113,22 @@ async function copyAddress(slot: number) {
             {{ sc.status === "active" ? "Active" : "Pending" }}
           </span>
         </div>
+
         <p class="mt-1 text-sm text-gray-400">{{ sc.description }}</p>
-        <p class="mt-2 font-mono text-xs text-gray-600">Slot {{ sc.slot }}</p>
+
+        <div class="mt-3 flex items-center justify-between text-xs">
+          <p class="font-mono text-gray-600">Slot {{ sc.slot }}</p>
+          <span class="rounded-full bg-gray-800 px-2 py-0.5 text-gray-400">
+            {{ platformUseCase(sc.id) }}
+          </span>
+        </div>
+
+        <router-link
+          :to="platformHref(sc.id)"
+          class="mt-4 inline-flex rounded-lg border border-gray-700 px-3 py-2 text-xs font-semibold text-gray-200 hover:border-ecash-500 hover:bg-gray-800 hover:text-white"
+        >
+          Open platform
+        </router-link>
 
         <!-- L2 receive address — only on VERIFIED chains (Thunder slot 9,
              BitAssets slot 4) and only once a wallet key exists. -->

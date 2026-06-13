@@ -9,7 +9,7 @@ const links = [
   { to: "/send", label: "Send" },
   { to: "/receive", label: "Receive" },
   { to: "/swap", label: "Swap" },
-  { to: "/sidechains", label: "Chains" },
+  { to: "/platforms", label: "Platforms" },
   { to: "/hardware", label: "Hardware" },
   { to: "/toolbox", label: "Tools" },
   { to: "/settings", label: "Settings" },
@@ -44,9 +44,6 @@ const links = [
           <span class="sr-only">Sidecoin</span>
         </h1>
         <p class="text-xs text-gray-500">eCash Drivechains Wallet</p>
-        <p class="mt-1 text-[10px] uppercase tracking-wider text-gray-600">
-          Web Edition
-        </p>
       </div>
 
       <ul class="space-y-1">

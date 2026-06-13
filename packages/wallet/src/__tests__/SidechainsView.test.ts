@@ -1,16 +1,13 @@
 // packages/wallet/src/__tests__/SidechainsView.test.ts
 //
-// Tests for SidechainsView.vue.
-// Covers sidechain list rendering, slot display, active/pending badges,
+// Tests for the Platforms list view.
+// Covers platform list rendering, slot display, active/pending badges,
 // loading state, error state, and BIP info text.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
+import { createRouter, createWebHashHistory } from "vue-router";
 import SidechainsView from "../views/SidechainsView.vue";
-
-// ---------------------------------------------------------------------------
-// Mock the API module
-// ---------------------------------------------------------------------------
 
 vi.mock("../api", () => ({
   getSidechains: vi.fn(),
@@ -19,16 +16,6 @@ vi.mock("../api", () => ({
 import { getSidechains } from "../api";
 
 const mockGetSidechains = vi.mocked(getSidechains);
-
-// ---------------------------------------------------------------------------
-// Helpers
-//
-// Slots MUST match the authoritative registry in
-// packages/shared/src/sidechains/registry.ts. BIP-300 slots are SPARSE and
-// assigned per proposal — never sequential, never the array index.
-//   thunder=9 zside=98 bitnames=2 bitassets=4 photon=99 truthcoin=13
-//   coinshift=255 riscy=3 (proposed)
-// ---------------------------------------------------------------------------
 
 const MOCK_SIDECHAINS = [
   { slot: 9, id: "thunder", displayName: "Thunder Network", description: "Payment channels.", status: "active" },
@@ -41,11 +28,32 @@ const MOCK_SIDECHAINS = [
   { slot: 3, id: "riscy", displayName: "RISCy", description: "Reserved — not activated.", status: "proposed" },
 ];
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
+function createTestRouter() {
+  return createRouter({
+    history: createWebHashHistory(),
+    routes: [
+      { path: "/platforms", name: "platforms", component: SidechainsView },
+      { path: "/platforms/:platformId", name: "platform-detail", component: { template: "<div />" } },
+    ],
+  });
+}
 
-describe("SidechainsView.vue", () => {
+async function mountPlatforms() {
+  const router = createTestRouter();
+  router.push("/platforms");
+  await router.isReady();
+
+  const wrapper = mount(SidechainsView, {
+    global: {
+      plugins: [router],
+    },
+  });
+
+  await flushPromises();
+  return wrapper;
+}
+
+describe("Platforms view", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetSidechains.mockResolvedValue(MOCK_SIDECHAINS);
@@ -55,71 +63,68 @@ describe("SidechainsView.vue", () => {
     vi.restoreAllMocks();
   });
 
-  it("should render the 'Sidechains' heading", async () => {
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
-    expect(wrapper.find("h2").text()).toBe("Sidechains");
+  it("should render the 'Platforms' heading", async () => {
+    const wrapper = await mountPlatforms();
+    expect(wrapper.find("h2").text()).toBe("Platforms");
   });
 
   it("should render BIP-300/301 subtitle", async () => {
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
-    expect(wrapper.text()).toContain("BIP-300 / BIP-301 Drivechains");
-    expect(wrapper.text()).toContain("7 sidechains at launch");
+    const wrapper = await mountPlatforms();
+    expect(wrapper.text()).toContain("BIP-300 / BIP-301 Drivechain platforms");
   });
 
-  it("should render all 8 sidechain cards", async () => {
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
+  it("should render all 8 platform cards", async () => {
+    const wrapper = await mountPlatforms();
     for (const sc of MOCK_SIDECHAINS) {
       expect(wrapper.text()).toContain(sc.displayName);
     }
   });
 
-  it("should display sidechain descriptions", async () => {
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
+  it("should display platform descriptions", async () => {
+    const wrapper = await mountPlatforms();
     for (const sc of MOCK_SIDECHAINS) {
       expect(wrapper.text()).toContain(sc.description);
     }
   });
 
-  it("should display slot numbers for each sidechain", async () => {
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
+  it("should display slot numbers for each platform", async () => {
+    const wrapper = await mountPlatforms();
     for (const sc of MOCK_SIDECHAINS) {
       expect(wrapper.text()).toContain(`Slot ${sc.slot}`);
     }
   });
 
-  it("should show 'Active' badge for active sidechains", async () => {
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
+  it("should render platform detail links", async () => {
+    const wrapper = await mountPlatforms();
+    const hrefs = wrapper.findAll("a").map((a) => a.attributes("href"));
+    expect(hrefs).toContain("#/platforms/thunder");
+    expect(hrefs).toContain("#/platforms/zside");
+    expect(hrefs).toContain("#/platforms/riscy");
+  });
+
+  it("should show 'Active' badge for active platforms", async () => {
+    const wrapper = await mountPlatforms();
     const html = wrapper.html();
-    // 7 active sidechains should have "Active" text
     const activeMatches = html.match(/Active/g);
     expect(activeMatches).not.toBeNull();
     expect(activeMatches!.length).toBeGreaterThanOrEqual(7);
   });
 
-  it("should show 'Pending' badge for inactive sidechains", async () => {
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
+  it("should show 'Pending' badge for inactive platforms", async () => {
+    const wrapper = await mountPlatforms();
     expect(wrapper.text()).toContain("Pending");
   });
 
   it("should call getSidechains on mount", async () => {
-    mount(SidechainsView);
-    await flushPromises();
+    await mountPlatforms();
     expect(mockGetSidechains).toHaveBeenCalledTimes(1);
   });
 
   it("should show error state when API fails", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetSidechains.mockRejectedValue(new Error("Sidechain fetch failed"));
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
-    expect(wrapper.text()).toContain("Error loading sidechains");
+    const wrapper = await mountPlatforms();
+    expect(wrapper.text()).toContain("Error loading platforms");
     expect(wrapper.text()).toContain("Sidechain fetch failed");
     consoleSpy.mockRestore();
   });
@@ -127,21 +132,18 @@ describe("SidechainsView.vue", () => {
   it("should log error to console when API fails", async () => {
     const consoleSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     mockGetSidechains.mockRejectedValue(new Error("Network down"));
-    mount(SidechainsView);
-    await flushPromises();
+    await mountPlatforms();
     expect(consoleSpy).toHaveBeenCalledWith(
       "[SidechainsView] Failed to load sidechains:",
-      expect.any(Error)
+      expect.any(Error),
     );
     consoleSpy.mockRestore();
   });
 
   it("should render an empty list gracefully", async () => {
     mockGetSidechains.mockResolvedValue([]);
-    const wrapper = mount(SidechainsView);
-    await flushPromises();
-    // Should still show heading and subtitle but no cards
-    expect(wrapper.find("h2").text()).toBe("Sidechains");
+    const wrapper = await mountPlatforms();
+    expect(wrapper.find("h2").text()).toBe("Platforms");
     expect(wrapper.text()).not.toContain("Slot 9");
   });
 });
