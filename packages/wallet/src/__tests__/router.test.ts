@@ -8,44 +8,28 @@ import { describe, it, expect } from "vitest";
 import router from "../router";
 
 describe("Router Configuration", () => {
-  it("should have exactly 7 routes", () => {
+  it("should have exactly 9 routes", () => {
     const routes = router.getRoutes();
-    expect(routes).toHaveLength(7);
+    expect(routes).toHaveLength(9);
   });
 
-  it("should have a dashboard route at /", () => {
-    const route = router.getRoutes().find((r) => r.path === "/");
+  it.each([
+    ["/onboarding", "onboarding"],
+    ["/", "dashboard"],
+    ["/send", "send"],
+    ["/receive", "receive"],
+    ["/swap", "swap"],
+    ["/sidechains", "sidechains"],
+    ["/hardware", "hardware"],
+    ["/toolbox", "toolbox"],
+    ["/settings", "settings"],
+  ])("should have route %s named %s", (path, name) => {
+    const route = router.getRoutes().find((r) => r.path === path);
     expect(route).toBeDefined();
-    expect(route!.name).toBe("dashboard");
-  });
-
-  it("should have a send route at /send", () => {
-    const route = router.getRoutes().find((r) => r.path === "/send");
-    expect(route).toBeDefined();
-    expect(route!.name).toBe("send");
-  });
-
-  it("should have a receive route at /receive", () => {
-    const route = router.getRoutes().find((r) => r.path === "/receive");
-    expect(route).toBeDefined();
-    expect(route!.name).toBe("receive");
-  });
-
-  it("should have a sidechains route at /sidechains", () => {
-    const route = router.getRoutes().find((r) => r.path === "/sidechains");
-    expect(route).toBeDefined();
-    expect(route!.name).toBe("sidechains");
-  });
-
-  it("should have a settings route at /settings", () => {
-    const route = router.getRoutes().find((r) => r.path === "/settings");
-    expect(route).toBeDefined();
-    expect(route!.name).toBe("settings");
+    expect(route!.name).toBe(name);
   });
 
   it("should use hash history mode", () => {
-    // createWebHashHistory produces URLs with # prefix
-    // The router's currentRoute starts at / in hash mode
     expect(router.options.history).toBeDefined();
   });
 
@@ -68,7 +52,7 @@ describe("Router Configuration", () => {
     for (const route of routes) {
       expect(
         route.components?.default,
-        `Route "${String(route.name)}" is missing a component`
+        `Route "${String(route.name)}" is missing a component`,
       ).toBeDefined();
     }
   });

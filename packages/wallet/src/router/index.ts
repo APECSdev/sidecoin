@@ -5,10 +5,12 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import DashboardView from "../views/DashboardView.vue";
 import SendView from "../views/SendView.vue";
 import ReceiveView from "../views/ReceiveView.vue";
+import AssetSwapView from "../views/AssetSwapView.vue";
 import SidechainsView from "../views/SidechainsView.vue";
+import HardwareWalletView from "../views/HardwareWalletView.vue";
+import ToolboxView from "../views/ToolboxView.vue";
 import SettingsView from "../views/SettingsView.vue";
 import OnboardingView from "../views/OnboardingView.vue";
-import HardwareWalletView from "../views/HardwareWalletView.vue";
 
 import { hasWallet } from "../keystore";
 
@@ -19,8 +21,10 @@ const router = createRouter({
     { path: "/", name: "dashboard", component: DashboardView },
     { path: "/send", name: "send", component: SendView },
     { path: "/receive", name: "receive", component: ReceiveView },
+    { path: "/swap", name: "swap", component: AssetSwapView },
     { path: "/sidechains", name: "sidechains", component: SidechainsView },
     { path: "/hardware", name: "hardware", component: HardwareWalletView },
+    { path: "/toolbox", name: "toolbox", component: ToolboxView },
     { path: "/settings", name: "settings", component: SettingsView },
   ],
 });

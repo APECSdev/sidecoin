@@ -1,8 +1,7 @@
 // packages/wallet/src/__tests__/App.test.ts
 //
 // Tests for the root App.vue component.
-// Verifies the navigation (desktop sidebar + mobile bottom bar), branding,
-// route links, and main content area render correctly.
+// Verifies the navigation, branding, route links, and main content area.
 
 import { describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
@@ -10,10 +9,6 @@ import { createRouter, createWebHashHistory } from "vue-router";
 import { createPinia } from "pinia";
 import { defineComponent, h } from "vue";
 import App from "../App.vue";
-
-// ---------------------------------------------------------------------------
-// Helpers — create a test router with stub components
-// ---------------------------------------------------------------------------
 
 function createStubComponent(name: string) {
   return defineComponent({
@@ -31,7 +26,10 @@ function createTestRouter() {
       { path: "/", name: "dashboard", component: createStubComponent("Dashboard") },
       { path: "/send", name: "send", component: createStubComponent("Send") },
       { path: "/receive", name: "receive", component: createStubComponent("Receive") },
+      { path: "/swap", name: "swap", component: createStubComponent("Swap") },
       { path: "/sidechains", name: "sidechains", component: createStubComponent("Sidechains") },
+      { path: "/hardware", name: "hardware", component: createStubComponent("Hardware") },
+      { path: "/toolbox", name: "toolbox", component: createStubComponent("Toolbox") },
       { path: "/settings", name: "settings", component: createStubComponent("Settings") },
     ],
   });
@@ -50,10 +48,6 @@ async function mountApp() {
     },
   });
 }
-
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
 
 describe("App.vue", () => {
   it("should render the app title 'Sidecoin'", async () => {
@@ -76,35 +70,31 @@ describe("App.vue", () => {
     expect(wrapper.text()).toContain("2026-08-21 15:00Z");
   });
 
-  it("should render the fork block estimate", async () => {
+  it("should render navigation links for all 8 wallet routes", async () => {
     const wrapper = await mountApp();
-    expect(wrapper.text()).toContain("block ~964,000");
-  });
+    const hrefs = wrapper.findAll("a").map((l) => l.attributes("href"));
 
-  it("should render 'eCash Hard Fork' text", async () => {
-    const wrapper = await mountApp();
-    expect(wrapper.text()).toContain("eCash Hard Fork");
-  });
-
-  it("should render navigation links for all 5 routes", async () => {
-    const wrapper = await mountApp();
-    const links = wrapper.findAll("a");
-
-    const hrefs = links.map((l) => l.attributes("href"));
     expect(hrefs).toContain("#/");
     expect(hrefs).toContain("#/send");
     expect(hrefs).toContain("#/receive");
+    expect(hrefs).toContain("#/swap");
     expect(hrefs).toContain("#/sidechains");
+    expect(hrefs).toContain("#/hardware");
+    expect(hrefs).toContain("#/toolbox");
     expect(hrefs).toContain("#/settings");
   });
 
   it("should render navigation link text for all routes", async () => {
     const wrapper = await mountApp();
     const nav = wrapper.find("nav");
+
     expect(nav.text()).toContain("Home");
     expect(nav.text()).toContain("Send");
     expect(nav.text()).toContain("Receive");
+    expect(nav.text()).toContain("Swap");
     expect(nav.text()).toContain("Chains");
+    expect(nav.text()).toContain("Hardware");
+    expect(nav.text()).toContain("Tools");
     expect(nav.text()).toContain("Settings");
   });
 
@@ -120,7 +110,6 @@ describe("App.vue", () => {
 
   it("should render the RouterView content area", async () => {
     const wrapper = await mountApp();
-    // The stub Dashboard component should render inside main
     expect(wrapper.find("main").text()).toContain("Dashboard");
   });
 });

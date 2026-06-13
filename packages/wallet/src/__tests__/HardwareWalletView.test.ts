@@ -1,4 +1,5 @@
 // packages/wallet/src/__tests__/HardwareWalletView.test.ts
+
 import { describe, it, expect, vi } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import HardwareWalletView from "../views/HardwareWalletView.vue";
@@ -19,6 +20,15 @@ function fakeWallet(overrides: Partial<HardwareWallet> = {}): HardwareWallet {
 }
 
 describe("HardwareWalletView", () => {
+  it("renders OneKey integration copy", () => {
+    const wallet = fakeWallet();
+    const w = mount(HardwareWalletView, { props: { wallet } });
+
+    expect(w.text()).toContain("OneKey integration");
+    expect(w.text()).toContain("Hardware Wallet");
+    expect(w.text()).toContain("WebUSB required");
+  });
+
   it("connects then derives and displays an address", async () => {
     const wallet = fakeWallet();
     const w = mount(HardwareWalletView, { props: { wallet } });
@@ -27,10 +37,14 @@ describe("HardwareWalletView", () => {
     await flushPromises();
     expect(wallet.connect).toHaveBeenCalled();
 
-    const getBtn = w.findAll("button").find((b) => b.text() === "Get address")!;
+    const getBtn = w.findAll("button").find((b) => b.text() === "Show address")!;
     await getBtn.trigger("click");
     await flushPromises();
 
+    expect(wallet.getAddress).toHaveBeenCalledWith("m/44'/0'/0'/0/0", {
+      coin: "btc",
+      showOnDevice: true,
+    });
     expect(w.get('[data-test="hw-address"]').text()).toContain("bc1qexample");
   });
 

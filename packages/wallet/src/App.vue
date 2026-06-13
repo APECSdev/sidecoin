@@ -8,7 +8,10 @@ const links = [
   { to: "/", label: "Home" },
   { to: "/send", label: "Send" },
   { to: "/receive", label: "Receive" },
+  { to: "/swap", label: "Swap" },
   { to: "/sidechains", label: "Chains" },
+  { to: "/hardware", label: "Hardware" },
+  { to: "/toolbox", label: "Tools" },
   { to: "/settings", label: "Settings" },
 ];
 </script>
@@ -73,15 +76,15 @@ const links = [
     </main>
 
     <!-- Mobile bottom tab bar -->
-    <!-- h-16 + full-cell flex links = ~64px touch targets, easier to tap. -->
     <nav
-      class="fixed bottom-0 left-0 right-0 z-20 grid h-16 grid-cols-5 border-t border-gray-800 bg-gray-950/95 backdrop-blur md:hidden"
+      class="fixed bottom-0 left-0 right-0 z-20 flex h-16 overflow-x-auto border-t border-gray-800 bg-gray-950/95 backdrop-blur md:hidden"
+      aria-label="Wallet navigation"
     >
       <router-link
         v-for="l in links"
         :key="l.to"
         :to="l.to"
-        class="flex h-full flex-col items-center justify-center gap-1 text-xs font-medium text-gray-400 transition-colors hover:text-gray-200 active:bg-gray-800/60"
+        class="flex h-full min-w-20 flex-col items-center justify-center gap-1 px-2 text-xs font-medium text-gray-400 transition-colors hover:text-gray-200 active:bg-gray-800/60"
         active-class="text-ecash-400"
       >
         {{ l.label }}

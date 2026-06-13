@@ -1,4 +1,5 @@
 <!-- packages/wallet/src/views/HardwareWalletView.vue -->
+
 <script setup lang="ts">
 import { ref } from "vue";
 import type { HardwareWallet, HardwareAccount } from "../hardware/types";
@@ -41,65 +42,109 @@ async function fetchAddress() {
 </script>
 
 <template>
-  <div class="mx-auto max-w-lg">
-    <h1 class="text-2xl font-bold text-ecash-400">Hardware Wallet</h1>
-    <p class="mt-1 text-sm text-gray-500">{{ wallet.name }} · read-only</p>
-
-    <div
-      class="mt-4 rounded border border-gray-800 bg-gray-900 p-3 text-xs text-gray-400"
-    >
-      Requires a Chromium browser over HTTPS (localhost is fine). Read-only:
-      derives and displays an address so it can be compared against BitWindow.
-      No signing yet.
+  <div class="mx-auto max-w-3xl">
+    <div class="mb-6">
+      <p class="text-xs uppercase tracking-widest text-ecash-500">OneKey integration</p>
+      <h2 class="mt-1 text-2xl font-bold">Hardware Wallet</h2>
+      <p class="mt-2 max-w-2xl text-sm text-gray-400">
+        Connect a OneKey device, derive an address, and verify it on-device.
+        Signing remains disabled until fork network parameters and transaction
+        support are validated end-to-end.
+      </p>
     </div>
 
-    <div class="mt-6 space-y-4">
-      <button
-        class="rounded bg-ecash-500 px-4 py-2 text-sm font-semibold text-gray-950 hover:bg-ecash-400 disabled:opacity-40"
-        :disabled="status === 'connecting'"
-        @click="connect"
-      >
-        {{ status === "connected" ? "Reconnect" : "Connect device" }}
-      </button>
+    <div class="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <section class="rounded-xl border border-gray-800 bg-gray-900 p-5">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h3 class="font-semibold text-white">{{ wallet.name }} Device</h3>
+            <p class="mt-1 text-xs text-gray-500">
+              Chromium + HTTPS or localhost · WebUSB required
+            </p>
+          </div>
+          <span
+            class="rounded-full px-3 py-1 text-xs font-semibold"
+            :class="{
+              'bg-gray-800 text-gray-400': status === 'idle',
+              'bg-yellow-900 text-yellow-300': status === 'connecting',
+              'bg-ecash-900 text-ecash-400': status === 'connected',
+              'bg-red-900 text-red-300': status === 'error',
+            }"
+          >
+            {{ status }}
+          </span>
+        </div>
 
-      <div v-if="status === 'connected'" class="space-y-3 rounded bg-gray-900 p-4">
-        <label class="block text-xs uppercase tracking-wide text-gray-500">
-          Derivation path
-          <input
-            v-model="path"
-            class="mt-1 w-full rounded bg-gray-800 p-2 font-mono text-sm text-gray-100"
-          />
-        </label>
-        <label class="block text-xs uppercase tracking-wide text-gray-500">
-          Coin
-          <input
-            v-model="coin"
-            class="mt-1 w-full rounded bg-gray-800 p-2 font-mono text-sm text-gray-100"
-          />
-        </label>
-        <label class="flex items-center gap-2 text-sm text-gray-300">
-          <input v-model="showOnDevice" type="checkbox" />
-          Show address on device
-        </label>
         <button
-          class="rounded border border-gray-700 px-4 py-2 text-sm text-gray-200 hover:bg-gray-800"
-          @click="fetchAddress"
+          class="mt-5 rounded-lg bg-ecash-500 px-4 py-2 text-sm font-semibold text-gray-950 hover:bg-ecash-400 disabled:opacity-40"
+          :disabled="status === 'connecting'"
+          @click="connect"
         >
-          Get address
+          {{ status === "connected" ? "Reconnect OneKey" : "Connect OneKey" }}
         </button>
-      </div>
 
-      <div
-        v-if="account"
-        class="rounded bg-gray-900 p-4 font-mono text-sm break-all text-ecash-400"
-        data-test="hw-address"
-      >
-        {{ account.address }}
-      </div>
+        <div v-if="status === 'connected'" class="mt-6 space-y-4 rounded-lg border border-gray-800 bg-gray-950 p-4">
+          <label class="block text-xs uppercase tracking-wide text-gray-500">
+            Derivation path
+            <input
+              v-model="path"
+              class="mt-1 w-full rounded bg-gray-800 p-2 font-mono text-sm text-gray-100 focus:outline-none focus:ring-1 focus:ring-ecash-500"
+            />
+          </label>
 
-      <p v-if="error" class="text-sm text-red-400" data-test="hw-error">
-        {{ error }}
-      </p>
+          <label class="block text-xs uppercase tracking-wide text-gray-500">
+            OneKey coin id
+            <input
+              v-model="coin"
+              class="mt-1 w-full rounded bg-gray-800 p-2 font-mono text-sm text-gray-100 focus:outline-none focus:ring-1 focus:ring-ecash-500"
+            />
+          </label>
+
+          <label class="flex items-center gap-2 text-sm text-gray-300">
+            <input v-model="showOnDevice" type="checkbox" />
+            Show address on device for confirmation
+          </label>
+
+          <button
+            class="rounded border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+            @click="fetchAddress"
+          >
+            Show address
+          </button>
+        </div>
+
+        <div
+          v-if="account"
+          class="mt-5 rounded-lg border border-gray-800 bg-gray-950 p-4"
+          data-test="hw-address"
+        >
+          <p class="mb-1 text-xs uppercase tracking-wide text-gray-500">Derived address</p>
+          <p class="break-all font-mono text-sm text-ecash-400">{{ account.address }}</p>
+          <p class="mt-2 break-all font-mono text-xs text-gray-600">{{ account.path }}</p>
+        </div>
+
+        <p v-if="error" class="mt-4 text-sm text-red-400" data-test="hw-error">
+          {{ error }}
+        </p>
+      </section>
+
+      <aside class="space-y-4">
+        <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+          <h3 class="font-semibold text-white">Current support</h3>
+          <ul class="mt-3 space-y-2 text-sm text-gray-400">
+            <li>✓ Device discovery</li>
+            <li>✓ Address derivation</li>
+            <li>✓ On-device address confirmation</li>
+            <li class="text-gray-600">○ Transaction signing pending</li>
+          </ul>
+        </div>
+
+        <div class="rounded-xl border border-yellow-800 bg-yellow-950/30 p-4 text-sm text-yellow-500">
+          Verify every hardware-derived address on the OneKey screen before
+          receiving funds. Browser text alone is not sufficient for high-value
+          transfers.
+        </div>
+      </aside>
     </div>
   </div>
 </template>
