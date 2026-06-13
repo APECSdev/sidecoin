@@ -15,7 +15,7 @@ const pageLinks = [
 ];
 
 const productLinks = [
-  { href: "/#platforms", label: "Downloads" },
+  { href: "/#downloads", label: "Downloads" },
   { href: WALLET_URL, label: "Launch Wallet", external: true },
   { href: "/#tech", label: "Technical" },
 ];
@@ -29,7 +29,7 @@ const communityLinks = [
   <div class="mx-auto max-w-5xl px-6 py-12">
     <div class="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
       <div>
-        <a href="/" class="text-lg font-bold text-ecash-400">
+        <a href="/" class="text-lg font-bold text-ecash-400 no-underline hover:no-underline">
           <span aria-hidden="true">SidΞcoin</span>
           <span class="sr-only">Sidecoin</span>
         </a>
@@ -39,7 +39,7 @@ const communityLinks = [
         </p>
         <a
           href={WALLET_URL}
-          class="mt-5 inline-flex rounded-lg bg-ecash-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-ecash-500"
+          class="mt-5 inline-flex rounded-lg bg-ecash-600 px-4 py-2 text-sm font-semibold text-white no-underline transition-colors hover:bg-ecash-500 hover:no-underline"
         >
           Launch Wallet
         </a>
@@ -53,7 +53,7 @@ const communityLinks = [
           {pageLinks.map((l) => (
             <a
               href={l.href}
-              class="block text-sm text-gray-300 transition-colors hover:text-white"
+              class="block text-sm text-gray-300 no-underline transition-colors hover:text-white hover:no-underline"
             >
               {l.label}
             </a>
@@ -69,7 +69,7 @@ const communityLinks = [
           {productLinks.map((l) => (
             <a
               href={l.href}
-              class="block text-sm text-gray-300 transition-colors hover:text-white"
+              class="block text-sm text-gray-300 no-underline transition-colors hover:text-white hover:no-underline"
               {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
             >
               {l.label}
@@ -86,7 +86,7 @@ const communityLinks = [
           {communityLinks.map((l) => (
             <a
               href={l.href}
-              class="block text-sm text-gray-300 transition-colors hover:text-white"
+              class="block text-sm text-gray-300 no-underline transition-colors hover:text-white hover:no-underline"
               {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
             >
               {l.label}

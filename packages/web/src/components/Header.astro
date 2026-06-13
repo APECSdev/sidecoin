@@ -8,7 +8,7 @@
 const WALLET_URL = "https://wallet.sidecoin.app/";
 
 const links = [
-  { href: "/#platforms", label: "Downloads" },
+  { href: "/#downloads", label: "Downloads" },
   { href: "/#chains", label: "Sidechains" },
   { href: "/#tech", label: "Technical" },
   { href: "https://github.com/APECSdev/sidecoin", label: "GitHub", external: true },
@@ -17,14 +17,14 @@ const links = [
 
 <header class="sticky top-0 z-50 border-b border-gray-800 bg-gray-950/80 backdrop-blur">
   <nav class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4" aria-label="Primary">
-    <a href="/" class="text-lg font-bold text-ecash-400"><span aria-hidden="true">SidΞcoin</span><span class="sr-only">Sidecoin</span></a>
+    <a href="/" class="text-lg font-bold text-ecash-400 no-underline hover:no-underline"><span aria-hidden="true">SidΞcoin</span><span class="sr-only">Sidecoin</span></a>
 
     <!-- Desktop links -->
     <div class="hidden items-center gap-3 md:flex">
       {links.map((l) => (
         <a
           href={l.href}
-          class="rounded-lg border border-gray-800 bg-gray-900/70 px-4 py-2 text-sm font-semibold text-gray-200 transition-all hover:border-ecash-500/70 hover:bg-gray-800 hover:text-white"
+          class="rounded-lg border border-gray-800 bg-gray-900/70 px-4 py-2 text-sm font-semibold text-gray-200 no-underline transition-all hover:border-ecash-500/70 hover:bg-gray-800 hover:text-white hover:no-underline"
           {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
         >
           {l.label}
@@ -32,7 +32,7 @@ const links = [
       ))}
       <a
         href={WALLET_URL}
-        class="rounded-lg bg-ecash-600 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-ecash-950/40 transition-all hover:bg-ecash-500"
+        class="rounded-lg bg-ecash-600 px-4 py-2 text-sm font-semibold text-white no-underline shadow-lg shadow-ecash-950/40 transition-all hover:bg-ecash-500 hover:no-underline"
       >
         Launch Wallet
       </a>
@@ -62,7 +62,7 @@ const links = [
       {links.map((l) => (
         <a
           href={l.href}
-          class="block rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2.5 text-center text-base font-semibold text-gray-200 transition-all hover:border-ecash-500/70 hover:bg-gray-800 hover:text-white"
+          class="block rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2.5 text-center text-base font-semibold text-gray-200 no-underline transition-all hover:border-ecash-500/70 hover:bg-gray-800 hover:text-white hover:no-underline"
           {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
         >
           {l.label}
@@ -70,7 +70,7 @@ const links = [
       ))}
       <a
         href={WALLET_URL}
-        class="mt-2 block rounded-lg bg-ecash-600 px-3 py-2.5 text-center text-base font-semibold text-white transition-colors hover:bg-ecash-500"
+        class="mt-2 block rounded-lg bg-ecash-600 px-3 py-2.5 text-center text-base font-semibold text-white no-underline transition-colors hover:bg-ecash-500 hover:no-underline"
       >
         Launch Wallet
       </a>
