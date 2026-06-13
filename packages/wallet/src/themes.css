@@ -1,0 +1,314 @@
+/* packages/wallet/src/themes.css */
+
+/*
+  Theme overrides for the wallet.
+
+  This intentionally overrides existing Tailwind utility classes instead of
+  forcing a large token migration right now. Theme choices are display-only and
+  must never affect wallet logic, signing, transaction construction, balances,
+  entitlements, swaps, coin splitting, settlement, or broadcast.
+*/
+
+/* ─────────────────────────────────────────────────────────────
+   Rosé
+   ───────────────────────────────────────────────────────────── */
+
+.theme-rose {
+  background:
+    radial-gradient(circle at top left, rgba(244, 114, 182, 0.16), transparent 34rem),
+    radial-gradient(circle at top right, rgba(251, 191, 36, 0.08), transparent 30rem),
+    #110812;
+}
+
+.theme-rose.bg-gray-950,
+.theme-rose .bg-gray-950 {
+  background-color: #110812;
+}
+
+.theme-rose .bg-gray-950\/95 {
+  background-color: rgba(17, 8, 18, 0.95);
+}
+
+.theme-rose .bg-gray-900 {
+  background-color: #1f1321;
+}
+
+.theme-rose .bg-gray-950\/70 {
+  background-color: rgba(17, 8, 18, 0.72);
+}
+
+.theme-rose .bg-gray-950\/40 {
+  background-color: rgba(17, 8, 18, 0.42);
+}
+
+.theme-rose .bg-gray-800 {
+  background-color: #3a263d;
+}
+
+.theme-rose .border-gray-800 {
+  border-color: #4a304f;
+}
+
+.theme-rose .border-gray-700 {
+  border-color: #6d456f;
+}
+
+.theme-rose .text-gray-600 {
+  color: #9f7ea3;
+}
+
+.theme-rose .text-gray-500 {
+  color: #b891bd;
+}
+
+.theme-rose .text-gray-400 {
+  color: #d7b6d8;
+}
+
+.theme-rose .text-gray-300 {
+  color: #ead6e7;
+}
+
+.theme-rose .text-ecash-300 {
+  color: #f9a8d4;
+}
+
+.theme-rose .text-ecash-400 {
+  color: #fb7185;
+}
+
+.theme-rose .text-ecash-500 {
+  color: #f472b6;
+}
+
+.theme-rose .text-ecash-600 {
+  color: #f9a8d4;
+}
+
+.theme-rose .bg-ecash-500 {
+  background-color: #fb7185;
+}
+
+.theme-rose .bg-ecash-600 {
+  background-color: #e11d48;
+}
+
+.theme-rose .bg-ecash-900 {
+  background-color: #831843;
+}
+
+.theme-rose .bg-ecash-950,
+.theme-rose .bg-ecash-950\/40,
+.theme-rose .bg-ecash-950\/60,
+.theme-rose .bg-ecash-950\/70 {
+  background-color: rgba(80, 7, 36, 0.72);
+}
+
+.theme-rose .border-ecash-500 {
+  border-color: #fb7185;
+}
+
+.theme-rose .border-ecash-700 {
+  border-color: #be185d;
+}
+
+.theme-rose .border-ecash-800 {
+  border-color: #9d174d;
+}
+
+.theme-rose .border-ecash-800\/60 {
+  border-color: rgba(157, 23, 77, 0.6);
+}
+
+.theme-rose .hover\:bg-ecash-400:hover {
+  background-color: #fda4af;
+}
+
+.theme-rose .hover\:bg-ecash-500:hover {
+  background-color: #fb7185;
+}
+
+.theme-rose .hover\:bg-ecash-900\/40:hover {
+  background-color: rgba(131, 24, 67, 0.4);
+}
+
+.theme-rose .hover\:border-ecash-500:hover {
+  border-color: #fb7185;
+}
+
+.theme-rose .focus\:border-ecash-500:focus {
+  border-color: #fb7185;
+}
+
+.theme-rose .focus\:ring-ecash-500:focus {
+  --tw-ring-color: #fb7185;
+}
+
+.theme-rose .peer-checked\:bg-ecash-600:checked ~ span {
+  background-color: #e11d48;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   Cypherpunk
+   ───────────────────────────────────────────────────────────── */
+
+.theme-cypherpunk {
+  background:
+    radial-gradient(circle at top left, rgba(250, 204, 21, 0.16), transparent 32rem),
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.14), transparent 30rem),
+    radial-gradient(circle at bottom right, rgba(217, 70, 239, 0.12), transparent 28rem),
+    #050507;
+}
+
+.theme-cypherpunk.bg-gray-950,
+.theme-cypherpunk .bg-gray-950 {
+  background-color: #050507;
+}
+
+.theme-cypherpunk .bg-gray-950\/95 {
+  background-color: rgba(5, 5, 7, 0.95);
+}
+
+.theme-cypherpunk .bg-gray-900 {
+  background-color: #101014;
+}
+
+.theme-cypherpunk .bg-gray-950\/70 {
+  background-color: rgba(5, 5, 7, 0.76);
+}
+
+.theme-cypherpunk .bg-gray-950\/40 {
+  background-color: rgba(5, 5, 7, 0.48);
+}
+
+.theme-cypherpunk .bg-gray-800 {
+  background-color: #25242b;
+}
+
+.theme-cypherpunk .border-gray-800 {
+  border-color: #2f2f39;
+}
+
+.theme-cypherpunk .border-gray-700 {
+  border-color: #52525f;
+}
+
+.theme-cypherpunk .text-gray-600 {
+  color: #85859a;
+}
+
+.theme-cypherpunk .text-gray-500 {
+  color: #a1a1b5;
+}
+
+.theme-cypherpunk .text-gray-400 {
+  color: #c7c7d9;
+}
+
+.theme-cypherpunk .text-gray-300 {
+  color: #eeeeff;
+}
+
+.theme-cypherpunk .text-ecash-300 {
+  color: #67e8f9;
+}
+
+.theme-cypherpunk .text-ecash-400 {
+  color: #facc15;
+  text-shadow: 0 0 18px rgba(250, 204, 21, 0.22);
+}
+
+.theme-cypherpunk .text-ecash-500 {
+  color: #22d3ee;
+}
+
+.theme-cypherpunk .text-ecash-600 {
+  color: #a78bfa;
+}
+
+.theme-cypherpunk .bg-ecash-500 {
+  background-color: #facc15;
+}
+
+.theme-cypherpunk .bg-ecash-600 {
+  background-color: #f59e0b;
+}
+
+.theme-cypherpunk .bg-ecash-900 {
+  background-color: #713f12;
+}
+
+.theme-cypherpunk .bg-ecash-950,
+.theme-cypherpunk .bg-ecash-950\/40,
+.theme-cypherpunk .bg-ecash-950\/60,
+.theme-cypherpunk .bg-ecash-950\/70 {
+  background-color: rgba(113, 63, 18, 0.62);
+}
+
+.theme-cypherpunk .border-ecash-500 {
+  border-color: #facc15;
+}
+
+.theme-cypherpunk .border-ecash-700 {
+  border-color: #f59e0b;
+}
+
+.theme-cypherpunk .border-ecash-800 {
+  border-color: #ca8a04;
+}
+
+.theme-cypherpunk .border-ecash-800\/60 {
+  border-color: rgba(202, 138, 4, 0.6);
+}
+
+.theme-cypherpunk .hover\:bg-ecash-400:hover {
+  background-color: #fde047;
+}
+
+.theme-cypherpunk .hover\:bg-ecash-500:hover {
+  background-color: #facc15;
+}
+
+.theme-cypherpunk .hover\:bg-ecash-900\/40:hover {
+  background-color: rgba(113, 63, 18, 0.4);
+}
+
+.theme-cypherpunk .hover\:border-ecash-500:hover {
+  border-color: #facc15;
+}
+
+.theme-cypherpunk .focus\:border-ecash-500:focus {
+  border-color: #facc15;
+}
+
+.theme-cypherpunk .focus\:ring-ecash-500:focus {
+  --tw-ring-color: #facc15;
+}
+
+.theme-cypherpunk .peer-checked\:bg-ecash-600:checked ~ span {
+  background-color: #f59e0b;
+}
+
+.theme-cypherpunk .bg-amber-500 {
+  background-color: #22d3ee;
+}
+
+.theme-cypherpunk .text-amber-400 {
+  color: #22d3ee;
+}
+
+.theme-cypherpunk .border-amber-500,
+.theme-cypherpunk .border-amber-500\/40,
+.theme-cypherpunk .border-amber-500\/60 {
+  border-color: rgba(34, 211, 238, 0.68);
+}
+
+.theme-cypherpunk .bg-amber-950\/10,
+.theme-cypherpunk .bg-amber-950\/30,
+.theme-cypherpunk .bg-amber-950\/40 {
+  background-color: rgba(34, 211, 238, 0.08);
+}
+
+.theme-cypherpunk .hover\:bg-amber-400:hover {
+  background-color: #67e8f9;
+}

@@ -1,14 +1,16 @@
 // packages/wallet/src/__tests__/App.test.ts
 //
 // Tests for the root App.vue component.
-// Verifies the navigation, branding, route links, and main content area.
+// Verifies the navigation, branding, route links, theme class, and main
+// content area.
 
-import { describe, it, expect } from "vitest";
+import { beforeEach, describe, it, expect } from "vitest";
 import { mount } from "@vue/test-utils";
 import { createRouter, createWebHashHistory } from "vue-router";
 import { createPinia } from "pinia";
 import { defineComponent, h } from "vue";
 import App from "../App.vue";
+import { THEME_STORAGE_KEY } from "../theme";
 
 function createStubComponent(name: string) {
   return defineComponent({
@@ -51,6 +53,10 @@ async function mountApp() {
 }
 
 describe("App.vue", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("should render the app title 'Sidecoin'", async () => {
     const wrapper = await mountApp();
     expect(wrapper.text()).toContain("Sidecoin");
@@ -69,6 +75,23 @@ describe("App.vue", () => {
   it("should render the fork countdown date", async () => {
     const wrapper = await mountApp();
     expect(wrapper.text()).toContain("2026-08-21 15:00Z");
+  });
+
+  it("should use the default theme class by default", async () => {
+    const wrapper = await mountApp();
+    expect(wrapper.classes()).toContain("theme-default");
+  });
+
+  it("should apply a persisted Rosé theme class", async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, "rose");
+    const wrapper = await mountApp();
+    expect(wrapper.classes()).toContain("theme-rose");
+  });
+
+  it("should apply a persisted Cypherpunk theme class", async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, "cypherpunk");
+    const wrapper = await mountApp();
+    expect(wrapper.classes()).toContain("theme-cypherpunk");
   });
 
   it("should render navigation links for all 9 wallet routes", async () => {

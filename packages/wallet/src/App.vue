@@ -1,11 +1,16 @@
 <!-- packages/wallet/src/App.vue -->
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterView } from "vue-router";
 import InstallWallet from "./components/InstallWallet.vue";
 import ProStatusCard from "./components/pro/ProStatusCard.vue";
 import { DEMO_MODE_EVENT, isDemoModeEnabled } from "./demo";
+import {
+  THEME_EVENT,
+  getWalletTheme,
+  walletThemeClass,
+} from "./theme";
 
 const links = [
   { to: "/", label: "Home" },
@@ -20,23 +25,33 @@ const links = [
 ];
 
 const demoMode = ref(isDemoModeEnabled());
+const walletTheme = ref(getWalletTheme());
+
+const themeClass = computed(() => walletThemeClass(walletTheme.value));
 
 function handleDemoModeChanged() {
   demoMode.value = isDemoModeEnabled();
 }
 
+function handleThemeChanged() {
+  walletTheme.value = getWalletTheme();
+}
+
 onMounted(() => {
   demoMode.value = isDemoModeEnabled();
+  walletTheme.value = getWalletTheme();
   window.addEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
+  window.addEventListener(THEME_EVENT, handleThemeChanged);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
+  window.removeEventListener(THEME_EVENT, handleThemeChanged);
 });
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-950 text-white">
+  <div :class="themeClass" class="min-h-screen bg-gray-950 text-white">
     <!-- Mobile top bar -->
     <header
       class="sticky top-0 z-20 flex items-center justify-between border-b border-gray-800 bg-gray-950/95 px-4 py-3 backdrop-blur md:hidden"

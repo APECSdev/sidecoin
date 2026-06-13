@@ -7,12 +7,19 @@ import { DEFAULT_BASE_URL } from "@sidecoin/api-client";
 import { loadWallet } from "../keystore";
 import { deriveNostrIdentityKey } from "@sidecoin/shared";
 import { isDemoModeEnabled, setDemoMode } from "../demo";
+import {
+  WALLET_THEMES,
+  getWalletTheme,
+  setWalletTheme,
+} from "../theme";
+import type { WalletTheme } from "../theme";
 
 const nodeUrl = ref("");
 const electrumUrl = ref("tcp://127.0.0.1:50001");
 const saved = ref(false);
 const usingDefault = ref(true);
 const demoMode = ref(false);
+const selectedTheme = ref<WalletTheme>("default");
 
 // ─── Founder Identity Key (NIP-06 Nostr key) ────────────────
 // Derived locally from the wallet mnemonic at m/44'/1237'/0'/0/0. This is the
@@ -29,6 +36,7 @@ onMounted(() => {
   }
   usingDefault.value = getApiBaseUrl() === "";
   demoMode.value = isDemoModeEnabled();
+  selectedTheme.value = getWalletTheme();
 
   try {
     const wallet = loadWallet();
@@ -71,6 +79,11 @@ function handleSave() {
 
 function handleDemoModeChange() {
   setDemoMode(demoMode.value);
+}
+
+function handleThemeChange(theme: WalletTheme) {
+  selectedTheme.value = theme;
+  setWalletTheme(theme);
 }
 </script>
 
@@ -119,6 +132,41 @@ function handleDemoModeChange() {
         {{ saved ? "Saved ✓" : "Save Settings" }}
       </button>
     </form>
+
+    <!-- Appearance settings are display-only. They must never affect wallet
+         logic, signing, balances, swaps, coin splitting, or broadcast. -->
+    <section class="mt-8 max-w-3xl rounded border border-gray-800 bg-gray-900 p-4">
+      <p class="text-sm font-semibold text-gray-300">Appearance</p>
+      <h3 class="mt-2 text-lg font-black text-white">Theme</h3>
+      <p class="mt-2 text-xs leading-5 text-gray-500">
+        Choose the visual style that best fits your wallet experience.
+      </p>
+
+      <div class="mt-4 grid gap-3 md:grid-cols-3">
+        <button
+          v-for="theme in WALLET_THEMES"
+          :key="theme.id"
+          type="button"
+          class="rounded-xl border p-4 text-left transition-colors"
+          :class="selectedTheme === theme.id ? 'border-ecash-500 bg-ecash-950/60' : 'border-gray-800 bg-gray-950 hover:border-gray-700'"
+          :aria-pressed="selectedTheme === theme.id"
+          @click="handleThemeChange(theme.id)"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <p class="font-black text-white">{{ theme.label }}</p>
+            <span
+              v-if="selectedTheme === theme.id"
+              class="rounded-full bg-ecash-500 px-2 py-0.5 text-xs font-black uppercase tracking-wide text-gray-950"
+            >
+              Active
+            </span>
+          </div>
+          <p class="mt-2 text-xs leading-5 text-gray-500">
+            {{ theme.description }}
+          </p>
+        </button>
+      </div>
+    </section>
 
     <!-- Demo Mode is display-only. It must never affect signing, sending,
          swapping, splitting, settlement, or broadcast. -->

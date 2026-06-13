@@ -2,13 +2,15 @@
 //
 // Tests for SettingsView.vue.
 // Covers form rendering, save flow, default/custom adapter banners,
-// Demo Mode, the collapsed debug info section, and API integration.
+// Appearance themes, Demo Mode, the collapsed debug info section, and API
+// integration.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import SettingsView from "../views/SettingsView.vue";
 import { DEFAULT_BASE_URL } from "@sidecoin/api-client";
 import { DEMO_MODE_STORAGE_KEY } from "../demo";
+import { THEME_STORAGE_KEY } from "../theme";
 
 // ---------------------------------------------------------------------------
 // Mock the API module
@@ -155,6 +157,79 @@ describe("SettingsView.vue", () => {
       electrumUrl: "tcp://127.0.0.1:50001",
     });
     consoleSpy.mockRestore();
+  });
+
+  // ── Appearance Section ──
+
+  it("should render the Appearance theme settings", () => {
+    const wrapper = mount(SettingsView);
+    expect(wrapper.text()).toContain("Appearance");
+    expect(wrapper.text()).toContain("Theme");
+    expect(wrapper.text()).toContain("Default");
+    expect(wrapper.text()).toContain("Rosé");
+    expect(wrapper.text()).toContain("Cypherpunk");
+  });
+
+  it("should use the Default theme when no theme is stored", () => {
+    const wrapper = mount(SettingsView);
+    const defaultButton = wrapper
+      .findAll("button[type='button']")
+      .find((button) => button.text().includes("Default"));
+
+    expect(defaultButton).toBeDefined();
+    expect(defaultButton!.attributes("aria-pressed")).toBe("true");
+  });
+
+  it("should initialize the selected theme from localStorage", async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, "rose");
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    const roseButton = wrapper
+      .findAll("button[type='button']")
+      .find((button) => button.text().includes("Rosé"));
+
+    expect(roseButton).toBeDefined();
+    expect(roseButton!.attributes("aria-pressed")).toBe("true");
+  });
+
+  it("should persist the Rosé theme when selected", async () => {
+    const wrapper = mount(SettingsView);
+    const roseButton = wrapper
+      .findAll("button[type='button']")
+      .find((button) => button.text().includes("Rosé"));
+
+    expect(roseButton).toBeDefined();
+    await roseButton!.trigger("click");
+
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("rose");
+  });
+
+  it("should persist the Cypherpunk theme when selected", async () => {
+    const wrapper = mount(SettingsView);
+    const cypherpunkButton = wrapper
+      .findAll("button[type='button']")
+      .find((button) => button.text().includes("Cypherpunk"));
+
+    expect(cypherpunkButton).toBeDefined();
+    await cypherpunkButton!.trigger("click");
+
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBe("cypherpunk");
+  });
+
+  it("should clear the stored theme when Default is selected", async () => {
+    localStorage.setItem(THEME_STORAGE_KEY, "cypherpunk");
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    const defaultButton = wrapper
+      .findAll("button[type='button']")
+      .find((button) => button.text().includes("Default"));
+
+    expect(defaultButton).toBeDefined();
+    await defaultButton!.trigger("click");
+
+    expect(localStorage.getItem(THEME_STORAGE_KEY)).toBeNull();
   });
 
   // ── Demo Mode Section ──
