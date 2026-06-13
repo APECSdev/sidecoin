@@ -44,6 +44,63 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("Liquidity");
   });
 
+  it("renders Thunder-specific overview actions", async () => {
+    const wrapper = await mountPlatform("/platforms/thunder");
+    expect(wrapper.text()).toContain("Create invoice");
+    expect(wrapper.text()).toContain("Send payment");
+    expect(wrapper.text()).toContain("Channel liquidity");
+    expect(wrapper.text()).toContain("Liquidity planner");
+  });
+
+  it("can switch to the Thunder Payments tab", async () => {
+    const wrapper = await mountPlatform("/platforms/thunder");
+    const payments = wrapper.findAll("button").find((b) => b.text() === "Payments");
+    expect(payments).toBeDefined();
+
+    await payments!.trigger("click");
+
+    expect(wrapper.text()).toContain("Thunder Payments");
+    expect(wrapper.text()).toContain("Send Payment");
+    expect(wrapper.text()).toContain("Create Invoice");
+    expect(wrapper.text()).toContain("Route estimate");
+    expect(wrapper.text()).toContain("Payment ID");
+    expect(wrapper.text()).toContain("thunder-pay-7f4a");
+  });
+
+  it("can switch to the Thunder Channels tab", async () => {
+    const wrapper = await mountPlatform("/platforms/thunder");
+    const channels = wrapper.findAll("button").find((b) => b.text() === "Channels");
+    expect(channels).toBeDefined();
+
+    await channels!.trigger("click");
+
+    expect(wrapper.text()).toContain("Thunder Channels");
+    expect(wrapper.text()).toContain("Open channels");
+    expect(wrapper.text()).toContain("Inbound liquidity");
+    expect(wrapper.text()).toContain("Outbound liquidity");
+    expect(wrapper.text()).toContain("Average health");
+    expect(wrapper.text()).toContain("routing-peer-01");
+    expect(wrapper.text()).toContain("merchant-hub");
+    expect(wrapper.text()).toContain("backup-route");
+  });
+
+  it("can switch to the Thunder Liquidity tab", async () => {
+    const wrapper = await mountPlatform("/platforms/thunder");
+    const liquidity = wrapper.findAll("button").find((b) => b.text() === "Liquidity");
+    expect(liquidity).toBeDefined();
+
+    await liquidity!.trigger("click");
+
+    expect(wrapper.text()).toContain("Liquidity Planner");
+    expect(wrapper.text()).toContain("Available to send");
+    expect(wrapper.text()).toContain("Available to receive");
+    expect(wrapper.text()).toContain("Route coverage");
+    expect(wrapper.text()).toContain("Suggested action");
+    expect(wrapper.text()).toContain("Recommendations");
+    expect(wrapper.text()).toContain("Add inbound capacity");
+    expect(wrapper.text()).toContain("Display-only liquidity view");
+  });
+
   it("renders a clear PRO CTA for gated platforms", async () => {
     const wrapper = await mountPlatform("/platforms/zside");
     expect(wrapper.text()).toContain("Unlock zSide with Sidecoin PRO");

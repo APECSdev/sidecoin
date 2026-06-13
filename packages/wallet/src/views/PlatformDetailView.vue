@@ -10,7 +10,7 @@ import ProBadge from "../components/pro/ProBadge.vue";
 import ProGate from "../components/pro/ProGate.vue";
 
 interface PlatformTab extends PlatformFeatureTab {
-  kind?: "overview" | "workflow" | "contacts" | "messages" | "parent-chain" | "activity";
+  kind?: "overview" | "workflow" | "thunder-payments" | "thunder-channels" | "thunder-liquidity" | "contacts" | "messages" | "parent-chain" | "activity";
 }
 
 interface MetricCard {
@@ -25,6 +25,29 @@ interface ActivityRow {
   amount: string;
   status: string;
   txid: string;
+}
+
+interface ThunderPaymentRow {
+  time: string;
+  type: string;
+  amount: string;
+  status: string;
+  paymentId: string;
+}
+
+interface ThunderChannelRow {
+  peer: string;
+  capacity: string;
+  inbound: string;
+  outbound: string;
+  status: string;
+  health: string;
+}
+
+interface ThunderLiquidityRecommendation {
+  title: string;
+  body: string;
+  priority: string;
 }
 
 interface BitNamesContact {
@@ -46,6 +69,75 @@ interface BitNamesMessage {
 const route = useRoute();
 const selectedTabId = ref("");
 const selectedBitNamesContact = ref("alice.bit");
+
+const thunderPaymentRows: ThunderPaymentRow[] = [
+  {
+    time: "14:40",
+    type: "Payment",
+    amount: "0.75000000",
+    status: "Settled",
+    paymentId: "thunder-pay-7f4a",
+  },
+  {
+    time: "14:12",
+    type: "Invoice",
+    amount: "0.12500000",
+    status: "Paid",
+    paymentId: "thunder-inv-52ac",
+  },
+  {
+    time: "13:58",
+    type: "Route probe",
+    amount: "0.00000000",
+    status: "Complete",
+    paymentId: "thunder-route-91bd",
+  },
+];
+
+const thunderChannelRows: ThunderChannelRow[] = [
+  {
+    peer: "routing-peer-01",
+    capacity: "3.00000000",
+    inbound: "1.20000000",
+    outbound: "1.80000000",
+    status: "Open",
+    health: "98%",
+  },
+  {
+    peer: "merchant-hub",
+    capacity: "2.50000000",
+    inbound: "0.90000000",
+    outbound: "1.60000000",
+    status: "Open",
+    health: "94%",
+  },
+  {
+    peer: "backup-route",
+    capacity: "1.25000000",
+    inbound: "0.85000000",
+    outbound: "0.40000000",
+    status: "Watch",
+    health: "81%",
+  },
+];
+
+const thunderLiquidityRecommendations: ThunderLiquidityRecommendation[] = [
+  {
+    title: "Add inbound capacity",
+    body: "Receiving capacity is healthy, but another inbound path would improve invoice reliability.",
+    priority: "Medium",
+  },
+  {
+    title: "Rebalance merchant-hub",
+    body: "Merchant routing has strong outbound capacity and could support more balanced two-way flow.",
+    priority: "Low",
+  },
+  {
+    title: "Keep backup route online",
+    body: "The backup route improves resilience for small payments and fallback routing.",
+    priority: "Low",
+  },
+];
 
 const bitNamesContacts: BitNamesContact[] = [
   {
@@ -137,11 +229,17 @@ const platformTabs = computed<PlatformTab[]>(() => {
     ...platform.value.featureTabs.map((tab): PlatformTab => ({
       ...tab,
       kind:
-        tab.id === "contacts"
-          ? "contacts"
-          : tab.id === "messages"
-            ? "messages"
-            : "workflow",
+        platform.value?.id === "thunder" && tab.id === "payments"
+          ? "thunder-payments"
+          : platform.value?.id === "thunder" && tab.id === "channels"
+            ? "thunder-channels"
+            : platform.value?.id === "thunder" && tab.id === "liquidity"
+              ? "thunder-liquidity"
+              : tab.id === "contacts"
+                ? "contacts"
+                : tab.id === "messages"
+                  ? "messages"
+                  : "workflow",
     })),
     {
       id: "parent-chain",
@@ -462,7 +560,59 @@ function openBitNamesMessages(contactName: string) {
             {{ selectedTab.body }}
           </p>
 
-          <div class="mt-6 grid gap-3 sm:grid-cols-2">
+          <div
+            v-if="platform.id === 'thunder'"
+            class="mt-6 grid gap-3 sm:grid-cols-2"
+          >
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Create invoice</p>
+              <p class="mt-2 font-semibold text-white">Request a Thunder payment</p>
+              <button
+                class="mt-4 rounded-lg bg-ecash-600 px-4 py-2 text-sm font-bold text-white hover:bg-ecash-500"
+                @click="selectedTabId = 'payments'"
+              >
+                Open Payments
+              </button>
+            </div>
+
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Send payment</p>
+              <p class="mt-2 font-semibold text-white">Review recipient, route, and fee</p>
+              <button
+                class="mt-4 rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+                @click="selectedTabId = 'payments'"
+              >
+                Review payment
+              </button>
+            </div>
+
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Channel liquidity</p>
+              <p class="mt-2 font-semibold text-white">3 open paths · 94% route coverage</p>
+              <button
+                class="mt-4 rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+                @click="selectedTabId = 'channels'"
+              >
+                View Channels
+              </button>
+            </div>
+
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Liquidity planner</p>
+              <p class="mt-2 font-semibold text-white">Available send/receive capacity</p>
+              <button
+                class="mt-4 rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+                @click="selectedTabId = 'liquidity'"
+              >
+                Open Planner
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-else
+            class="mt-6 grid gap-3 sm:grid-cols-2"
+          >
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Primary action</p>
               <p class="mt-2 font-semibold text-white">{{ actionLabel() }}</p>
@@ -507,6 +657,413 @@ function openBitNamesMessages(contactName: string) {
             </table>
           </div>
         </div>
+      </div>
+
+      <div v-else-if="selectedTab?.kind === 'thunder-payments'" class="mt-6 grid gap-6 xl:grid-cols-[1fr_0.8fr]">
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-xl font-bold text-white">Thunder Payments</h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">
+              Preview fast Thunder payment flows for sending payments, creating
+              invoices, and reviewing route status before settlement.
+            </p>
+          </div>
+
+          <div class="grid gap-4 lg:grid-cols-2">
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-5">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Send Payment</p>
+              <h4 class="mt-2 text-lg font-black text-white">Review outgoing payment</h4>
+
+              <label class="mt-5 block">
+                <span class="text-xs uppercase tracking-widest text-gray-500">Recipient or invoice</span>
+                <input
+                  disabled
+                  placeholder="invoice, contact, or Thunder address"
+                  class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
+                />
+              </label>
+
+              <label class="mt-4 block">
+                <span class="text-xs uppercase tracking-widest text-gray-500">Amount</span>
+                <input
+                  disabled
+                  placeholder="0.00000000"
+                  class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
+                />
+              </label>
+
+              <label class="mt-4 block">
+                <span class="text-xs uppercase tracking-widest text-gray-500">Memo</span>
+                <input
+                  disabled
+                  placeholder="Coffee, invoice #1024, or payment note"
+                  class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
+                />
+              </label>
+
+              <button
+                disabled
+                class="mt-5 rounded-lg bg-gray-800 px-4 py-2 text-sm font-bold text-gray-600"
+              >
+                Review payment
+              </button>
+            </div>
+
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-5">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Create Invoice</p>
+              <h4 class="mt-2 text-lg font-black text-white">Request a payment</h4>
+
+              <label class="mt-5 block">
+                <span class="text-xs uppercase tracking-widest text-gray-500">Invoice amount</span>
+                <input
+                  disabled
+                  placeholder="0.00000000"
+                  class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
+                />
+              </label>
+
+              <label class="mt-4 block">
+                <span class="text-xs uppercase tracking-widest text-gray-500">Label</span>
+                <input
+                  disabled
+                  placeholder="Payment request label"
+                  class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
+                />
+              </label>
+
+              <label class="mt-4 block">
+                <span class="text-xs uppercase tracking-widest text-gray-500">Expiry</span>
+                <input
+                  disabled
+                  placeholder="30 minutes"
+                  class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
+                />
+              </label>
+
+              <button
+                disabled
+                class="mt-5 rounded-lg bg-gray-800 px-4 py-2 text-sm font-bold text-gray-600"
+              >
+                Create invoice
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
+            <table class="w-full min-w-[760px] text-left text-sm">
+              <thead class="text-xs uppercase tracking-widest text-gray-500">
+                <tr>
+                  <th class="border-b border-gray-800 px-4 py-3">Time</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Type</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Amount</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Status</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Payment ID</th>
+                </tr>
+              </thead>
+              <tbody class="text-gray-300">
+                <tr v-for="row in thunderPaymentRows" :key="row.paymentId">
+                  <td class="border-b border-gray-900 px-4 py-3">{{ row.time }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3">{{ row.type }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-ecash-400">{{ row.amount }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3">{{ row.status }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-500">{{ row.paymentId }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="space-y-4">
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Route estimate
+            </p>
+            <h3 class="mt-2 text-xl font-black text-white">
+              Preview route quality
+            </h3>
+            <dl class="mt-5 space-y-3 text-sm">
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Route coverage</dt>
+                <dd class="font-mono text-ecash-400">94%</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Estimated fee</dt>
+                <dd class="font-mono text-gray-300">0.00000120</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Expected settlement</dt>
+                <dd class="font-mono text-gray-300">Instant preview</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Fallback routes</dt>
+                <dd class="font-mono text-gray-300">2</dd>
+              </div>
+            </dl>
+          </div>
+
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Payment safety
+            </p>
+            <h3 class="mt-2 text-xl font-black text-white">
+              Review before sending
+            </h3>
+            <ul class="mt-5 space-y-3 text-sm text-gray-300">
+              <li class="flex gap-2">
+                <span class="text-ecash-400">✓</span>
+                <span>Invoices and routes are preview-only in this scaffold.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-ecash-400">✓</span>
+                <span>No Thunder payment is broadcast from this screen.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-ecash-400">✓</span>
+                <span>Live settlement will require explicit review.</span>
+              </li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+
+      <div v-else-if="selectedTab?.kind === 'thunder-channels'" class="mt-6 grid gap-6 xl:grid-cols-[1fr_0.8fr]">
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-xl font-bold text-white">Thunder Channels</h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">
+              Monitor channel capacity, inbound/outbound liquidity, route
+              health, and future channel actions from one wallet view.
+            </p>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Open channels</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">3</p>
+              <p class="mt-1 text-xs text-gray-500">active liquidity paths</p>
+            </div>
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Inbound liquidity</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">2.95000000</p>
+              <p class="mt-1 text-xs text-gray-500">available to receive</p>
+            </div>
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Outbound liquidity</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">3.80000000</p>
+              <p class="mt-1 text-xs text-gray-500">available to send</p>
+            </div>
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Average health</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">91%</p>
+              <p class="mt-1 text-xs text-gray-500">weighted route score</p>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
+            <table class="w-full min-w-[820px] text-left text-sm">
+              <thead class="text-xs uppercase tracking-widest text-gray-500">
+                <tr>
+                  <th class="border-b border-gray-800 px-4 py-3">Peer</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Capacity</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Inbound</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Outbound</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Status</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Health</th>
+                </tr>
+              </thead>
+              <tbody class="text-gray-300">
+                <tr v-for="row in thunderChannelRows" :key="row.peer">
+                  <td class="border-b border-gray-900 px-4 py-3 font-semibold text-white">{{ row.peer }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-ecash-400">{{ row.capacity }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-gray-300">{{ row.inbound }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-gray-300">{{ row.outbound }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3">{{ row.status }}</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-gray-300">{{ row.health }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-3">
+            <button
+              disabled
+              class="rounded-lg bg-gray-800 px-4 py-2 text-sm font-bold text-gray-600"
+            >
+              Open Channel
+            </button>
+            <button
+              disabled
+              class="rounded-lg bg-gray-800 px-4 py-2 text-sm font-bold text-gray-600"
+            >
+              Close selected
+            </button>
+            <button
+              disabled
+              class="rounded-lg bg-gray-800 px-4 py-2 text-sm font-bold text-gray-600"
+            >
+              Rebalance
+            </button>
+          </div>
+        </div>
+
+        <aside class="space-y-4">
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Channel Summary
+            </p>
+            <h3 class="mt-2 text-xl font-black text-white">
+              Balanced liquidity
+            </h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">
+              Thunder’s preview channel set has more outbound than inbound
+              capacity, which is useful for paying but should be monitored for
+              receiving reliability.
+            </p>
+          </div>
+
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Preview-only controls
+            </p>
+            <h3 class="mt-2 text-xl font-black text-white">
+              No channel operations yet
+            </h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">
+              Channel opening, closing, and rebalancing controls are disabled
+              until live Thunder channel operations are connected.
+            </p>
+          </div>
+        </aside>
+      </div>
+
+      <div v-else-if="selectedTab?.kind === 'thunder-liquidity'" class="mt-6 grid gap-6 xl:grid-cols-[1fr_0.8fr]">
+        <div class="space-y-6">
+          <div>
+            <h3 class="text-xl font-bold text-white">Liquidity Planner</h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">
+              Plan Thunder send/receive capacity, inspect route coverage, and
+              review suggested liquidity actions before moving funds.
+            </p>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Available to send</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">3.80000000</p>
+              <p class="mt-1 text-xs text-gray-500">outbound capacity</p>
+            </div>
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Available to receive</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">2.95000000</p>
+              <p class="mt-1 text-xs text-gray-500">inbound capacity</p>
+            </div>
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Route coverage</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">94%</p>
+              <p class="mt-1 text-xs text-gray-500">payment reachability</p>
+            </div>
+            <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Suggested action</p>
+              <p class="mt-3 text-2xl font-black text-amber-400">Inbound</p>
+              <p class="mt-1 text-xs text-gray-500">add receive capacity</p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-5">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Recommendations
+            </p>
+            <div class="mt-4 space-y-3">
+              <div
+                v-for="item in thunderLiquidityRecommendations"
+                :key="item.title"
+                class="rounded-xl border border-gray-800 bg-gray-900 p-4"
+              >
+                <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <h4 class="font-bold text-white">{{ item.title }}</h4>
+                    <p class="mt-2 text-sm leading-6 text-gray-400">{{ item.body }}</p>
+                  </div>
+                  <span class="w-fit rounded-full bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-300">
+                    {{ item.priority }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
+            <table class="w-full min-w-[720px] text-left text-sm">
+              <thead class="text-xs uppercase tracking-widest text-gray-500">
+                <tr>
+                  <th class="border-b border-gray-800 px-4 py-3">Diagnostic</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Value</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Status</th>
+                  <th class="border-b border-gray-800 px-4 py-3">Note</th>
+                </tr>
+              </thead>
+              <tbody class="text-gray-300">
+                <tr>
+                  <td class="border-b border-gray-900 px-4 py-3">Outbound ratio</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-ecash-400">56%</td>
+                  <td class="border-b border-gray-900 px-4 py-3">Healthy</td>
+                  <td class="border-b border-gray-900 px-4 py-3 text-gray-500">Good payment capacity</td>
+                </tr>
+                <tr>
+                  <td class="border-b border-gray-900 px-4 py-3">Inbound ratio</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-ecash-400">44%</td>
+                  <td class="border-b border-gray-900 px-4 py-3">Watch</td>
+                  <td class="border-b border-gray-900 px-4 py-3 text-gray-500">Add capacity for invoices</td>
+                </tr>
+                <tr>
+                  <td class="border-b border-gray-900 px-4 py-3">Fallback routes</td>
+                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-ecash-400">2</td>
+                  <td class="border-b border-gray-900 px-4 py-3">Ready</td>
+                  <td class="border-b border-gray-900 px-4 py-3 text-gray-500">Improves reliability</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <aside class="space-y-4">
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Planner scope
+            </p>
+            <h3 class="mt-2 text-xl font-black text-white">
+              Display-only liquidity view
+            </h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">
+              This planner does not open channels, rebalance funds, or move
+              value. It previews the wallet-native layout for Thunder liquidity
+              management.
+            </p>
+          </div>
+
+          <div class="rounded-xl border border-amber-500/40 bg-amber-950/10 p-6">
+            <p class="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
+              Coming next
+            </p>
+            <h3 class="mt-2 text-xl font-black text-white">
+              Live Thunder operations
+            </h3>
+            <ul class="mt-5 space-y-3 text-sm text-gray-300">
+              <li class="flex gap-2">
+                <span class="text-amber-400">✓</span>
+                <span>Route quote before payment review.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-amber-400">✓</span>
+                <span>Channel open and close workflows.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-amber-400">✓</span>
+                <span>Liquidity-aware invoice creation.</span>
+              </li>
+            </ul>
+          </div>
+        </aside>
       </div>
 
       <div v-else-if="selectedTab?.kind === 'parent-chain'" class="mt-6 grid gap-6 xl:grid-cols-2">
