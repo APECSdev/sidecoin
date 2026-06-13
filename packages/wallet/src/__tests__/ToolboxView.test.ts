@@ -33,7 +33,7 @@ describe("ToolboxView.vue", () => {
     expect(destinationStep).toBeDefined();
     await destinationStep!.trigger("click");
 
-    expect(wrapper.text()).toContain("Current eCash wallet");
+    expect(wrapper.text()).toContain("current wallet");
     expect(wrapper.text()).toContain("BTC return address");
     expect(wrapper.text()).toContain("choose a safe BTC destination");
   });
