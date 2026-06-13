@@ -1,8 +1,9 @@
 // packages/wallet/src/__tests__/SendView.test.ts
 //
 // Tests for SendView.vue.
-// Covers form rendering, input binding, button disable states, and the real
-// build -> review -> broadcast flow (heavy deps mocked at the module boundary).
+// Covers form rendering, tabbed layout, input binding, button disable states,
+// and the real build -> review -> broadcast flow (heavy deps mocked at the
+// module boundary).
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
@@ -159,6 +160,19 @@ describe("SendView.vue", () => {
     expect(wrapper.find("h2").text()).toBe("Send eCash");
   });
 
+  it("should render L1 wallet context", () => {
+    const wrapper = mountSend();
+    expect(wrapper.text()).toContain("L1 Wallet");
+    expect(wrapper.text()).toContain("Local signing");
+  });
+
+  it("should render Simple, Advanced and Review tabs", () => {
+    const wrapper = mountSend();
+    expect(wrapper.text()).toContain("Simple");
+    expect(wrapper.text()).toContain("Advanced");
+    expect(wrapper.text()).toContain("Review");
+  });
+
   it("should render the recipient address input", () => {
     const wrapper = mountSend();
     const inputs = wrapper.findAll("input");
@@ -177,11 +191,11 @@ describe("SendView.vue", () => {
     expect(amountInput).toBeDefined();
   });
 
-  it("should render the Send button", () => {
+  it("should render the Review Transaction button", () => {
     const wrapper = mountSend();
     const button = wrapper.find("button[type='submit']");
     expect(button.exists()).toBe(true);
-    expect(button.text()).toBe("Send");
+    expect(button.text()).toBe("Review Transaction");
   });
 
   it("should render 'Recipient Address' label", () => {
@@ -194,13 +208,21 @@ describe("SendView.vue", () => {
     expect(wrapper.text()).toContain("Amount (eCash)");
   });
 
-  it("should disable the Send button when address is empty", () => {
+  it("should render fee policy and send safety copy", () => {
+    const wrapper = mountSend();
+    expect(wrapper.text()).toContain("Fee policy");
+    expect(wrapper.text()).toContain("1 sat/vB");
+    expect(wrapper.text()).toContain("Send safety");
+    expect(wrapper.text()).toContain("Broadcast happens only after review.");
+  });
+
+  it("should disable the Review Transaction button when address is empty", () => {
     const wrapper = mountSend();
     const button = wrapper.find("button[type='submit']");
     expect(button.attributes("disabled")).toBeDefined();
   });
 
-  it("should disable the Send button when amount is empty", async () => {
+  it("should disable the Review Transaction button when amount is empty", async () => {
     const wrapper = mountSend();
     const inputs = wrapper.findAll("input");
     await inputs[0].setValue("ecash1qtest");
@@ -208,7 +230,7 @@ describe("SendView.vue", () => {
     expect(button.attributes("disabled")).toBeDefined();
   });
 
-  it("should enable the Send button when both fields are filled", async () => {
+  it("should enable the Review Transaction button when both fields are filled", async () => {
     const wrapper = mountSend();
     const inputs = wrapper.findAll("input");
     await inputs[0].setValue("ecash1qtest");
@@ -236,6 +258,34 @@ describe("SendView.vue", () => {
     expect((inputs[1].element as HTMLInputElement).value).toBe("0.001");
   });
 
+  it("should show the PRO Coin Control preview on the Advanced tab", async () => {
+    const wrapper = mountSend();
+    const advanced = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Advanced");
+
+    expect(advanced).toBeDefined();
+    await advanced!.trigger("click");
+
+    expect(wrapper.text()).toContain("Advanced send tools");
+    expect(wrapper.text()).toContain("Coin Control");
+    expect(wrapper.text()).toContain("Manual UTXO selection");
+    expect(wrapper.text()).toContain("Sidecoin PRO");
+  });
+
+  it("should show an empty review state before a transaction is built", async () => {
+    const wrapper = mountSend();
+    const review = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Review");
+
+    expect(review).toBeDefined();
+    await review!.trigger("click");
+
+    expect(wrapper.text()).toContain("No transaction built yet");
+    expect(wrapper.text()).toContain("Open Simple Send");
+  });
+
   // -------------------------------------------------------------------------
   // Build -> review -> broadcast flow
   // -------------------------------------------------------------------------
@@ -248,6 +298,7 @@ describe("SendView.vue", () => {
     expect(getL1Utxos).toHaveBeenCalledWith(KEY.address);
     expect(selectCoins).toHaveBeenCalled();
     expect(buildAndSignP2wpkhTransaction).toHaveBeenCalled();
+    expect(wrapper.text()).toContain("Signed locally, ready to broadcast");
     expect(wrapper.text()).toContain(SIGNED.txid);
     expect(broadcastButton(wrapper)).toBeDefined();
   });
@@ -317,6 +368,7 @@ describe("SendView.vue", () => {
     await flushPromises();
 
     expect(broadcastTransaction).toHaveBeenCalledWith("signet", SIGNED.hex);
+    expect(wrapper.text()).toContain("Broadcast receipt");
     expect(wrapper.text().toLowerCase()).toContain("accepted");
     expect(wrapper.text()).toContain(SIGNED.txid);
   });
