@@ -10,7 +10,7 @@ import ProBadge from "../components/pro/ProBadge.vue";
 import ProGate from "../components/pro/ProGate.vue";
 
 interface PlatformTab extends PlatformFeatureTab {
-  kind?: "overview" | "workflow" | "parent-chain" | "activity";
+  kind?: "overview" | "workflow" | "contacts" | "messages" | "parent-chain" | "activity";
 }
 
 interface MetricCard {
@@ -27,8 +27,91 @@ interface ActivityRow {
   txid: string;
 }
 
+interface BitNamesContact {
+  name: string;
+  displayName: string;
+  useCase: string;
+  status: string;
+  lastSeen: string;
+  paymentHint: string;
+}
+
+interface BitNamesMessage {
+  contact: string;
+  side: "sent" | "received";
+  time: string;
+  body: string;
+}
+
 const route = useRoute();
 const selectedTabId = ref("");
+const selectedBitNamesContact = ref("alice.bit");
+
+const bitNamesContacts: BitNamesContact[] = [
+  {
+    name: "alice.bit",
+    displayName: "Alice",
+    useCase: "Payments and messages",
+    status: "Resolved",
+    lastSeen: "2 min ago",
+    paymentHint: "Thunder invoice contact",
+  },
+  {
+    name: "merchant.bit",
+    displayName: "Merchant",
+    useCase: "Invoices and receipts",
+    status: "Resolved",
+    lastSeen: "Today",
+    paymentHint: "Preferred payment endpoint",
+  },
+  {
+    name: "support.bit",
+    displayName: "Support",
+    useCase: "Product support",
+    status: "Preview",
+    lastSeen: "Demo",
+    paymentHint: "Messaging preview",
+  },
+];
+
+const bitNamesMessages: BitNamesMessage[] = [
+  {
+    contact: "alice.bit",
+    side: "received",
+    time: "14:42",
+    body: "Payment received. Thanks!",
+  },
+  {
+    contact: "alice.bit",
+    side: "sent",
+    time: "14:43",
+    body: "Great — I’ll send the next invoice over Thunder.",
+  },
+  {
+    contact: "alice.bit",
+    side: "received",
+    time: "14:44",
+    body: "Perfect. BitNames makes this much easier than copying addresses.",
+  },
+  {
+    contact: "merchant.bit",
+    side: "received",
+    time: "13:30",
+    body: "Your order is ready. Send the payment to the resolved Thunder endpoint.",
+  },
+  {
+    contact: "merchant.bit",
+    side: "sent",
+    time: "13:31",
+    body: "Confirmed. I’ll review the invoice before broadcasting.",
+  },
+  {
+    contact: "support.bit",
+    side: "received",
+    time: "12:05",
+    body: "Welcome to the BitNames messaging preview.",
+  },
+];
 
 const platform = computed(() => {
   const id = String(route.params.platformId ?? "");
@@ -51,9 +134,14 @@ const platformTabs = computed<PlatformTab[]>(() => {
       bullets: ["Platform balance", "Wallet actions", "Recent activity", "Parent chain status"],
       kind: "overview",
     },
-    ...platform.value.featureTabs.map((tab) => ({
+    ...platform.value.featureTabs.map((tab): PlatformTab => ({
       ...tab,
-      kind: "workflow" as const,
+      kind:
+        tab.id === "contacts"
+          ? "contacts"
+          : tab.id === "messages"
+            ? "messages"
+            : "workflow",
     })),
     {
       id: "parent-chain",
@@ -90,6 +178,14 @@ const selectedTab = computed(() => {
   return platformTabs.value.find((tab) => tab.id === selectedTabId.value);
 });
 
+const selectedContact = computed(() => {
+  return bitNamesContacts.find((contact) => contact.name === selectedBitNamesContact.value) ?? bitNamesContacts[0];
+});
+
+const selectedConversation = computed(() => {
+  return bitNamesMessages.filter((message) => message.contact === selectedBitNamesContact.value);
+});
+
 const proBenefits = computed(() => [
   `Unlock ${platform.value?.displayName ?? "this platform"} workflows`,
   "Historical analysis across platforms",
@@ -114,7 +210,7 @@ const metricCards = computed<MetricCard[]>(() => {
       { label: "Registered Names", value: "3", caption: "wallet identities" },
       { label: "Records", value: "9", caption: "profile and address records" },
       { label: "Contacts", value: "24", caption: "resolved identities" },
-      { label: "Renewals", value: "2", caption: "upcoming reminders" },
+      { label: "Messages", value: "6", caption: "demo conversation events" },
     ];
   }
 
@@ -252,6 +348,11 @@ function secondaryFieldPlaceholder(): string {
   if (id === "truthcoin") return "Popular, newest, most active, or liquidity";
   if (id === "coinshift") return "0.00000000";
   return "0.00000000";
+}
+
+function openBitNamesMessages(contactName: string) {
+  selectedBitNamesContact.value = contactName;
+  selectedTabId.value = "messages";
 }
 </script>
 
@@ -506,6 +607,222 @@ function secondaryFieldPlaceholder(): string {
               </tr>
             </tbody>
           </table>
+        </div>
+      </div>
+
+      <div v-else-if="selectedTab?.kind === 'contacts'" class="mt-6 grid gap-6 xl:grid-cols-[1fr_0.8fr]">
+        <div>
+          <h3 class="text-xl font-bold text-white">{{ selectedTab.title }}</h3>
+          <p class="mt-3 text-sm leading-6 text-gray-400">
+            {{ selectedTab.body }}
+          </p>
+
+          <div class="mt-6 rounded-xl border border-gray-800 bg-gray-950 p-5">
+            <div class="flex flex-col gap-3 md:flex-row md:items-end">
+              <label class="flex-1">
+                <span class="text-xs uppercase tracking-widest text-gray-500">Search or add BitName</span>
+                <input
+                  disabled
+                  placeholder="alice.bit"
+                  class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
+                />
+              </label>
+
+              <button
+                disabled
+                type="button"
+                class="rounded-lg border border-gray-800 px-4 py-2 text-sm font-semibold text-gray-600"
+              >
+                Add Contact
+              </button>
+            </div>
+
+            <div class="mt-5 overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
+              <table class="w-full min-w-[760px] text-left text-sm">
+                <thead class="text-xs uppercase tracking-widest text-gray-500">
+                  <tr>
+                    <th class="border-b border-gray-800 px-4 py-3">BitName</th>
+                    <th class="border-b border-gray-800 px-4 py-3">Use case</th>
+                    <th class="border-b border-gray-800 px-4 py-3">Status</th>
+                    <th class="border-b border-gray-800 px-4 py-3">Last seen</th>
+                    <th class="border-b border-gray-800 px-4 py-3">Actions</th>
+                  </tr>
+                </thead>
+                <tbody class="text-gray-300">
+                  <tr v-for="contact in bitNamesContacts" :key="contact.name">
+                    <td class="border-b border-gray-900 px-4 py-3">
+                      <p class="font-semibold text-white">{{ contact.name }}</p>
+                      <p class="mt-1 text-xs text-gray-500">{{ contact.displayName }}</p>
+                    </td>
+                    <td class="border-b border-gray-900 px-4 py-3">{{ contact.useCase }}</td>
+                    <td class="border-b border-gray-900 px-4 py-3">{{ contact.status }}</td>
+                    <td class="border-b border-gray-900 px-4 py-3">{{ contact.lastSeen }}</td>
+                    <td class="border-b border-gray-900 px-4 py-3">
+                      <div class="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          class="rounded border border-ecash-700 px-3 py-1 text-xs font-bold text-ecash-400 hover:bg-ecash-950/40"
+                          @click="openBitNamesMessages(contact.name)"
+                        >
+                          Message
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded border border-gray-700 px-3 py-1 text-xs font-semibold text-gray-300 hover:bg-gray-800"
+                          @click="selectedTabId = 'resolve'"
+                        >
+                          Resolve
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+          <p class="mb-3 text-xs uppercase tracking-widest text-gray-500">
+            Contact profile preview
+          </p>
+
+          <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+            <p class="text-lg font-black text-white">{{ selectedContact.name }}</p>
+            <p class="mt-1 text-sm text-gray-400">{{ selectedContact.displayName }}</p>
+            <dl class="mt-4 space-y-3 text-sm">
+              <div>
+                <dt class="text-xs uppercase tracking-widest text-gray-500">Status</dt>
+                <dd class="mt-1 text-gray-300">{{ selectedContact.status }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs uppercase tracking-widest text-gray-500">Payment hint</dt>
+                <dd class="mt-1 text-gray-300">{{ selectedContact.paymentHint }}</dd>
+              </div>
+              <div>
+                <dt class="text-xs uppercase tracking-widest text-gray-500">Preview scope</dt>
+                <dd class="mt-1 text-gray-300">Display-only contact and messaging UI.</dd>
+              </div>
+            </dl>
+          </div>
+
+          <button
+            type="button"
+            class="mt-4 w-full rounded-lg bg-ecash-600 px-4 py-2 text-sm font-bold text-white hover:bg-ecash-500"
+            @click="openBitNamesMessages(selectedContact.name)"
+          >
+            Open Messages Preview
+          </button>
+        </div>
+      </div>
+
+      <div v-else-if="selectedTab?.kind === 'messages'" class="mt-6 grid gap-6 xl:grid-cols-[0.75fr_1.25fr]">
+        <div class="space-y-4">
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-5">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Identity
+            </p>
+            <h3 class="mt-2 text-xl font-bold text-white">BitNames Messages</h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">
+              Preview identity-based messaging from inside BitNames. This screen
+              is display-only: no messages leave your wallet.
+            </p>
+
+            <div class="mt-5 rounded-xl border border-ecash-800 bg-ecash-950/20 p-4">
+              <p class="text-xs uppercase tracking-widest text-ecash-500">
+                Chatting as
+              </p>
+              <p class="mt-2 font-mono text-sm font-black text-ecash-400">
+                sidecoin.bit
+              </p>
+              <p class="mt-2 text-xs leading-5 text-gray-500">
+                Demo identity preview. Register and resolve BitNames before
+                live messaging is connected.
+              </p>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+            <p class="mb-3 text-xs uppercase tracking-widest text-gray-500">
+              Contacts
+            </p>
+            <div class="space-y-2">
+              <button
+                v-for="contact in bitNamesContacts"
+                :key="contact.name"
+                type="button"
+                class="w-full rounded-lg border px-4 py-3 text-left transition-colors"
+                :class="selectedBitNamesContact === contact.name ? 'border-ecash-600 bg-ecash-950/30' : 'border-gray-800 bg-gray-900 hover:border-gray-700'"
+                @click="selectedBitNamesContact = contact.name"
+              >
+                <p class="font-semibold text-white">{{ contact.name }}</p>
+                <p class="mt-1 text-xs text-gray-500">{{ contact.useCase }}</p>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-gray-800 bg-gray-950 p-5">
+          <div class="flex flex-col gap-3 border-b border-gray-800 pb-4 md:flex-row md:items-start md:justify-between">
+            <div>
+              <p class="text-xs uppercase tracking-widest text-gray-500">
+                Demo conversation
+              </p>
+              <h3 class="mt-2 text-xl font-bold text-white">{{ selectedContact.name }}</h3>
+              <p class="mt-1 text-sm text-gray-500">{{ selectedContact.paymentHint }}</p>
+            </div>
+            <span class="w-fit rounded-full bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-300">
+              Preview only
+            </span>
+          </div>
+
+          <div class="mt-5 space-y-3">
+            <div
+              v-for="message in selectedConversation"
+              :key="`${message.contact}-${message.time}-${message.body}`"
+              class="flex"
+              :class="message.side === 'sent' ? 'justify-end' : 'justify-start'"
+            >
+              <div
+                class="max-w-[80%] rounded-2xl border px-4 py-3"
+                :class="message.side === 'sent' ? 'border-ecash-700 bg-ecash-950/40' : 'border-gray-800 bg-gray-900'"
+              >
+                <p class="text-sm leading-6 text-gray-200">{{ message.body }}</p>
+                <p
+                  class="mt-2 text-xs"
+                  :class="message.side === 'sent' ? 'text-ecash-500' : 'text-gray-500'"
+                >
+                  {{ message.time }}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-6 rounded-xl border border-gray-800 bg-gray-900 p-4">
+            <label class="block">
+              <span class="text-xs uppercase tracking-widest text-gray-500">Composer preview</span>
+              <textarea
+                disabled
+                rows="3"
+                placeholder="Messaging preview disabled until BitNames messaging is connected."
+                class="mt-2 w-full rounded border border-gray-800 bg-gray-950 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
+              ></textarea>
+            </label>
+
+            <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p class="text-xs leading-5 text-gray-500">
+                No network calls, signing, encryption claims, or message
+                delivery are performed in this preview.
+              </p>
+              <button
+                disabled
+                type="button"
+                class="w-fit rounded-lg bg-gray-800 px-4 py-2 text-sm font-bold text-gray-600"
+              >
+                Send disabled
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 

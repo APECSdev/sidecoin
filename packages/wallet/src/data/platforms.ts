@@ -102,7 +102,7 @@ export const PLATFORMS: PlatformScaffold[] = [
     tagline: "Names, identity, and human-readable records.",
     primaryUseCase: "Identity",
     description:
-      "BitNames is the naming and identity platform. The wallet UI will focus on registering names, managing records, and resolving identities.",
+      "BitNames is the naming and identity platform. The wallet UI will focus on registering names, managing records, resolving identities, contacts, and messaging previews.",
     featureTabs: [
       {
         id: "register",
@@ -124,6 +124,20 @@ export const PLATFORMS: PlatformScaffold[] = [
         title: "Resolve identities",
         body: "Scaffold for looking up names before sending or verifying identities.",
         bullets: ["Name lookup", "Resolved addresses", "Trust hints", "Copy/share actions"],
+      },
+      {
+        id: "contacts",
+        label: "Contacts",
+        title: "BitNames contacts",
+        body: "Preview contact book for resolved identities, payment addresses, and message shortcuts.",
+        bullets: ["Contact search", "Identity status", "Payment shortcuts", "Message shortcuts"],
+      },
+      {
+        id: "messages",
+        label: "Messages",
+        title: "BitNames messages",
+        body: "Preview identity-based messaging tied to BitNames contacts and wallet records.",
+        bullets: ["Identity selection", "Contact list", "Demo conversation", "Disabled composer preview"],
       },
     ],
   },
