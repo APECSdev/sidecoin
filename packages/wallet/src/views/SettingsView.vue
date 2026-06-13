@@ -6,11 +6,13 @@ import { getApiBaseUrl, setApiBaseUrl } from "../api";
 import { DEFAULT_BASE_URL } from "@sidecoin/api-client";
 import { loadWallet } from "../keystore";
 import { deriveNostrIdentityKey } from "@sidecoin/shared";
+import { isDemoModeEnabled, setDemoMode } from "../demo";
 
 const nodeUrl = ref("");
 const electrumUrl = ref("tcp://127.0.0.1:50001");
 const saved = ref(false);
 const usingDefault = ref(true);
+const demoMode = ref(false);
 
 // ─── Founder Identity Key (NIP-06 Nostr key) ────────────────
 // Derived locally from the wallet mnemonic at m/44'/1237'/0'/0/0. This is the
@@ -26,6 +28,7 @@ onMounted(() => {
     nodeUrl.value = currentUrl;
   }
   usingDefault.value = getApiBaseUrl() === "";
+  demoMode.value = isDemoModeEnabled();
 
   try {
     const wallet = loadWallet();
@@ -64,6 +67,10 @@ function handleSave() {
   setTimeout(() => {
     saved.value = false;
   }, 2000);
+}
+
+function handleDemoModeChange() {
+  setDemoMode(demoMode.value);
 }
 </script>
 
@@ -113,6 +120,32 @@ function handleSave() {
       </button>
     </form>
 
+    <!-- Demo Mode is display-only. It must never affect signing, sending,
+         swapping, splitting, settlement, or broadcast. -->
+    <section class="mt-8 max-w-lg rounded border border-gray-800 bg-gray-900 p-4">
+      <div class="flex items-start justify-between gap-4">
+        <div>
+          <p class="text-sm font-semibold text-gray-300">Experience</p>
+          <h3 class="mt-2 text-lg font-black text-white">Demo Mode</h3>
+          <p class="mt-2 text-xs leading-5 text-gray-500">
+            Explore Sidecoin with sample balances, platform activity, and PRO
+            previews. Demo Mode changes display data only.
+          </p>
+        </div>
+
+        <label class="relative inline-flex cursor-pointer items-center">
+          <input
+            v-model="demoMode"
+            type="checkbox"
+            class="peer sr-only"
+            aria-label="Demo Mode"
+            @change="handleDemoModeChange"
+          />
+          <span class="h-6 w-11 rounded-full bg-gray-700 after:absolute after:left-0.5 after:top-0.5 after:h-5 after:w-5 after:rounded-full after:bg-white after:transition-all peer-checked:bg-ecash-600 peer-checked:after:translate-x-5"></span>
+        </label>
+      </div>
+    </section>
+
     <!-- ─── Founder Identity Key ──────────────────────────── -->
     <div class="mt-8 max-w-lg rounded border border-gray-800 bg-gray-900 p-4">
       <p class="mb-1 text-sm font-semibold text-gray-300">Founder Identity Key</p>
@@ -154,7 +187,7 @@ function handleSave() {
         <p>Adapter: {{ usingDefault ? "Default" : "Custom" }}</p>
         <p>Fork Target: 2026-08-21 15:00Z</p>
         <p>Fork Block: ~964,000</p>
-        <p>Sidechains: Thunder · zSide · BitNames · BitAssets · Photon · Truthcoin · CoinShift</p>
+        <p>Platforms: Thunder · zSide · BitNames · BitAssets · Photon · Truthcoin · CoinShift</p>
         <p>BIPs: 300, 301</p>
       </div>
     </details>

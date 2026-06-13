@@ -2,12 +2,13 @@
 //
 // Tests for SettingsView.vue.
 // Covers form rendering, save flow, default/custom adapter banners,
-// the debug info section, and API integration.
+// Demo Mode, the collapsed debug info section, and API integration.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import SettingsView from "../views/SettingsView.vue";
 import { DEFAULT_BASE_URL } from "@sidecoin/api-client";
+import { DEMO_MODE_STORAGE_KEY } from "../demo";
 
 // ---------------------------------------------------------------------------
 // Mock the API module
@@ -31,6 +32,7 @@ describe("SettingsView.vue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
+    localStorage.clear();
     mockGetApiBaseUrl.mockReturnValue("");
   });
 
@@ -155,11 +157,60 @@ describe("SettingsView.vue", () => {
     consoleSpy.mockRestore();
   });
 
+  // ── Demo Mode Section ──
+
+  it("should render Demo Mode settings", () => {
+    const wrapper = mount(SettingsView);
+    expect(wrapper.text()).toContain("Experience");
+    expect(wrapper.text()).toContain("Demo Mode");
+    expect(wrapper.text()).toContain("Explore Sidecoin with sample balances");
+  });
+
+  it("should leave Demo Mode disabled by default", () => {
+    const wrapper = mount(SettingsView);
+    const checkbox = wrapper.find('input[aria-label="Demo Mode"]');
+    expect((checkbox.element as HTMLInputElement).checked).toBe(false);
+  });
+
+  it("should initialize Demo Mode from localStorage", async () => {
+    localStorage.setItem(DEMO_MODE_STORAGE_KEY, "1");
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+    const checkbox = wrapper.find('input[aria-label="Demo Mode"]');
+    expect((checkbox.element as HTMLInputElement).checked).toBe(true);
+  });
+
+  it("should persist Demo Mode when toggled on", async () => {
+    const wrapper = mount(SettingsView);
+    const checkbox = wrapper.find('input[aria-label="Demo Mode"]');
+
+    await checkbox.setValue(true);
+
+    expect(localStorage.getItem(DEMO_MODE_STORAGE_KEY)).toBe("1");
+  });
+
+  it("should clear Demo Mode when toggled off", async () => {
+    localStorage.setItem(DEMO_MODE_STORAGE_KEY, "1");
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    const checkbox = wrapper.find('input[aria-label="Demo Mode"]');
+    await checkbox.setValue(false);
+
+    expect(localStorage.getItem(DEMO_MODE_STORAGE_KEY)).toBeNull();
+  });
+
   // ── Debug Info Section ──
 
   it("should render the Debug Info section", () => {
     const wrapper = mount(SettingsView);
     expect(wrapper.text()).toContain("Debug Info");
+  });
+
+  it("should hide debug info by default", () => {
+    const wrapper = mount(SettingsView);
+    const details = wrapper.find("details");
+    expect((details.element as HTMLDetailsElement).open).toBe(false);
   });
 
   it("should display version in debug info", () => {
@@ -200,7 +251,7 @@ describe("SettingsView.vue", () => {
     expect(wrapper.text()).toContain("Fork Block: ~964,000");
   });
 
-  it("should list all sidechain names in debug info", () => {
+  it("should list all platform names in debug info", () => {
     const wrapper = mount(SettingsView);
     expect(wrapper.text()).toContain("Thunder");
     expect(wrapper.text()).toContain("zSide");
