@@ -1,9 +1,11 @@
 <!-- packages/wallet/src/App.vue -->
 
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from "vue";
 import { RouterView } from "vue-router";
 import InstallWallet from "./components/InstallWallet.vue";
 import ProStatusCard from "./components/pro/ProStatusCard.vue";
+import { DEMO_MODE_EVENT, isDemoModeEnabled } from "./demo";
 
 const links = [
   { to: "/", label: "Home" },
@@ -16,6 +18,21 @@ const links = [
   { to: "/pro", label: "PRO" },
   { to: "/settings", label: "Settings" },
 ];
+
+const demoMode = ref(isDemoModeEnabled());
+
+function handleDemoModeChanged() {
+  demoMode.value = isDemoModeEnabled();
+}
+
+onMounted(() => {
+  demoMode.value = isDemoModeEnabled();
+  window.addEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
+});
 </script>
 
 <template>
@@ -33,7 +50,15 @@ const links = [
           Drivechains Financial Hub
         </p>
       </div>
-      <span class="font-mono text-[10px] text-ecash-400">2026·08·21</span>
+      <div class="flex items-center gap-2">
+        <span
+          v-if="demoMode"
+          class="rounded-full border border-ecash-700 bg-ecash-950/70 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-ecash-400"
+        >
+          Demo
+        </span>
+        <span class="font-mono text-[10px] text-ecash-400">2026·08·21</span>
+      </div>
     </header>
 
     <!-- Desktop sidebar -->
@@ -61,6 +86,23 @@ const links = [
       </ul>
 
       <div class="mt-auto space-y-3">
+        <div
+          v-if="demoMode"
+          class="rounded-xl border border-ecash-700 bg-ecash-950/40 p-3 text-xs"
+          data-test="demo-mode-sidebar-card"
+        >
+          <p class="font-black text-ecash-400">Demo Mode</p>
+          <p class="mt-1 text-gray-400">
+            Sample balances and platform activity enabled.
+          </p>
+          <router-link
+            to="/settings"
+            class="mt-3 inline-flex rounded border border-ecash-700 px-3 py-2 font-bold text-ecash-400 hover:bg-ecash-900/40"
+          >
+            Manage demo
+          </router-link>
+        </div>
+
         <ProStatusCard />
 
         <div class="rounded bg-gray-900 p-3 text-xs text-gray-500">

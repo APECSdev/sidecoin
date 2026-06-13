@@ -222,6 +222,40 @@ function platformHref(platformId: string): string {
       </a>
     </div>
 
+    <section
+      v-if="demoMode"
+      class="mb-6 rounded-2xl border border-ecash-700 bg-gradient-to-br from-ecash-950/60 via-gray-900 to-gray-950 p-5"
+      data-test="demo-mode-dashboard-banner"
+    >
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <span class="inline-flex rounded-full bg-ecash-500 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-gray-950">
+            Demo Mode
+          </span>
+          <h3 class="mt-3 text-xl font-black text-white">Sample financial hub activity is enabled</h3>
+          <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-300">
+            You are viewing sample balances, platform activity, and PRO previews
+            across the Drivechains Financial Hub.
+          </p>
+        </div>
+
+        <div class="flex flex-wrap gap-3">
+          <a
+            href="#/settings"
+            class="rounded-lg border border-ecash-700 px-4 py-2 text-sm font-bold text-ecash-400 hover:bg-ecash-900/40"
+          >
+            Manage demo
+          </a>
+          <a
+            href="#/pro"
+            class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-black text-gray-950 hover:bg-amber-400"
+          >
+            View PRO
+          </a>
+        </div>
+      </div>
+    </section>
+
     <!-- L1 wallet balance — always shown, independent of the platform inflow
          fan-out below. -->
     <div class="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-6">

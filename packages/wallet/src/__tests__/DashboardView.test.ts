@@ -296,6 +296,8 @@ describe("DashboardView.vue", () => {
     expect(mockGetSidechains).not.toHaveBeenCalled();
     expect(mockGetDeposits).not.toHaveBeenCalled();
     expect(mockGetL1Balance).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain("Demo Mode");
+    expect(wrapper.text()).toContain("Sample financial hub activity is enabled");
     expect(wrapper.text()).toContain("1.32257244");
     expect(wrapper.text()).toContain("28 events across 8 platforms");
     expect(wrapper.text()).toContain("RISCy");

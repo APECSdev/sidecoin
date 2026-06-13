@@ -187,6 +187,7 @@ describe("SettingsView.vue", () => {
     await checkbox.setValue(true);
 
     expect(localStorage.getItem(DEMO_MODE_STORAGE_KEY)).toBe("1");
+    expect(wrapper.text()).toContain("Sample balances and platform activity are enabled.");
   });
 
   it("should clear Demo Mode when toggled off", async () => {

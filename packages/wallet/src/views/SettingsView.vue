@@ -122,14 +122,34 @@ function handleDemoModeChange() {
 
     <!-- Demo Mode is display-only. It must never affect signing, sending,
          swapping, splitting, settlement, or broadcast. -->
-    <section class="mt-8 max-w-lg rounded border border-gray-800 bg-gray-900 p-4">
+    <section
+      class="mt-8 max-w-lg rounded border p-4 transition-colors"
+      :class="demoMode ? 'border-ecash-700 bg-ecash-950/40' : 'border-gray-800 bg-gray-900'"
+      data-test="demo-mode-settings-card"
+    >
       <div class="flex items-start justify-between gap-4">
         <div>
-          <p class="text-sm font-semibold text-gray-300">Experience</p>
-          <h3 class="mt-2 text-lg font-black text-white">Demo Mode</h3>
+          <p
+            class="text-sm font-semibold"
+            :class="demoMode ? 'text-ecash-400' : 'text-gray-300'"
+          >
+            Experience
+          </p>
+          <div class="mt-2 flex flex-wrap items-center gap-2">
+            <h3 class="text-lg font-black text-white">Demo Mode</h3>
+            <span
+              v-if="demoMode"
+              class="rounded-full bg-ecash-500 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-gray-950"
+            >
+              Active
+            </span>
+          </div>
           <p class="mt-2 text-xs leading-5 text-gray-500">
             Explore Sidecoin with sample balances, platform activity, and PRO
             previews. Demo Mode changes display data only.
+          </p>
+          <p v-if="demoMode" class="mt-3 text-xs font-semibold text-ecash-400">
+            Sample balances and platform activity are enabled.
           </p>
         </div>
 

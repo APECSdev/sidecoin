@@ -31,6 +31,9 @@ describe("PlatformDetailView.vue", () => {
     const wrapper = await mountPlatform("/platforms/thunder");
     expect(wrapper.text()).toContain("Thunder Network");
     expect(wrapper.text()).toContain("Platform · Slot 9");
+    expect(wrapper.text()).toContain("Overview");
+    expect(wrapper.text()).toContain("Parent Chain");
+    expect(wrapper.text()).toContain("Activity");
     expect(wrapper.text()).toContain("Payments");
   });
 
@@ -44,6 +47,7 @@ describe("PlatformDetailView.vue", () => {
   it("renders a clear PRO CTA for gated platforms", async () => {
     const wrapper = await mountPlatform("/platforms/zside");
     expect(wrapper.text()).toContain("Unlock zSide with Sidecoin PRO");
+    expect(wrapper.text()).toContain("Platform wallet preview");
     expect(wrapper.text()).toContain("Historical analysis across platforms");
     expect(wrapper.text()).toContain("Early access to proposed platforms like RISCy");
   });
