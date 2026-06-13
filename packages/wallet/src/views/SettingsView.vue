@@ -20,6 +20,7 @@ const saved = ref(false);
 const usingDefault = ref(true);
 const demoMode = ref(false);
 const selectedTheme = ref<WalletTheme>("default");
+const showDemoModeExplainer = ref(false);
 
 // ─── Founder Identity Key (NIP-06 Nostr key) ────────────────
 // Derived locally from the wallet mnemonic at m/44'/1237'/0'/0/0. This is the
@@ -79,11 +80,19 @@ function handleSave() {
 
 function handleDemoModeChange() {
   setDemoMode(demoMode.value);
+
+  if (demoMode.value) {
+    showDemoModeExplainer.value = true;
+  }
 }
 
 function handleThemeChange(theme: WalletTheme) {
   selectedTheme.value = theme;
   setWalletTheme(theme);
+}
+
+function closeDemoModeExplainer() {
+  showDemoModeExplainer.value = false;
 }
 </script>
 
@@ -199,6 +208,14 @@ function handleThemeChange(theme: WalletTheme) {
           <p v-if="demoMode" class="mt-3 text-xs font-semibold text-ecash-400">
             Sample balances and platform activity are enabled.
           </p>
+          <button
+            v-if="demoMode"
+            type="button"
+            class="mt-3 rounded border border-ecash-700 px-3 py-2 text-xs font-bold text-ecash-400 hover:bg-ecash-900/40"
+            @click="showDemoModeExplainer = true"
+          >
+            What changes in Demo Mode?
+          </button>
         </div>
 
         <label class="relative inline-flex cursor-pointer items-center">
@@ -259,5 +276,118 @@ function handleThemeChange(theme: WalletTheme) {
         <p>BIPs: 300, 301</p>
       </div>
     </details>
+
+    <!-- Demo Mode explainer. Display-only: this modal explains UI scope only.
+         It must never trigger signing, sending, swaps, splitting, settlement,
+         entitlement changes, hardware calls, or broadcast. -->
+    <div
+      v-if="showDemoModeExplainer"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/80 p-4 backdrop-blur"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="demo-mode-explainer-title"
+      data-test="demo-mode-explainer-modal"
+    >
+      <div class="w-full max-w-3xl rounded-2xl border border-ecash-700 bg-gray-900 shadow-2xl">
+        <div class="border-b border-gray-800 p-6">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <span class="inline-flex rounded-full bg-ecash-500 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-gray-950">
+                Demo Mode
+              </span>
+              <h3
+                id="demo-mode-explainer-title"
+                class="mt-4 text-2xl font-black text-white"
+              >
+                Demo Mode is now active
+              </h3>
+              <p class="mt-3 max-w-2xl text-sm leading-6 text-gray-300">
+                You can explore Sidecoin with sample balances, platform
+                activity, and PRO previews across the Drivechains Financial Hub.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              class="rounded-lg border border-gray-700 px-3 py-2 text-sm font-bold text-gray-300 hover:bg-gray-800 hover:text-white"
+              aria-label="Close Demo Mode explanation"
+              @click="closeDemoModeExplainer"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+
+        <div class="grid gap-4 p-6 lg:grid-cols-2">
+          <section class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+            <h4 class="font-black text-ecash-400">What Demo Mode changes</h4>
+            <ul class="mt-4 space-y-3 text-sm text-gray-300">
+              <li class="flex gap-3">
+                <span class="text-ecash-400">✓</span>
+                <span>Dashboard balances and platform activity use sample data.</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="text-ecash-400">✓</span>
+                <span>Platform portfolio cards show screenshot-ready activity.</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="text-ecash-400">✓</span>
+                <span>PRO previews stay visible so you can explore the full hub.</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="text-ecash-400">✓</span>
+                <span>The sidebar and Dashboard clearly show Demo Mode is enabled.</span>
+              </li>
+            </ul>
+          </section>
+
+          <section class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+            <h4 class="font-black text-amber-400">What Demo Mode never changes</h4>
+            <ul class="mt-4 space-y-3 text-sm text-gray-300">
+              <li class="flex gap-3">
+                <span class="text-amber-400">✓</span>
+                <span>Your wallet keys, seed phrase, and identity key are unchanged.</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="text-amber-400">✓</span>
+                <span>Send, receive, swap, split, signing, and broadcast logic are unchanged.</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="text-amber-400">✓</span>
+                <span>Hardware wallet operations are not simulated or bypassed.</span>
+              </li>
+              <li class="flex gap-3">
+                <span class="text-amber-400">✓</span>
+                <span>Entitlements, PRO checks, and wallet security rules stay intact.</span>
+              </li>
+            </ul>
+          </section>
+        </div>
+
+        <div class="flex flex-col gap-3 border-t border-gray-800 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <p class="text-xs leading-5 text-gray-500">
+            Demo Mode is a display-only experience for exploring Sidecoin before
+            connecting live activity.
+          </p>
+
+          <div class="flex flex-wrap gap-3">
+            <a
+              href="#/"
+              class="rounded-lg bg-ecash-600 px-4 py-2 text-sm font-black text-white hover:bg-ecash-500"
+              @click="closeDemoModeExplainer"
+            >
+              Explore Dashboard
+            </a>
+            <button
+              type="button"
+              class="rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+              @click="closeDemoModeExplainer"
+            >
+              Keep browsing
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>

@@ -2,8 +2,8 @@
 //
 // Tests for SettingsView.vue.
 // Covers form rendering, save flow, default/custom adapter banners,
-// Appearance themes, Demo Mode, the collapsed debug info section, and API
-// integration.
+// Appearance themes, Demo Mode, the Demo Mode explainer modal, the collapsed
+// debug info section, and API integration.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
@@ -263,6 +263,54 @@ describe("SettingsView.vue", () => {
 
     expect(localStorage.getItem(DEMO_MODE_STORAGE_KEY)).toBe("1");
     expect(wrapper.text()).toContain("Sample balances and platform activity are enabled.");
+  });
+
+  it("should show a Demo Mode explainer modal when toggled on", async () => {
+    const wrapper = mount(SettingsView);
+    const checkbox = wrapper.find('input[aria-label="Demo Mode"]');
+
+    await checkbox.setValue(true);
+
+    expect(wrapper.text()).toContain("Demo Mode is now active");
+    expect(wrapper.text()).toContain("What Demo Mode changes");
+    expect(wrapper.text()).toContain("Dashboard balances and platform activity use sample data.");
+    expect(wrapper.text()).toContain("What Demo Mode never changes");
+    expect(wrapper.text()).toContain("Your wallet keys, seed phrase, and identity key are unchanged.");
+    expect(wrapper.text()).toContain("Send, receive, swap, split, signing, and broadcast logic are unchanged.");
+  });
+
+  it("should close the Demo Mode explainer modal", async () => {
+    const wrapper = mount(SettingsView);
+    const checkbox = wrapper.find('input[aria-label="Demo Mode"]');
+
+    await checkbox.setValue(true);
+    expect(wrapper.text()).toContain("Demo Mode is now active");
+
+    const keepBrowsing = wrapper
+      .findAll("button[type='button']")
+      .find((button) => button.text() === "Keep browsing");
+
+    expect(keepBrowsing).toBeDefined();
+    await keepBrowsing!.trigger("click");
+
+    expect(wrapper.text()).not.toContain("Demo Mode is now active");
+  });
+
+  it("should reopen the Demo Mode explainer from the active Demo Mode card", async () => {
+    localStorage.setItem(DEMO_MODE_STORAGE_KEY, "1");
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    expect(wrapper.text()).not.toContain("Demo Mode is now active");
+
+    const explainButton = wrapper
+      .findAll("button[type='button']")
+      .find((button) => button.text() === "What changes in Demo Mode?");
+
+    expect(explainButton).toBeDefined();
+    await explainButton!.trigger("click");
+
+    expect(wrapper.text()).toContain("Demo Mode is now active");
   });
 
   it("should clear Demo Mode when toggled off", async () => {
