@@ -30,6 +30,8 @@ export const PRO_PLATFORM_IDS = [
   "riscy",
 ];
 
+export const COIN_CONTROL_FEATURE_ID = "wallet:coin-control";
+
 export const BASIC_FEATURES = [
   "l1",
   "swap",
@@ -49,6 +51,7 @@ export const PRO_FEATURES = [
   "hardware:signing",
   "analytics:historical",
   "platforms:early-access",
+  COIN_CONTROL_FEATURE_ID,
 ];
 
 export const CURRENT_ENTITLEMENTS: EntitlementState = {

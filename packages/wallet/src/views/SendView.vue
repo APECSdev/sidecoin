@@ -1,7 +1,7 @@
 <!-- packages/wallet/src/views/SendView.vue -->
 
 <script setup lang="ts">
-import { ref, defineAsyncComponent } from "vue";
+import { computed, ref, defineAsyncComponent } from "vue";
 import { parsePaymentUri } from "../components/paymenturi";
 import { toSpendableUtxo, parseCoinsToSats } from "../send";
 import { loadWallet } from "../keystore";
@@ -19,6 +19,10 @@ import {
   buildAndSignP2wpkhTransaction,
   type SignedTransaction,
 } from "@sidecoin/shared";
+import {
+  canAccessFeature,
+  COIN_CONTROL_FEATURE_ID,
+} from "../entitlements";
 
 // The scanner is loaded lazily (only when opened) so the camera library
 // (qr-scanner) — which pulls in browser-only getUserMedia APIs — is never
@@ -37,10 +41,50 @@ interface BuiltTx extends SignedTransaction {
   amountSatoshis: bigint;
 }
 
+interface CoinControlPreviewRow {
+  selected: boolean;
+  amount: string;
+  confirmations: string;
+  label: string;
+  address: string;
+  txid: string;
+  status: string;
+}
+
 const sendTabs: { id: SendTab; label: string }[] = [
   { id: "simple", label: "Simple" },
   { id: "advanced", label: "Advanced" },
   { id: "review", label: "Review" },
+];
+
+const coinControlPreviewRows: CoinControlPreviewRow[] = [
+  {
+    selected: true,
+    amount: "0.75000000",
+    confirmations: "216",
+    label: "Primary receive",
+    address: "tb1qpreviewprimaryreceiveaddress000000000000000",
+    txid: "7f4a2d9c...91bd",
+    status: "Spendable",
+  },
+  {
+    selected: false,
+    amount: "0.31250000",
+    confirmations: "42",
+    label: "Thunder deposit change",
+    address: "tb1qpreviewthunderchange0000000000000000000",
+    txid: "52ac88e1...44de",
+    status: "Review",
+  },
+  {
+    selected: false,
+    amount: "0.05000000",
+    confirmations: "6",
+    label: "Small coin",
+    address: "tb1qpreviewcoincontrolsmall000000000000000",
+    txid: "09fa12cc...7f4a",
+    status: "Spendable",
+  },
 ];
 
 const selectedTab = ref<SendTab>("simple");
@@ -52,6 +96,17 @@ const error = ref<string | null>(null);
 const built = ref<BuiltTx | null>(null);
 const receipt = ref<BroadcastReceipt | null>(null);
 const showScanner = ref(false);
+
+const hasCoinControlAccess = computed(() => {
+  return canAccessFeature(COIN_CONTROL_FEATURE_ID);
+});
+
+const previewSelectedTotal = computed(() => {
+  return coinControlPreviewRows
+    .filter((row) => row.selected)
+    .reduce((total, row) => total + Number(row.amount), 0)
+    .toFixed(8);
+});
 
 function openScanner() {
   showScanner.value = true;
@@ -325,18 +380,19 @@ function cancel() {
               </p>
             </div>
             <h3 class="mt-3 text-xl font-black text-white">
-              Coin Control comes next
+              Coin Control preview
             </h3>
             <p class="mt-3 text-sm leading-6 text-gray-300">
-              Manual UTXO selection will live in Advanced as a Sidecoin PRO
-              power tool. Simple sends continue to use automatic coin selection.
+              Manual UTXO selection lives in Advanced as a Sidecoin PRO power
+              tool preview. Simple sends continue to use automatic coin
+              selection.
             </p>
             <button
               type="button"
               class="mt-5 rounded-lg border border-amber-500/50 px-4 py-2 text-sm font-bold text-amber-300 hover:bg-amber-950/40"
               @click="selectedTab = 'advanced'"
             >
-              Preview Advanced
+              Preview Coin Control
             </button>
           </div>
         </aside>
@@ -349,6 +405,12 @@ function cancel() {
             <span class="rounded-full bg-amber-500 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-gray-950">
               PRO
             </span>
+            <span
+              class="rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-wide"
+              :class="hasCoinControlAccess ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-400'"
+            >
+              {{ hasCoinControlAccess ? "Unlocked" : "Locked" }}
+            </span>
           </div>
           <p class="mt-3 max-w-2xl text-sm leading-6 text-gray-400">
             Advanced tools are designed for power users who want explicit
@@ -356,45 +418,126 @@ function cancel() {
           </p>
 
           <div class="mt-6 rounded-xl border border-amber-500/40 bg-amber-950/10 p-5">
-            <p class="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
-              Coin Control
-            </p>
-            <h4 class="mt-2 text-lg font-black text-white">
-              Manual UTXO selection
-            </h4>
-            <p class="mt-3 text-sm leading-6 text-gray-300">
-              Coin Control will let Sidecoin PRO users inspect coins, select
-              exact UTXOs, review confirmations, and build advanced sends.
-            </p>
+            <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div>
+                <p class="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
+                  Coin Control
+                </p>
+                <h4 class="mt-2 text-lg font-black text-white">
+                  Manual UTXO selection preview
+                </h4>
+                <p class="mt-3 max-w-2xl text-sm leading-6 text-gray-300">
+                  Coin Control will let Sidecoin PRO users inspect coins,
+                  select exact UTXOs, review confirmations, and build advanced
+                  sends. This preview does not change transaction construction.
+                </p>
+              </div>
+
+              <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
+                <p class="text-xs uppercase tracking-widest text-gray-500">
+                  Preview selected
+                </p>
+                <p class="mt-2 font-mono text-2xl font-black text-amber-400">
+                  {{ previewSelectedTotal }}
+                </p>
+                <p class="mt-1 text-xs text-gray-500">
+                  Display-only sample coins
+                </p>
+              </div>
+            </div>
+
+            <div
+              v-if="!hasCoinControlAccess"
+              class="mt-5 rounded-xl border border-amber-500/40 bg-gray-950 p-5"
+            >
+              <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                <div>
+                  <p class="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
+                    Sidecoin PRO required
+                  </p>
+                  <h5 class="mt-2 text-lg font-black text-white">
+                    Unlock advanced Coin Control
+                  </h5>
+                  <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-400">
+                    Basic users keep automatic coin selection. PRO unlocks the
+                    advanced Coin Control workflow for manual UTXO review and
+                    selection.
+                  </p>
+                </div>
+
+                <a
+                  href="#/pro"
+                  class="w-fit rounded-lg bg-amber-500 px-4 py-2 text-sm font-black text-gray-950 hover:bg-amber-400"
+                >
+                  Upgrade to PRO
+                </a>
+              </div>
+            </div>
 
             <div class="mt-5 overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
-              <table class="w-full min-w-[720px] text-left text-sm">
+              <table class="w-full min-w-[980px] text-left text-sm">
                 <thead class="text-xs uppercase tracking-widest text-gray-500">
                   <tr>
                     <th class="border-b border-gray-800 px-4 py-3">Select</th>
                     <th class="border-b border-gray-800 px-4 py-3">Amount</th>
                     <th class="border-b border-gray-800 px-4 py-3">Confirmations</th>
                     <th class="border-b border-gray-800 px-4 py-3">Label</th>
+                    <th class="border-b border-gray-800 px-4 py-3">Address</th>
+                    <th class="border-b border-gray-800 px-4 py-3">TxID</th>
                     <th class="border-b border-gray-800 px-4 py-3">Status</th>
                   </tr>
                 </thead>
                 <tbody class="text-gray-300">
-                  <tr>
+                  <tr
+                    v-for="row in coinControlPreviewRows"
+                    :key="row.txid"
+                  >
                     <td class="border-b border-gray-900 px-4 py-3">
-                      <input disabled type="checkbox" class="rounded border-gray-700 bg-gray-900" />
+                      <input
+                        disabled
+                        type="checkbox"
+                        :checked="row.selected"
+                        class="rounded border-gray-700 bg-gray-900"
+                      />
                     </td>
                     <td class="border-b border-gray-900 px-4 py-3 font-mono text-amber-400">
-                      PRO
+                      {{ row.amount }}
                     </td>
-                    <td class="border-b border-gray-900 px-4 py-3">—</td>
-                    <td class="border-b border-gray-900 px-4 py-3">Manual selection</td>
-                    <td class="border-b border-gray-900 px-4 py-3">Coming next</td>
+                    <td class="border-b border-gray-900 px-4 py-3">
+                      {{ row.confirmations }}
+                    </td>
+                    <td class="border-b border-gray-900 px-4 py-3">
+                      {{ row.label }}
+                    </td>
+                    <td class="break-all border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-500">
+                      {{ row.address }}
+                    </td>
+                    <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-500">
+                      {{ row.txid }}
+                    </td>
+                    <td class="border-b border-gray-900 px-4 py-3">
+                      {{ row.status }}
+                    </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            <div class="mt-5 flex flex-wrap gap-3">
+            <div class="mt-5 grid gap-3 md:grid-cols-3">
+              <button
+                disabled
+                type="button"
+                class="rounded-lg bg-gray-800 px-4 py-2 text-sm font-bold text-gray-600"
+              >
+                Select all
+              </button>
+              <button
+                disabled
+                type="button"
+                class="rounded-lg bg-gray-800 px-4 py-2 text-sm font-bold text-gray-600"
+              >
+                Clear
+              </button>
               <button
                 disabled
                 type="button"
@@ -402,43 +545,77 @@ function cancel() {
               >
                 Use selected coins
               </button>
-              <button
-                type="button"
-                class="rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
-                @click="selectedTab = 'simple'"
-              >
-                Back to Simple Send
-              </button>
+            </div>
+
+            <div class="mt-5 rounded-xl border border-gray-800 bg-gray-950 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">
+                Preview-only safety note
+              </p>
+              <p class="mt-2 text-sm leading-6 text-gray-400">
+                This screen is a visual PRO preview. It does not fetch extra
+                coins, does not persist selections, does not override automatic
+                coin selection, and does not change the Simple Send build/sign
+                path.
+              </p>
             </div>
           </div>
         </div>
 
-        <aside class="rounded-xl border border-gray-800 bg-gray-950 p-6">
-          <p class="text-xs uppercase tracking-widest text-gray-500">
-            Advanced warning
-          </p>
-          <h3 class="mt-2 text-xl font-black text-white">
-            Power tools require care
-          </h3>
-          <p class="mt-3 text-sm leading-6 text-gray-400">
-            Manual coin selection can affect privacy, fees, and change outputs.
-            Sidecoin keeps this separate from Simple Send so everyday payments
-            remain straightforward.
-          </p>
-          <ul class="mt-5 space-y-3 text-sm text-gray-300">
-            <li class="flex gap-2">
-              <span class="text-amber-400">✓</span>
-              <span>Inspect confirmations before spending.</span>
-            </li>
-            <li class="flex gap-2">
-              <span class="text-amber-400">✓</span>
-              <span>Keep automatic coin selection as the default.</span>
-            </li>
-            <li class="flex gap-2">
-              <span class="text-amber-400">✓</span>
-              <span>Review all outputs before broadcast.</span>
-            </li>
-          </ul>
+        <aside class="space-y-4">
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Advanced warning
+            </p>
+            <h3 class="mt-2 text-xl font-black text-white">
+              Power tools require care
+            </h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">
+              Manual coin selection can affect privacy, fees, and change outputs.
+              Sidecoin keeps this separate from Simple Send so everyday payments
+              remain straightforward.
+            </p>
+            <ul class="mt-5 space-y-3 text-sm text-gray-300">
+              <li class="flex gap-2">
+                <span class="text-amber-400">✓</span>
+                <span>Inspect confirmations before spending.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-amber-400">✓</span>
+                <span>Keep automatic coin selection as the default.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-amber-400">✓</span>
+                <span>Review all outputs before broadcast.</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Future workflow
+            </p>
+            <h3 class="mt-2 text-xl font-black text-white">
+              How Coin Control will work
+            </h3>
+            <ol class="mt-5 space-y-3 text-sm text-gray-300">
+              <li class="flex gap-2">
+                <span class="text-amber-400">1.</span>
+                <span>Load spendable wallet UTXOs for the signing key.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-amber-400">2.</span>
+                <span>Select exact coins and review privacy tradeoffs.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-amber-400">3.</span>
+                <span>Build locally using selected coins only.</span>
+              </li>
+              <li class="flex gap-2">
+                <span class="text-amber-400">4.</span>
+                <span>Review outputs, fee, change, txid, and signed hex.</span>
+              </li>
+            </ol>
+          </div>
         </aside>
       </div>
 

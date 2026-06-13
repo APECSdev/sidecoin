@@ -269,8 +269,68 @@ describe("SendView.vue", () => {
 
     expect(wrapper.text()).toContain("Advanced send tools");
     expect(wrapper.text()).toContain("Coin Control");
-    expect(wrapper.text()).toContain("Manual UTXO selection");
+    expect(wrapper.text()).toContain("Manual UTXO selection preview");
     expect(wrapper.text()).toContain("Sidecoin PRO");
+  });
+
+  it("should render the richer Coin Control preview table", async () => {
+    const wrapper = mountSend();
+    const advanced = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Advanced");
+
+    expect(advanced).toBeDefined();
+    await advanced!.trigger("click");
+
+    expect(wrapper.text()).toContain("Select");
+    expect(wrapper.text()).toContain("Amount");
+    expect(wrapper.text()).toContain("Confirmations");
+    expect(wrapper.text()).toContain("Label");
+    expect(wrapper.text()).toContain("Address");
+    expect(wrapper.text()).toContain("TxID");
+    expect(wrapper.text()).toContain("Status");
+    expect(wrapper.text()).toContain("Primary receive");
+    expect(wrapper.text()).toContain("Thunder deposit change");
+    expect(wrapper.text()).toContain("Small coin");
+  });
+
+  it("should show Coin Control as locked for the Basic entitlement state", async () => {
+    const wrapper = mountSend();
+    const advanced = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Advanced");
+
+    expect(advanced).toBeDefined();
+    await advanced!.trigger("click");
+
+    expect(wrapper.text()).toContain("Locked");
+    expect(wrapper.text()).toContain("Sidecoin PRO required");
+    expect(wrapper.text()).toContain("Unlock advanced Coin Control");
+    expect(wrapper.text()).toContain("Upgrade to PRO");
+  });
+
+  it("should make Coin Control controls preview-only and disabled", async () => {
+    const wrapper = mountSend();
+    const advanced = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Advanced");
+
+    expect(advanced).toBeDefined();
+    await advanced!.trigger("click");
+
+    expect(wrapper.text()).toContain("Select all");
+    expect(wrapper.text()).toContain("Clear");
+    expect(wrapper.text()).toContain("Use selected coins");
+    expect(wrapper.text()).toContain("Preview-only safety note");
+
+    const disabledButtons = wrapper
+      .findAll("button")
+      .filter((button) => ["Select all", "Clear", "Use selected coins"].includes(button.text()));
+
+    expect(disabledButtons).toHaveLength(3);
+    for (const button of disabledButtons) {
+      expect(button.attributes("disabled")).toBeDefined();
+    }
   });
 
   it("should show an empty review state before a transaction is built", async () => {
