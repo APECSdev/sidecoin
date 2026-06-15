@@ -1,0 +1,24 @@
+/* packages/explorer/src/style.css */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(250, 204, 21, 0.12), transparent 32rem),
+    radial-gradient(circle at top right, rgba(34, 211, 238, 0.10), transparent 30rem),
+    #050507;
+  color: #f9fafb;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+code,
+pre,
+.mono {
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
+}

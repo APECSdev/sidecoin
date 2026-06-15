@@ -172,6 +172,46 @@ importers:
         specifier: 9.23.3
         version: 9.23.3
 
+  packages/explorer:
+    dependencies:
+      '@vitejs/plugin-vue':
+        specifier: 6.0.1
+        version: 6.0.1(vite@7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))(vue@3.5.22(typescript@5.8.3))
+      autoprefixer:
+        specifier: 10.4.20
+        version: 10.4.20(postcss@8.5.15)
+      tailwindcss:
+        specifier: 3.4.17
+        version: 3.4.17(ts-node@10.9.2(@types/node@25.0.3)(typescript@5.8.3))
+      vite:
+        specifier: 7.1.9
+        version: 7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
+      vite-tsconfig-paths:
+        specifier: 6.0.5
+        version: 6.0.5(typescript@5.8.3)(vite@7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))
+      vue:
+        specifier: 3.5.22
+        version: 3.5.22(typescript@5.8.3)
+      vue-router:
+        specifier: 4.5.1
+        version: 4.5.1(vue@3.5.22(typescript@5.8.3))
+    devDependencies:
+      '@vue/test-utils':
+        specifier: 2.4.6
+        version: 2.4.6
+      happy-dom:
+        specifier: 20.0.11
+        version: 20.0.11
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+      vitest:
+        specifier: 4.0.18
+        version: 4.0.18(@types/node@25.0.3)(@vitest/ui@4.0.16)(happy-dom@20.0.11)(jiti@2.7.0)(jsdom@27.3.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
+      vue-tsc:
+        specifier: 3.1.0
+        version: 3.1.0(typescript@5.8.3)
+
   packages/mobile:
     dependencies:
       '@react-native-async-storage/async-storage':
@@ -14597,6 +14637,12 @@ snapshots:
       vite: 7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
       vue: 3.5.22(typescript@5.6.3)
 
+  '@vitejs/plugin-vue@6.0.1(vite@7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))(vue@3.5.22(typescript@5.8.3))':
+    dependencies:
+      '@rolldown/pluginutils': 1.0.0-beta.29
+      vite: 7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
+      vue: 3.5.22(typescript@5.8.3)
+
   '@vitejs/plugin-vue@6.0.7(vite@7.3.3(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))(vue@3.5.22(typescript@5.8.3))':
     dependencies:
       '@rolldown/pluginutils': 1.0.1
@@ -14960,6 +15006,18 @@ snapshots:
       picomatch: 4.0.4
     optionalDependencies:
       typescript: 5.6.3
+
+  '@vue/language-core@3.1.0(typescript@5.8.3)':
+    dependencies:
+      '@volar/language-core': 2.4.23
+      '@vue/compiler-dom': 3.5.35
+      '@vue/shared': 3.5.35
+      alien-signals: 3.2.1
+      muggle-string: 0.4.1
+      path-browserify: 1.0.1
+      picomatch: 4.0.4
+    optionalDependencies:
+      typescript: 5.8.3
 
   '@vue/reactivity@3.5.22':
     dependencies:
@@ -21974,6 +22032,10 @@ snapshots:
     optionalDependencies:
       typescript: 5.6.3
 
+  tsconfck@3.1.6(typescript@5.8.3):
+    optionalDependencies:
+      typescript: 5.8.3
+
   tslib@1.14.1: {}
 
   tslib@2.8.1: {}
@@ -22397,6 +22459,16 @@ snapshots:
       - supports-color
       - typescript
 
+  vite-tsconfig-paths@6.0.5(typescript@5.8.3)(vite@7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)):
+    dependencies:
+      debug: 4.4.3(supports-color@8.1.1)
+      globrex: 0.1.2
+      tsconfck: 3.1.6(typescript@5.8.3)
+      vite: 7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
+    transitivePeerDependencies:
+      - supports-color
+      - typescript
+
   vite@7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0):
     dependencies:
       esbuild: 0.25.11
@@ -22581,11 +22653,22 @@ snapshots:
       '@vue/devtools-api': 6.6.4
       vue: 3.5.22(typescript@5.6.3)
 
+  vue-router@4.5.1(vue@3.5.22(typescript@5.8.3)):
+    dependencies:
+      '@vue/devtools-api': 6.6.4
+      vue: 3.5.22(typescript@5.8.3)
+
   vue-tsc@3.1.0(typescript@5.6.3):
     dependencies:
       '@volar/typescript': 2.4.23
       '@vue/language-core': 3.1.0(typescript@5.6.3)
       typescript: 5.6.3
+
+  vue-tsc@3.1.0(typescript@5.8.3):
+    dependencies:
+      '@volar/typescript': 2.4.23
+      '@vue/language-core': 3.1.0(typescript@5.8.3)
+      typescript: 5.8.3
 
   vue@3.5.22(typescript@5.6.3):
     dependencies:
