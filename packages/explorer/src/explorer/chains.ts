@@ -21,7 +21,7 @@ export const EXPLORER_CHAINS: ExplorerChain[] = [
     kind: "sidechain",
     slot: 2,
     description: "Names, identity, records, contacts, and wallet identity.",
-    status: "preview",
+    status: "active",
   },
   {
     id: "thunder",
@@ -30,7 +30,7 @@ export const EXPLORER_CHAINS: ExplorerChain[] = [
     kind: "sidechain",
     slot: 9,
     description: "Fast payments, channels, invoices, and liquidity activity.",
-    status: "preview",
+    status: "active",
   },
   {
     id: "zside",
