@@ -4,6 +4,8 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import BlocksTable from "../components/BlocksTable.vue";
+import ErrorState from "../components/ErrorState.vue";
+import LoadingState from "../components/LoadingState.vue";
 import SearchBox from "../components/SearchBox.vue";
 import StatCard from "../components/StatCard.vue";
 import TransactionsTable from "../components/TransactionsTable.vue";
@@ -36,21 +38,34 @@ const chain = computed(() => getExplorerChain(chainId.value));
 const status = ref<ExplorerStatus | null>(null);
 const blocks = ref<ExplorerBlockSummary[]>([]);
 const transactions = ref<ExplorerTransactionSummary[]>([]);
+const loading = ref(true);
 const error = ref("");
 
 async function loadChain() {
   if (chain.value == null) {
-    error.value = "Unknown explorer chain.";
+    error.value = "This explorer chain is not configured.";
     status.value = null;
     blocks.value = [];
     transactions.value = [];
+    loading.value = false;
     return;
   }
 
+  loading.value = true;
   error.value = "";
-  status.value = await getExplorerStatus(chainId.value);
-  blocks.value = await getLatestBlocks(chainId.value);
-  transactions.value = await getLatestTransactions(chainId.value);
+
+  try {
+    status.value = await getExplorerStatus(chainId.value);
+    blocks.value = await getLatestBlocks(chainId.value);
+    transactions.value = await getLatestTransactions(chainId.value);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "Unable to load chain data.";
+    status.value = null;
+    blocks.value = [];
+    transactions.value = [];
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(loadChain);
@@ -78,39 +93,52 @@ watch(chainId, loadChain);
       </div>
     </div>
 
-    <div v-if="status" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-      <StatCard
-        label="Latest Height"
-        :value="formatNumber(status.latestHeight)"
-        :note="formatTimestamp(status.updatedAt)"
-      />
-      <StatCard
-        label="Latest Block"
-        :value="truncateMiddle(status.latestBlockHash, 12, 10)"
-        note="Current demo index"
-      />
-      <StatCard
-        label="Indexed Transactions"
-        :value="formatNumber(status.indexedTransactions)"
-        note="Demo-backed scaffold"
-      />
-      <StatCard
-        label="Mempool Transactions"
-        :value="formatNumber(status.mempoolTransactions)"
-        note="Pending transactions"
-      />
-    </div>
+    <LoadingState
+      v-if="loading"
+      title="Loading chain dashboard"
+      :message="`Fetching ${chain.displayName} explorer data.`"
+    />
 
-    <div class="grid gap-6 xl:grid-cols-2">
-      <BlocksTable :chain-id="chain.id" :blocks="blocks" />
-      <TransactionsTable :chain-id="chain.id" :transactions="transactions" />
-    </div>
+    <ErrorState
+      v-else-if="error"
+      title="Chain dashboard unavailable"
+      :message="error"
+    />
+
+    <template v-else>
+      <div v-if="status" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <StatCard
+          label="Latest Height"
+          :value="formatNumber(status.latestHeight)"
+          :note="formatTimestamp(status.updatedAt)"
+        />
+        <StatCard
+          label="Latest Block"
+          :value="truncateMiddle(status.latestBlockHash, 12, 10)"
+          note="Current demo index"
+        />
+        <StatCard
+          label="Indexed Transactions"
+          :value="formatNumber(status.indexedTransactions)"
+          note="Demo-backed scaffold"
+        />
+        <StatCard
+          label="Mempool Transactions"
+          :value="formatNumber(status.mempoolTransactions)"
+          note="Pending transactions"
+        />
+      </div>
+
+      <div class="grid gap-6 xl:grid-cols-2">
+        <BlocksTable :chain-id="chain.id" :blocks="blocks" />
+        <TransactionsTable :chain-id="chain.id" :transactions="transactions" />
+      </div>
+    </template>
   </section>
 
-  <section v-else class="rounded-2xl border border-red-900/70 bg-red-950/30 p-6">
-    <h1 class="text-2xl font-black text-red-200">Unknown chain</h1>
-    <p class="mt-2 text-red-100">
-      {{ error || "This explorer chain is not configured." }}
-    </p>
-  </section>
+  <ErrorState
+    v-else
+    title="Unknown chain"
+    :message="error || 'This explorer chain is not configured.'"
+  />
 </template>

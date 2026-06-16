@@ -2,7 +2,14 @@
 
 <script setup lang="ts">
 import { RouterLink } from "vue-router";
-import { formatBytes, formatNumber, formatTimestamp, truncateMiddle } from "../explorer/format";
+import CopyButton from "./CopyButton.vue";
+import EmptyState from "./EmptyState.vue";
+import HashLink from "./HashLink.vue";
+import {
+  formatBytes,
+  formatNumber,
+  formatTimestamp,
+} from "../explorer/format";
 import type { ExplorerBlockSummary } from "../explorer/types";
 
 defineProps<{
@@ -17,7 +24,14 @@ defineProps<{
       <h2 class="font-black text-white">Latest Blocks</h2>
     </div>
 
-    <div class="overflow-x-auto">
+    <EmptyState
+      v-if="blocks.length === 0"
+      title="No blocks found"
+      message="No block records are available for this chain yet."
+      class="m-4"
+    />
+
+    <div v-else class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-800 text-sm">
         <thead class="bg-gray-950/50 text-left text-xs uppercase tracking-wide text-gray-500">
           <tr>
@@ -26,6 +40,7 @@ defineProps<{
             <th class="px-4 py-3">Time</th>
             <th class="px-4 py-3">Txs</th>
             <th class="px-4 py-3">Size</th>
+            <th class="px-4 py-3">Copy</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -41,8 +56,13 @@ defineProps<{
                 {{ formatNumber(block.height) }}
               </RouterLink>
             </td>
-            <td class="px-4 py-3 font-mono text-gray-300">
-              {{ truncateMiddle(block.hash) }}
+            <td class="px-4 py-3">
+              <HashLink
+                :value="block.hash"
+                :chain-id="chainId"
+                route-name="block"
+                param-name="id"
+              />
             </td>
             <td class="px-4 py-3 text-gray-400">
               {{ formatTimestamp(block.timestamp) }}
@@ -52,6 +72,9 @@ defineProps<{
             </td>
             <td class="px-4 py-3 text-gray-400">
               {{ formatBytes(block.size) }}
+            </td>
+            <td class="px-4 py-3">
+              <CopyButton :value="block.hash" label="Hash" />
             </td>
           </tr>
         </tbody>

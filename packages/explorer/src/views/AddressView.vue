@@ -2,14 +2,17 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { RouterLink, useRoute } from "vue-router";
+import { useRoute } from "vue-router";
+import CopyButton from "../components/CopyButton.vue";
+import ErrorState from "../components/ErrorState.vue";
+import HashLink from "../components/HashLink.vue";
+import LoadingState from "../components/LoadingState.vue";
 import { getAddress } from "../api";
 import { getExplorerChain } from "../explorer/chains";
 import {
   formatNumber,
   formatTimestamp,
   statusClass,
-  truncateMiddle,
 } from "../explorer/format";
 import type { ExplorerAddressDetail } from "../explorer/types";
 
@@ -27,17 +30,28 @@ const addressParam = computed(() => {
 
 const chain = computed(() => getExplorerChain(chainId.value));
 const address = ref<ExplorerAddressDetail | null>(null);
+const loading = ref(true);
 const error = ref("");
 
 async function loadAddress() {
   if (chain.value == null) {
-    error.value = "Unknown explorer chain.";
+    error.value = "This explorer chain is not configured.";
     address.value = null;
+    loading.value = false;
     return;
   }
 
+  loading.value = true;
   error.value = "";
-  address.value = await getAddress(chainId.value, addressParam.value);
+
+  try {
+    address.value = await getAddress(chainId.value, addressParam.value);
+  } catch (e) {
+    error.value = e instanceof Error ? e.message : "Unable to load this address.";
+    address.value = null;
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(loadAddress);
@@ -45,14 +59,26 @@ watch([chainId, addressParam], loadAddress);
 </script>
 
 <template>
-  <section v-if="chain && address" class="space-y-6">
+  <LoadingState
+    v-if="loading && chain"
+    title="Loading address"
+    :message="`Fetching address activity on ${chain.displayName}.`"
+  />
+
+  <section v-else-if="chain && address" class="space-y-6">
     <div class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6">
-      <p class="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">
-        {{ chain.displayName }} Address
-      </p>
-      <h1 class="mt-3 break-all font-mono text-xl font-black text-white md:text-3xl">
-        {{ address.address }}
-      </h1>
+      <div class="flex flex-col justify-between gap-4 md:flex-row md:items-start">
+        <div>
+          <p class="text-sm font-black uppercase tracking-[0.22em] text-cyan-300">
+            {{ chain.displayName }} Address
+          </p>
+          <h1 class="mt-3 break-all font-mono text-xl font-black text-white md:text-3xl">
+            {{ address.address }}
+          </h1>
+        </div>
+
+        <CopyButton :value="address.address" label="Copy address" />
+      </div>
     </div>
 
     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
@@ -90,17 +116,21 @@ watch([chainId, addressParam], loadAddress);
               <th class="px-4 py-3">Amount</th>
               <th class="px-4 py-3">Confirmations</th>
               <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3">Copy</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800">
             <tr v-for="utxo in address.utxos" :key="`${utxo.txid}:${utxo.vout}`">
               <td class="px-4 py-3">
-                <RouterLink
-                  :to="{ name: 'transaction', params: { chain: chain.id, txid: utxo.txid } }"
-                  class="font-mono text-cyan-300 hover:text-cyan-200"
-                >
-                  {{ truncateMiddle(utxo.txid) }}:{{ utxo.vout }}
-                </RouterLink>
+                <div class="flex flex-wrap items-center gap-1">
+                  <HashLink
+                    :value="utxo.txid"
+                    :chain-id="chain.id"
+                    route-name="transaction"
+                    param-name="txid"
+                  />
+                  <span class="font-mono text-gray-500">:{{ utxo.vout }}</span>
+                </div>
               </td>
               <td class="px-4 py-3 font-mono text-white">{{ utxo.amount }}</td>
               <td class="px-4 py-3 font-mono text-gray-300">
@@ -113,6 +143,9 @@ watch([chainId, addressParam], loadAddress);
                 >
                   {{ utxo.status }}
                 </span>
+              </td>
+              <td class="px-4 py-3">
+                <CopyButton :value="`${utxo.txid}:${utxo.vout}`" label="Outpoint" />
               </td>
             </tr>
           </tbody>
@@ -133,20 +166,18 @@ watch([chainId, addressParam], loadAddress);
               <th class="px-4 py-3">Type</th>
               <th class="px-4 py-3">Amount</th>
               <th class="px-4 py-3">Confirmations</th>
+              <th class="px-4 py-3">Copy</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-800">
             <tr v-for="transaction in address.transactions" :key="transaction.txid">
               <td class="px-4 py-3">
-                <RouterLink
-                  :to="{
-                    name: 'transaction',
-                    params: { chain: chain.id, txid: transaction.txid },
-                  }"
-                  class="font-mono text-cyan-300 hover:text-cyan-200"
-                >
-                  {{ truncateMiddle(transaction.txid) }}
-                </RouterLink>
+                <HashLink
+                  :value="transaction.txid"
+                  :chain-id="chain.id"
+                  route-name="transaction"
+                  param-name="txid"
+                />
               </td>
               <td class="px-4 py-3 text-gray-400">
                 {{ formatTimestamp(transaction.timestamp) }}
@@ -160,6 +191,9 @@ watch([chainId, addressParam], loadAddress);
               <td class="px-4 py-3 font-mono text-gray-300">
                 {{ formatNumber(transaction.confirmations) }}
               </td>
+              <td class="px-4 py-3">
+                <CopyButton :value="transaction.txid" label="TxID" />
+              </td>
             </tr>
           </tbody>
         </table>
@@ -167,10 +201,9 @@ watch([chainId, addressParam], loadAddress);
     </div>
   </section>
 
-  <section v-else class="rounded-2xl border border-red-900/70 bg-red-950/30 p-6">
-    <h1 class="text-2xl font-black text-red-200">Address unavailable</h1>
-    <p class="mt-2 text-red-100">
-      {{ error || "Unable to load this address." }}
-    </p>
-  </section>
+  <ErrorState
+    v-else
+    title="Address unavailable"
+    :message="error || 'Unable to load this address.'"
+  />
 </template>

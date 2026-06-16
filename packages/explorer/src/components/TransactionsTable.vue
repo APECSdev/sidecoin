@@ -1,11 +1,12 @@
 <!-- packages/explorer/src/components/TransactionsTable.vue -->
 
 <script setup lang="ts">
-import { RouterLink } from "vue-router";
+import CopyButton from "./CopyButton.vue";
+import EmptyState from "./EmptyState.vue";
+import HashLink from "./HashLink.vue";
 import {
   formatTimestamp,
   statusClass,
-  truncateMiddle,
 } from "../explorer/format";
 import type { ExplorerTransactionSummary } from "../explorer/types";
 
@@ -21,7 +22,14 @@ defineProps<{
       <h2 class="font-black text-white">Latest Transactions</h2>
     </div>
 
-    <div class="overflow-x-auto">
+    <EmptyState
+      v-if="transactions.length === 0"
+      title="No transactions found"
+      message="No transaction records are available for this chain yet."
+      class="m-4"
+    />
+
+    <div v-else class="overflow-x-auto">
       <table class="min-w-full divide-y divide-gray-800 text-sm">
         <thead class="bg-gray-950/50 text-left text-xs uppercase tracking-wide text-gray-500">
           <tr>
@@ -30,6 +38,7 @@ defineProps<{
             <th class="px-4 py-3">Amount</th>
             <th class="px-4 py-3">Fee</th>
             <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Copy</th>
           </tr>
         </thead>
         <tbody class="divide-y divide-gray-800">
@@ -39,15 +48,12 @@ defineProps<{
             class="hover:bg-gray-800/40"
           >
             <td class="px-4 py-3">
-              <RouterLink
-                :to="{
-                  name: 'transaction',
-                  params: { chain: chainId, txid: transaction.txid },
-                }"
-                class="font-mono font-bold text-cyan-300 hover:text-cyan-200"
-              >
-                {{ truncateMiddle(transaction.txid) }}
-              </RouterLink>
+              <HashLink
+                :value="transaction.txid"
+                :chain-id="chainId"
+                route-name="transaction"
+                param-name="txid"
+              />
             </td>
             <td class="px-4 py-3 text-gray-400">
               {{ formatTimestamp(transaction.timestamp) }}
@@ -65,6 +71,9 @@ defineProps<{
               >
                 {{ transaction.status }}
               </span>
+            </td>
+            <td class="px-4 py-3">
+              <CopyButton :value="transaction.txid" label="TxID" />
             </td>
           </tr>
         </tbody>

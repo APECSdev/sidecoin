@@ -3,6 +3,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink, useRoute } from "vue-router";
+import CopyButton from "../components/CopyButton.vue";
+import ErrorState from "../components/ErrorState.vue";
+import HashLink from "../components/HashLink.vue";
+import LoadingState from "../components/LoadingState.vue";
 import { getTransaction } from "../api";
 import { getExplorerChain } from "../explorer/chains";
 import {
@@ -10,7 +14,6 @@ import {
   formatNumber,
   formatTimestamp,
   statusClass,
-  truncateMiddle,
 } from "../explorer/format";
 import type { ExplorerTransactionDetail } from "../explorer/types";
 
@@ -28,17 +31,29 @@ const txid = computed(() => {
 
 const chain = computed(() => getExplorerChain(chainId.value));
 const transaction = ref<ExplorerTransactionDetail | null>(null);
+const loading = ref(true);
 const error = ref("");
 
 async function loadTransaction() {
   if (chain.value == null) {
-    error.value = "Unknown explorer chain.";
+    error.value = "This explorer chain is not configured.";
     transaction.value = null;
+    loading.value = false;
     return;
   }
 
+  loading.value = true;
   error.value = "";
-  transaction.value = await getTransaction(chainId.value, txid.value);
+
+  try {
+    transaction.value = await getTransaction(chainId.value, txid.value);
+  } catch (e) {
+    error.value =
+      e instanceof Error ? e.message : "Unable to load this transaction.";
+    transaction.value = null;
+  } finally {
+    loading.value = false;
+  }
 }
 
 onMounted(loadTransaction);
@@ -46,7 +61,13 @@ watch([chainId, txid], loadTransaction);
 </script>
 
 <template>
-  <section v-if="chain && transaction" class="space-y-6">
+  <LoadingState
+    v-if="loading && chain"
+    title="Loading transaction"
+    :message="`Fetching transaction ${txid} on ${chain.displayName}.`"
+  />
+
+  <section v-else-if="chain && transaction" class="space-y-6">
     <div class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6">
       <div class="flex flex-col justify-between gap-4 md:flex-row md:items-start">
         <div>
@@ -57,12 +78,16 @@ watch([chainId, txid], loadTransaction);
             {{ transaction.txid }}
           </h1>
         </div>
-        <span
-          class="w-fit rounded-full border px-3 py-1 text-xs font-bold uppercase"
-          :class="statusClass(transaction.status)"
-        >
-          {{ transaction.status }}
-        </span>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <span
+            class="w-fit rounded-full border px-3 py-1 text-xs font-bold uppercase"
+            :class="statusClass(transaction.status)"
+          >
+            {{ transaction.status }}
+          </span>
+          <CopyButton :value="transaction.txid" label="Copy txid" />
+        </div>
       </div>
     </div>
 
@@ -106,7 +131,16 @@ watch([chainId, txid], loadTransaction);
         <div>
           <dt class="text-xs uppercase tracking-wide text-gray-500">Block Hash</dt>
           <dd class="mt-1 break-all font-mono text-gray-300">
-            {{ transaction.blockHash ? truncateMiddle(transaction.blockHash, 16, 16) : "Pending" }}
+            <HashLink
+              v-if="transaction.blockHash"
+              :value="transaction.blockHash"
+              :chain-id="chain.id"
+              route-name="block"
+              param-name="id"
+              :head="16"
+              :tail="16"
+            />
+            <span v-else>Pending</span>
           </dd>
         </div>
         <div>
@@ -131,10 +165,25 @@ watch([chainId, txid], loadTransaction);
             :key="`${input.previousTxid}:${input.vout}`"
             class="space-y-2 p-4 text-sm"
           >
-            <p class="break-all font-mono text-cyan-300">
-              {{ truncateMiddle(input.previousTxid, 16, 16) }}:{{ input.vout }}
-            </p>
-            <p class="break-all font-mono text-gray-400">{{ input.address }}</p>
+            <div class="flex flex-wrap items-center gap-2">
+              <HashLink
+                :value="input.previousTxid"
+                :chain-id="chain.id"
+                route-name="transaction"
+                param-name="txid"
+                :head="16"
+                :tail="16"
+              />
+              <span class="font-mono text-gray-500">:{{ input.vout }}</span>
+              <CopyButton :value="`${input.previousTxid}:${input.vout}`" label="Outpoint" />
+            </div>
+            <HashLink
+              :value="input.address"
+              :chain-id="chain.id"
+              route-name="address"
+              param-name="address"
+              :truncate="false"
+            />
             <p class="font-mono text-white">{{ input.amount }}</p>
           </div>
         </div>
@@ -151,15 +200,16 @@ watch([chainId, txid], loadTransaction);
             class="space-y-2 p-4 text-sm"
           >
             <p class="font-mono text-gray-500">Output {{ output.index }}</p>
-            <RouterLink
-              :to="{
-                name: 'address',
-                params: { chain: chain.id, address: output.address },
-              }"
-              class="break-all font-mono text-cyan-300 hover:text-cyan-200"
-            >
-              {{ output.address }}
-            </RouterLink>
+            <div class="flex flex-wrap items-center gap-2">
+              <HashLink
+                :value="output.address"
+                :chain-id="chain.id"
+                route-name="address"
+                param-name="address"
+                :truncate="false"
+              />
+              <CopyButton :value="output.address" label="Address" />
+            </div>
             <p class="font-mono text-white">{{ output.amount }}</p>
             <p class="text-xs uppercase tracking-wide text-gray-500">
               {{ output.spent ? "Spent" : "Unspent" }}
@@ -170,10 +220,9 @@ watch([chainId, txid], loadTransaction);
     </div>
   </section>
 
-  <section v-else class="rounded-2xl border border-red-900/70 bg-red-950/30 p-6">
-    <h1 class="text-2xl font-black text-red-200">Transaction unavailable</h1>
-    <p class="mt-2 text-red-100">
-      {{ error || "Unable to load this transaction." }}
-    </p>
-  </section>
+  <ErrorState
+    v-else
+    title="Transaction unavailable"
+    :message="error || 'Unable to load this transaction.'"
+  />
 </template>
