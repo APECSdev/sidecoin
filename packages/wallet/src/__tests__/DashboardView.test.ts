@@ -228,6 +228,7 @@ describe("DashboardView.vue", () => {
 
   it("should render the Coin News preview on first landing", async () => {
     const wrapper = await mountDashboard();
+    expect(wrapper.find('[data-test="dashboard-summary-grid"]').exists()).toBe(true);
     expect(wrapper.text()).toContain("Coin News");
     expect(wrapper.text()).toContain("Broadcast News");
     expect(wrapper.text()).toContain("US Weekly");
@@ -338,7 +339,7 @@ describe("DashboardView.vue", () => {
 
     // 133700000 sats = 1.337 BTC.
     expect(wrapper.text()).toContain("1.337");
-    expect(wrapper.text()).toContain("BTC");
+    expect(wrapper.text()).toContain("eCash");
   });
 
   it("should show a not-yet-indexed note when the address is unseen", async () => {

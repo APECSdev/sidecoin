@@ -274,7 +274,7 @@ function platformHref(platformId: string): string {
       <template v-else>
         <p class="mt-2 text-4xl font-bold text-ecash-400">
           {{ satsToBtc(l1Balance ? l1Balance.totalSats : 0n) }}
-          <span class="text-lg text-gray-500">BTC</span>
+          <span class="text-lg text-gray-500">eCash</span>
         </p>
         <p
           v-if="l1Balance && !l1Balance.seen"
@@ -306,24 +306,29 @@ function platformHref(platformId: string): string {
 
     <!-- Loaded state -->
     <div v-else class="space-y-6">
-      <!-- Aggregate platform activity card -->
-      <div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-        <p class="text-sm text-gray-400">Platform Activity</p>
-        <p class="mt-2 text-4xl font-bold text-ecash-400">
-          {{ formatSats(totalSats) }}
-          <span class="text-lg text-gray-500">eCash</span>
-        </p>
-        <p class="mt-2 text-sm text-gray-500">
-          {{ totalDeposits }} {{ eventCountLabel }} across {{ rows.length }} {{ platformCountLabel }}
-        </p>
-        <p class="mt-1 max-w-2xl text-xs text-gray-600">
-          Track balances, deposits, and platform activity across the
-          Drivechains Financial Hub.
-        </p>
-      </div>
+      <!-- Dashboard summary and Coin News preview -->
+      <div
+        class="grid gap-6 xl:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)] xl:items-start"
+        data-test="dashboard-summary-grid"
+      >
+        <!-- Aggregate platform activity card -->
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+          <p class="text-sm text-gray-400">Platform Activity</p>
+          <p class="mt-2 text-4xl font-bold text-ecash-400">
+            {{ formatSats(totalSats) }}
+            <span class="text-lg text-gray-500">eCash</span>
+          </p>
+          <p class="mt-2 text-sm text-gray-500">
+            {{ totalDeposits }} {{ eventCountLabel }} across {{ rows.length }} {{ platformCountLabel }}
+          </p>
+          <p class="mt-1 max-w-2xl text-xs text-gray-600">
+            Track balances, deposits, and platform activity across the
+            Drivechains Financial Hub.
+          </p>
+        </div>
 
-      <!-- Coin News preview -->
-      <CoinNewsPreview />
+        <CoinNewsPreview />
+      </div>
 
       <!-- Per-platform breakdown -->
       <section>
