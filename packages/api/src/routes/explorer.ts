@@ -43,6 +43,16 @@ function num(r: JsonObject, key: string): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
 }
 
+function numberLike(r: JsonObject, key: string): number | null {
+  const v = r[key];
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim() !== "") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
 function bool(r: JsonObject, key: string): boolean | null {
   const v = r[key];
   return typeof v === "boolean" ? v : null;
@@ -165,7 +175,7 @@ function normalizeBlockDetail(
     version: num(r, "version"),
     nonce: num(r, "nonce"),
     bits: str(r, "bits"),
-    difficulty: str(r, "difficulty"),
+    difficulty: numberLike(r, "difficulty"),
     txids,
   };
 }
@@ -188,7 +198,7 @@ function normalizeTransactionSummary(
     timestamp: num(r, "timestamp"),
     totalOutputSats: decimalStringOrNull(r, "total_output_sats"),
     feeSats: decimalStringOrNull(r, "fee_sats"),
-    feeRate: str(r, "fee_rate"),
+    feeRate: numberLike(r, "fee_rate"),
     size: num(r, "size"),
     vsize: num(r, "vsize"),
     weight: num(r, "weight"),

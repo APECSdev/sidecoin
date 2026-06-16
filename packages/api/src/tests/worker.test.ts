@@ -393,3 +393,77 @@ describe("chain explorer endpoints", () => {
     });
   });
 });
+
+describe("chain explorer numeric metadata", () => {
+  it("preserves numeric L1 transaction feeRate", async () => {
+    const txid = "f5f1c645c942909161604d3046ffb39a88e1dd740c884161b87b28f23ef7c82a";
+    const f = upstream({
+      [`/v1/chains/signet/transactions/${txid}`]: {
+        status: 200,
+        body: {
+          chain_id: "signet",
+          txid,
+          status: "confirmed",
+          coinbase: false,
+          block_height: 1061,
+          block_hash: "00000001c45b142dcf3ff0c0b44560e1dd5c9a4cd083034677624ce7a8034059",
+          confirmations: 10,
+          timestamp: 1781622601,
+          size: 222,
+          vsize: 141,
+          weight: 561,
+          version: 2,
+          locktime: 1060,
+          total_output_sats: "710659222",
+          fee_sats: "3018",
+          fee_rate: 21.4,
+          inputs: [],
+          outputs: [],
+        },
+      },
+    });
+
+    await withFetch(f, async () => {
+      const res = await worker.fetch(
+        req(`/v1/chains/l1/transactions/${txid}`),
+        ENV,
+      );
+      expect(res.status).toBe(200);
+      const body = await readJson(res);
+      expect(body.transaction.feeRate).toBe(21.4);
+    });
+  });
+
+  it("preserves numeric L1 block difficulty", async () => {
+    const f = upstream({
+      "/v1/chains/signet/blocks/1061": {
+        status: 200,
+        body: {
+          chain_id: "signet",
+          height: 1061,
+          hash: "00000001c45b142dcf3ff0c0b44560e1dd5c9a4cd083034677624ce7a8034059",
+          previous_hash: "0000029c24574913673f8d9f9c2ebd230ecc993e1120aeb2e2bfc7774ce8bec2",
+          next_hash: "000003402583b574f357bffb5a78043a58ff4bdb5a3b937246cb05ac7e6073fa",
+          timestamp: 1781622601,
+          confirmations: 10,
+          merkle_root: "6a4ca33e9ccd17090915b5d6ea8174adf84d0a9faf1d453215b34e76dc762fe5",
+          transaction_count: 48,
+          size: 12737,
+          weight: 31940,
+          version: 536870912,
+          nonce: 2796412,
+          bits: "1e0377ae",
+          difficulty: 0.001126515290698186,
+          transactions: [],
+        },
+      },
+    });
+
+    await withFetch(f, async () => {
+      const res = await worker.fetch(req("/v1/chains/l1/blocks/1061"), ENV);
+      expect(res.status).toBe(200);
+      const body = await readJson(res);
+      expect(body.block.difficulty).toBe(0.001126515290698186);
+    });
+  });
+});
