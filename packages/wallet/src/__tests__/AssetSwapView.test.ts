@@ -12,41 +12,39 @@ describe("AssetSwapView.vue", () => {
     expect(wrapper.text()).toContain("Preview mode");
   });
 
-  it("explains that live swaps require SupaQt backend support", () => {
+  it("renders marketing-friendly Signet swap copy", () => {
     const wrapper = mount(AssetSwapView);
-    expect(wrapper.text()).toContain("Backend integration pending");
-    expect(wrapper.text()).toContain("waiting on SupaQt swap backend support");
-    expect(wrapper.text()).toContain("Live swap requirements");
+    expect(wrapper.text()).toContain("Swap between eCash and Drivechain assets on Signet.");
+    expect(wrapper.text()).toContain("Signet liquidity preview");
+    expect(wrapper.text()).toContain("Drivechain Routing");
   });
 
-  it("renders standard DEX-style swap fields without enabling execution", () => {
+  it("renders standard DEX-style swap fields", () => {
     const wrapper = mount(AssetSwapView);
     expect(wrapper.text()).toContain("From");
     expect(wrapper.text()).toContain("To");
     expect(wrapper.text()).toContain("Route");
     expect(wrapper.text()).toContain("Slippage tolerance");
-    expect(wrapper.text()).toContain("Network fee");
-    expect(wrapper.text()).toContain("Requires live quote API");
+    expect(wrapper.text()).toContain("Estimated fee");
+    expect(wrapper.text()).toContain("Settlement path");
   });
 
-  it("shows the disabled preview-only action", () => {
+  it("renders a polished preview quote action", () => {
     const wrapper = mount(AssetSwapView);
-    const button = wrapper
-      .findAll("button")
-      .find((candidate) => candidate.text() === "Swaps are preview-only");
-
-    expect(button?.exists()).toBe(true);
-    expect(button?.attributes("disabled")).toBeDefined();
-    expect(wrapper.text()).not.toContain("Review swap");
-    expect(wrapper.text()).not.toContain("Execute swap");
-    expect(wrapper.text()).not.toContain("Broadcast");
+    expect(wrapper.text()).toContain("Preview quote");
+    expect(wrapper.text()).toContain("Route Market");
+    expect(wrapper.text()).toContain("Swap Flow");
   });
 
-  it("renders planned safety warnings", () => {
+  it("does not render backend warning copy in the screenshot UI", () => {
     const wrapper = mount(AssetSwapView);
-    expect(wrapper.text()).toContain("Swap safety preview");
-    expect(wrapper.text()).toContain("Quotes can expire before signing.");
-    expect(wrapper.text()).toContain("Fees and route availability can change.");
-    expect(wrapper.text()).toContain("Settlement may take multiple confirmations.");
+    expect(wrapper.text()).not.toContain("Backend integration pending");
+    expect(wrapper.text()).not.toContain("SupaQt");
+    expect(wrapper.text()).not.toContain("Live swap requirements");
+    expect(wrapper.text()).not.toContain("Swap safety preview");
+    expect(wrapper.text()).not.toContain("does not sign");
+    expect(wrapper.text()).not.toContain("broadcast");
+    expect(wrapper.text()).not.toContain("Requires live quote API");
+    expect(wrapper.text()).not.toContain("Swaps are preview-only");
   });
 });
