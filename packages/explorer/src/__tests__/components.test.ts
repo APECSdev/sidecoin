@@ -141,3 +141,48 @@ describe("chain dashboard labels", () => {
     vi.doUnmock("../api");
   });
 });
+
+describe("address live utxo fallback", () => {
+  it("explains when live UTXO rows are not shown yet", async () => {
+    vi.resetModules();
+
+    vi.doMock("../api", () => ({
+      getAddress: vi.fn(async () => ({
+        chainId: "l1",
+        address: "tb1qtestaddress0000",
+        balance: "1.00000000 BTC",
+        totalReceived: "1.00000000 BTC",
+        totalSent: "0.00000000 BTC",
+        transactionCount: 1,
+        utxoCount: 1,
+        utxos: [],
+        transactions: [],
+      })),
+    }));
+
+    const { default: AddressView } = await import("../views/AddressView.vue");
+
+    const router = createRouter({
+      history: createWebHistory(),
+      routes,
+    });
+
+    router.push("/l1/address/tb1qtestaddress0000");
+    await router.isReady();
+
+    const wrapper = mount(AddressView, {
+      global: {
+        plugins: [router],
+      },
+    });
+
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain("UTXO details");
+    });
+
+    expect(wrapper.text()).toContain("Address balance and transaction history are live");
+    expect(wrapper.text()).toContain("not shown yet for this indexed chain");
+
+    vi.doUnmock("../api");
+  });
+});

@@ -29,6 +29,11 @@ const addressParam = computed(() => {
 });
 
 const chain = computed(() => getExplorerChain(chainId.value));
+const hasUtxos = computed(() => (address.value?.utxos.length ?? 0) > 0);
+const isLiveChain = computed(() =>
+  ["l1", "bitnames", "thunder"].includes(chainId.value),
+);
+
 const address = ref<ExplorerAddressDetail | null>(null);
 const loading = ref(true);
 const error = ref("");
@@ -104,7 +109,10 @@ watch([chainId, addressParam], loadAddress);
       </div>
     </div>
 
-    <div class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/70">
+    <div
+      v-if="hasUtxos"
+      class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/70"
+    >
       <div class="border-b border-gray-800 px-4 py-3">
         <h2 class="font-black text-white">UTXOs</h2>
       </div>
@@ -151,6 +159,17 @@ watch([chainId, addressParam], loadAddress);
           </tbody>
         </table>
       </div>
+    </div>
+
+    <div
+      v-else-if="isLiveChain"
+      class="rounded-2xl border border-gray-800 bg-gray-900/70 p-6"
+    >
+      <h2 class="font-black text-white">UTXO details</h2>
+      <p class="mt-2 text-sm leading-6 text-gray-400">
+        Address balance and transaction history are live. Detailed UTXO rows are
+        not shown yet for this indexed chain.
+      </p>
     </div>
 
     <div class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-900/70">
