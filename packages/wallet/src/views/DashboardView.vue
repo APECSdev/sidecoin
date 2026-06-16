@@ -206,20 +206,13 @@ function platformHref(platformId: string): string {
 
 <template>
   <div>
-    <div class="mb-6 flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div class="mb-6">
       <div>
         <p class="text-xs uppercase tracking-widest text-ecash-500">
           Drivechains Financial Hub
         </p>
         <h2 class="mt-1 text-3xl font-black">Dashboard</h2>
       </div>
-
-      <a
-        href="#/pro"
-        class="inline-flex w-fit rounded-xl bg-amber-500 px-5 py-3 text-sm font-black text-gray-950 transition-colors hover:bg-amber-400"
-      >
-        View PRO benefits
-      </a>
     </div>
 
     <section
@@ -234,8 +227,8 @@ function platformHref(platformId: string): string {
           </span>
           <h3 class="mt-3 text-xl font-black text-white">Sample financial hub activity is enabled</h3>
           <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-300">
-            You are viewing sample balances, platform activity, and PRO previews
-            across the Drivechains Financial Hub.
+            You are viewing sample balances and platform activity across the
+            Drivechains Financial Hub.
           </p>
         </div>
 
@@ -245,12 +238,6 @@ function platformHref(platformId: string): string {
             class="rounded-lg border border-ecash-700 px-4 py-2 text-sm font-bold text-ecash-400 hover:bg-ecash-900/40"
           >
             Manage demo
-          </a>
-          <a
-            href="#/pro"
-            class="rounded-lg bg-amber-500 px-4 py-2 text-sm font-black text-gray-950 hover:bg-amber-400"
-          >
-            View PRO
           </a>
         </div>
       </div>
@@ -333,54 +320,6 @@ function platformHref(platformId: string): string {
           Drivechains Financial Hub.
         </p>
       </div>
-
-      <!-- Historical analysis PRO CTA -->
-      <section class="rounded-2xl border border-amber-500/40 bg-gradient-to-br from-amber-950/30 via-gray-900 to-gray-950 p-6">
-        <div class="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div>
-            <span class="inline-flex rounded-full bg-amber-500 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-gray-950">
-              PRO
-            </span>
-            <h3 class="mt-4 text-2xl font-black text-white">
-              Unlock Historical Analysis with Sidecoin PRO
-            </h3>
-            <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-300">
-              Track balances, platform activity, deposits, and performance
-              across the full Drivechains Financial Hub.
-            </p>
-          </div>
-
-          <div class="flex flex-wrap gap-3">
-            <a
-              href="#/pro"
-              class="rounded-lg bg-amber-500 px-5 py-3 text-sm font-black text-gray-950 transition-colors hover:bg-amber-400"
-            >
-              Upgrade to PRO
-            </a>
-            <a
-              href="#/pro"
-              class="rounded-lg border border-gray-700 bg-gray-900 px-5 py-3 text-sm font-semibold text-gray-200 transition-colors hover:border-amber-500 hover:text-white"
-            >
-              View benefits
-            </a>
-          </div>
-        </div>
-
-        <div class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <div class="rounded-xl border border-gray-800 bg-gray-950/70 p-3 text-sm text-gray-300">
-            <span class="mr-2 text-amber-400">✓</span>Historical portfolio analysis
-          </div>
-          <div class="rounded-xl border border-gray-800 bg-gray-950/70 p-3 text-sm text-gray-300">
-            <span class="mr-2 text-amber-400">✓</span>Full platform activity
-          </div>
-          <div class="rounded-xl border border-gray-800 bg-gray-950/70 p-3 text-sm text-gray-300">
-            <span class="mr-2 text-amber-400">✓</span>Advanced wallet insights
-          </div>
-          <div class="rounded-xl border border-gray-800 bg-gray-950/70 p-3 text-sm text-gray-300">
-            <span class="mr-2 text-amber-400">✓</span>Early access analytics
-          </div>
-        </div>
-      </section>
 
       <!-- Per-platform breakdown -->
       <section>

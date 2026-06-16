@@ -94,7 +94,7 @@ describe("App.vue", () => {
     expect(wrapper.classes()).toContain("theme-cypherpunk");
   });
 
-  it("should render navigation links for all 9 wallet routes", async () => {
+  it("should render navigation links for all 8 primary wallet routes", async () => {
     const wrapper = await mountApp();
     const hrefs = wrapper.findAll("a").map((l) => l.attributes("href"));
 
@@ -105,11 +105,11 @@ describe("App.vue", () => {
     expect(hrefs).toContain("#/platforms");
     expect(hrefs).toContain("#/hardware");
     expect(hrefs).toContain("#/toolbox");
-    expect(hrefs).toContain("#/pro");
     expect(hrefs).toContain("#/settings");
+    expect(hrefs).not.toContain("#/pro");
   });
 
-  it("should render navigation link text for all routes", async () => {
+  it("should render navigation link text for all primary routes", async () => {
     const wrapper = await mountApp();
     const nav = wrapper.find("nav");
 
@@ -120,8 +120,8 @@ describe("App.vue", () => {
     expect(nav.text()).toContain("Platforms");
     expect(nav.text()).toContain("Hardware");
     expect(nav.text()).toContain("Tools");
-    expect(nav.text()).toContain("PRO");
     expect(nav.text()).toContain("Settings");
+    expect(nav.text()).not.toContain("PRO");
   });
 
   it("should have a nav element", async () => {

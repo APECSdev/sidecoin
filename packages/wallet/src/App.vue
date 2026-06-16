@@ -20,7 +20,6 @@ const links = [
   { to: "/platforms", label: "Platforms" },
   { to: "/hardware", label: "Hardware" },
   { to: "/toolbox", label: "Tools" },
-  { to: "/pro", label: "PRO" },
   { to: "/settings", label: "Settings" },
 ];
 

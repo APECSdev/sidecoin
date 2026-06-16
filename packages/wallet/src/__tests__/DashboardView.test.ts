@@ -217,11 +217,13 @@ describe("DashboardView.vue", () => {
     expect(wrapper.text()).toContain("Unlock analytics");
   });
 
-  it("should render the Historical Analysis PRO CTA", async () => {
+  it("should not render the broad historical analysis upsell on first landing", async () => {
     const wrapper = await mountDashboard();
-    expect(wrapper.text()).toContain("Unlock Historical Analysis with Sidecoin PRO");
-    expect(wrapper.text()).toContain("Historical portfolio analysis");
-    expect(wrapper.text()).toContain("Advanced wallet insights");
+    expect(wrapper.text()).not.toContain("Unlock Historical Analysis with Sidecoin PRO");
+    expect(wrapper.text()).not.toContain("Historical portfolio analysis");
+    expect(wrapper.text()).not.toContain("Advanced wallet insights");
+    expect(wrapper.text()).not.toContain("Upgrade to PRO");
+    expect(wrapper.text()).not.toContain("View PRO benefits");
   });
 
   it("should render the fork countdown banner", async () => {

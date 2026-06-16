@@ -16,14 +16,9 @@ const pro = isProPlan(CURRENT_ENTITLEMENTS);
     <div v-else>
       <p class="font-bold text-white">Sidecoin Basic</p>
       <p class="mt-1 text-gray-500">
-        Upgrade for all platforms, historical analysis, hardware signing, and early access.
+        Core wallet tools are ready. Advanced platform workflows unlock from
+        deeper product areas.
       </p>
-      <router-link
-        to="/pro"
-        class="mt-3 inline-flex rounded bg-amber-500 px-3 py-2 font-black text-gray-950 hover:bg-amber-400"
-      >
-        Upgrade to PRO
-      </router-link>
     </div>
   </div>
 </template>
