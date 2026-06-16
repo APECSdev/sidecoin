@@ -139,7 +139,7 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("Contact profile preview");
   });
 
-  it("can open the BitNames Messages preview from Contacts", async () => {
+  it("can open the BitMessages preview from Contacts", async () => {
     const wrapper = await mountPlatform("/platforms/bitnames");
     const contacts = wrapper.findAll("button").find((b) => b.text() === "Contacts");
     expect(contacts).toBeDefined();
@@ -151,28 +151,44 @@ describe("PlatformDetailView.vue", () => {
 
     await message!.trigger("click");
 
-    expect(wrapper.text()).toContain("BitNames Messages");
-    expect(wrapper.text()).toContain("Demo conversation");
-    expect(wrapper.text()).toContain("No network calls, signing, encryption claims, or message");
-    expect(wrapper.text()).toContain("Send disabled");
+    expect(wrapper.text()).toContain("BitMessages");
+    expect(wrapper.text()).toContain("Coin News");
+    expect(wrapper.text()).toContain("Broadcast News");
+    expect(wrapper.text()).toContain("sidecoin.bit");
+    expect(wrapper.text()).toContain("Posting from the new eCash.com wallet");
   });
 
-  it("can switch directly to the BitNames Messages tab", async () => {
+  it("can switch directly to the BitMessages tab", async () => {
     const wrapper = await mountPlatform("/platforms/bitnames");
     const messages = wrapper.findAll("button").find((b) => b.text() === "Messages");
     expect(messages).toBeDefined();
 
     await messages!.trigger("click");
 
-    expect(wrapper.text()).toContain("BitNames Messages");
-    expect(wrapper.text()).toContain("Chatting as");
-    expect(wrapper.text()).toContain("sidecoin.bit");
-    expect(wrapper.text()).toContain("Preview only");
-    const textarea = wrapper.find("textarea");
-    expect(textarea.exists()).toBe(true);
-    expect(textarea.attributes("placeholder")).toBe(
-      "Messaging preview disabled until BitNames messaging is connected.",
-    );
+    expect(wrapper.text()).toContain("BitMessages");
+    expect(wrapper.text()).toContain("Preview mode");
+    expect(wrapper.text()).toContain("US Weekly");
+    expect(wrapper.text()).toContain("Japan Weekly");
+    expect(wrapper.text()).toContain("Date");
+    expect(wrapper.text()).toContain("Fee");
+    expect(wrapper.text()).toContain("Title");
+    expect(wrapper.text()).toContain("私はサトシです。このフォークを支持します。");
+  });
+
+  it("does not render backend warning copy in the BitMessages screenshot UI", async () => {
+    const wrapper = await mountPlatform("/platforms/bitnames");
+    const messages = wrapper.findAll("button").find((b) => b.text() === "Messages");
+    expect(messages).toBeDefined();
+
+    await messages!.trigger("click");
+
+    expect(wrapper.text()).not.toContain("display-only");
+    expect(wrapper.text()).not.toContain("no messages leave your wallet");
+    expect(wrapper.text()).not.toContain("live messaging is connected");
+    expect(wrapper.text()).not.toContain("Messaging preview disabled");
+    expect(wrapper.text()).not.toContain("No network calls");
+    expect(wrapper.text()).not.toContain("Send disabled");
+    expect(wrapper.text()).not.toContain("SupaQt");
   });
 
   it("shows a not-found state for unknown platforms", async () => {

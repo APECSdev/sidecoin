@@ -226,6 +226,16 @@ describe("DashboardView.vue", () => {
     expect(wrapper.text()).not.toContain("View PRO benefits");
   });
 
+  it("should render the Coin News preview on first landing", async () => {
+    const wrapper = await mountDashboard();
+    expect(wrapper.text()).toContain("Coin News");
+    expect(wrapper.text()).toContain("Broadcast News");
+    expect(wrapper.text()).toContain("US Weekly");
+    expect(wrapper.text()).toContain("Japan Weekly");
+    expect(wrapper.text()).toContain("Posting from the new eCash.com wallet");
+    expect(wrapper.text()).toContain("私はサトシです。このフォークを支持します。");
+  });
+
   it("should render the fork countdown banner", async () => {
     const wrapper = await mountDashboard();
     expect(wrapper.text()).toContain("eCash Hard Fork");

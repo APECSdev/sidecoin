@@ -15,6 +15,7 @@ import {
 } from "../demo";
 import { canAccessPlatform, isProPlatform } from "../entitlements";
 import { getPlatformById } from "../data/platforms";
+import CoinNewsPreview from "../components/bitnames/CoinNewsPreview.vue";
 
 interface ChainRow {
   summary: SidechainSummary;
@@ -320,6 +321,9 @@ function platformHref(platformId: string): string {
           Drivechains Financial Hub.
         </p>
       </div>
+
+      <!-- Coin News preview -->
+      <CoinNewsPreview />
 
       <!-- Per-platform breakdown -->
       <section>
