@@ -244,92 +244,96 @@ function platformHref(platformId: string): string {
       </div>
     </section>
 
-    <!-- L1 wallet balance — always shown, independent of the platform inflow
-         fan-out below. -->
-    <div class="mb-6 rounded-2xl border border-gray-800 bg-gray-900 p-6">
-      <div class="flex flex-wrap items-center gap-3">
-        <p class="text-sm text-gray-400">L1 Wallet Balance</p>
-        <span class="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-semibold text-gray-400">
-          Signet
-        </span>
+    <!-- Dashboard summary and Coin News preview -->
+    <div
+      class="grid gap-6 xl:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)] xl:items-start"
+      data-test="dashboard-summary-grid"
+    >
+      <div class="space-y-6" data-test="dashboard-summary-values">
+        <!-- L1 wallet balance — always shown, independent of the platform inflow
+             fan-out below. -->
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+          <div class="flex flex-wrap items-center gap-3">
+            <p class="text-sm text-gray-400">L1 Wallet Balance</p>
+            <span class="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-semibold text-gray-400">
+              Signet
+            </span>
+          </div>
+
+          <div v-if="l1Loading" class="mt-2 text-gray-400">Loading balance…</div>
+
+          <div v-else-if="l1Error" class="mt-2 text-sm text-red-400">
+            <p>{{ l1Error }}</p>
+            <button
+              class="mt-2 rounded-lg bg-red-800/40 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-800/60"
+              @click="loadL1Balance"
+            >
+              Retry
+            </button>
+          </div>
+
+          <div v-else-if="!l1Address" class="mt-2 text-sm text-yellow-500">
+            Wallet setup required — your L1 balance appears once key setup is
+            complete.
+          </div>
+
+          <template v-else>
+            <p class="mt-2 text-4xl font-bold text-ecash-400">
+              {{ satsToBtc(l1Balance ? l1Balance.totalSats : 0n) }}
+              <span class="text-lg text-gray-500">eCash</span>
+            </p>
+            <p
+              v-if="l1Balance && !l1Balance.seen"
+              class="mt-2 text-xs text-yellow-600"
+            >
+              Address not yet seen on-chain. New deposits appear after they confirm
+              and are indexed.
+            </p>
+            <p v-else class="mt-2 break-all font-mono text-xs text-gray-600">
+              {{ l1Address }}
+            </p>
+          </template>
+        </div>
+
+        <!-- Loading state -->
+        <div v-if="loading" class="text-gray-400">Loading platform activity…</div>
+
+        <!-- Error state -->
+        <div v-else-if="error" class="rounded bg-red-900/30 p-4 text-red-400">
+          <p class="font-semibold">Error loading dashboard</p>
+          <p class="mt-1 text-sm">{{ error }}</p>
+          <button
+            class="mt-3 rounded-lg bg-red-800/40 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-800/60"
+            @click="load"
+          >
+            Retry
+          </button>
+        </div>
+
+        <template v-else>
+          <!-- Aggregate platform activity card -->
+          <div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+            <p class="text-sm text-gray-400">Platform Activity</p>
+            <p class="mt-2 text-4xl font-bold text-ecash-400">
+              {{ formatSats(totalSats) }}
+              <span class="text-lg text-gray-500">eCash</span>
+            </p>
+            <p class="mt-2 text-sm text-gray-500">
+              {{ totalDeposits }} {{ eventCountLabel }} across {{ rows.length }} {{ platformCountLabel }}
+            </p>
+            <p class="mt-1 max-w-2xl text-xs text-gray-600">
+              Track balances, deposits, and platform activity across the
+              Drivechains Financial Hub.
+            </p>
+          </div>
+        </template>
       </div>
 
-      <div v-if="l1Loading" class="mt-2 text-gray-400">Loading balance…</div>
-
-      <div v-else-if="l1Error" class="mt-2 text-sm text-red-400">
-        <p>{{ l1Error }}</p>
-        <button
-          class="mt-2 rounded-lg bg-red-800/40 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-800/60"
-          @click="loadL1Balance"
-        >
-          Retry
-        </button>
-      </div>
-
-      <div v-else-if="!l1Address" class="mt-2 text-sm text-yellow-500">
-        Wallet setup required — your L1 balance appears once key setup is
-        complete.
-      </div>
-
-      <template v-else>
-        <p class="mt-2 text-4xl font-bold text-ecash-400">
-          {{ satsToBtc(l1Balance ? l1Balance.totalSats : 0n) }}
-          <span class="text-lg text-gray-500">eCash</span>
-        </p>
-        <p
-          v-if="l1Balance && !l1Balance.seen"
-          class="mt-2 text-xs text-yellow-600"
-        >
-          Address not yet seen on-chain. New deposits appear after they confirm
-          and are indexed.
-        </p>
-        <p v-else class="mt-2 break-all font-mono text-xs text-gray-600">
-          {{ l1Address }}
-        </p>
-      </template>
-    </div>
-
-    <!-- Loading state -->
-    <div v-if="loading" class="text-gray-400">Loading platform activity…</div>
-
-    <!-- Error state -->
-    <div v-else-if="error" class="rounded bg-red-900/30 p-4 text-red-400">
-      <p class="font-semibold">Error loading dashboard</p>
-      <p class="mt-1 text-sm">{{ error }}</p>
-      <button
-        class="mt-3 rounded-lg bg-red-800/40 px-4 py-2 text-sm font-semibold text-red-200 hover:bg-red-800/60"
-        @click="load"
-      >
-        Retry
-      </button>
+      <CoinNewsPreview dashboard :show-japan-feed="false" />
     </div>
 
     <!-- Loaded state -->
-    <div v-else class="space-y-6">
-      <!-- Dashboard summary and Coin News preview -->
-      <div
-        class="grid gap-6 xl:grid-cols-[minmax(320px,0.85fr)_minmax(0,1.15fr)] xl:items-start"
-        data-test="dashboard-summary-grid"
-      >
-        <!-- Aggregate platform activity card -->
-        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
-          <p class="text-sm text-gray-400">Platform Activity</p>
-          <p class="mt-2 text-4xl font-bold text-ecash-400">
-            {{ formatSats(totalSats) }}
-            <span class="text-lg text-gray-500">eCash</span>
-          </p>
-          <p class="mt-2 text-sm text-gray-500">
-            {{ totalDeposits }} {{ eventCountLabel }} across {{ rows.length }} {{ platformCountLabel }}
-          </p>
-          <p class="mt-1 max-w-2xl text-xs text-gray-600">
-            Track balances, deposits, and platform activity across the
-            Drivechains Financial Hub.
-          </p>
-        </div>
-
-        <CoinNewsPreview />
-      </div>
-
+    <div v-if="!loading && !error" class="space-y-6">
       <!-- Per-platform breakdown -->
       <section>
         <div class="mb-4 flex items-center justify-between">

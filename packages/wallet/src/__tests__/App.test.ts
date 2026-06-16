@@ -106,7 +106,7 @@ describe("App.vue", () => {
     expect(hrefs).toContain("#/hardware");
     expect(hrefs).toContain("#/toolbox");
     expect(hrefs).toContain("#/settings");
-    expect(hrefs).not.toContain("#/pro");
+    expect(hrefs).toContain("#/pro");
   });
 
   it("should render navigation link text for all primary routes", async () => {
@@ -121,7 +121,7 @@ describe("App.vue", () => {
     expect(nav.text()).toContain("Hardware");
     expect(nav.text()).toContain("Tools");
     expect(nav.text()).toContain("Settings");
-    expect(nav.text()).not.toContain("PRO");
+    expect(nav.text()).toContain("Upgrade to PRO");
   });
 
   it("should have a nav element", async () => {

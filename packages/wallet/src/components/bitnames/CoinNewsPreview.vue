@@ -12,10 +12,12 @@ interface CoinNewsRow {
 
 const props = withDefaults(
   defineProps<{
+    dashboard?: boolean;
     showHero?: boolean;
     showJapanFeed?: boolean;
   }>(),
   {
+    dashboard: false,
     showHero: true,
     showJapanFeed: true,
   },
@@ -126,7 +128,10 @@ const japanWeeklyRows = computed(() => {
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[760px] text-left text-sm">
+        <table
+          class="text-left text-sm"
+          :class="props.dashboard ? 'w-full table-fixed' : 'w-full min-w-[760px]'"
+        >
           <thead class="bg-gray-950/80 text-xs uppercase tracking-widest text-gray-500">
             <tr>
               <th class="border-b border-gray-800 px-4 py-3">Date</th>
@@ -141,7 +146,12 @@ const japanWeeklyRows = computed(() => {
             >
               <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ row.date }}</td>
               <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ row.fee }}</td>
-              <td class="border-b border-gray-900 px-4 py-3 font-semibold text-white">{{ row.title }}</td>
+              <td
+                class="border-b border-gray-900 px-4 py-3 font-semibold text-white"
+                :class="props.dashboard ? 'whitespace-normal break-words' : ''"
+              >
+                {{ row.title }}
+              </td>
             </tr>
           </tbody>
         </table>
@@ -165,7 +175,10 @@ const japanWeeklyRows = computed(() => {
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[760px] text-left text-sm">
+        <table
+          class="text-left text-sm"
+          :class="props.dashboard ? 'w-full table-fixed' : 'w-full min-w-[760px]'"
+        >
           <thead class="bg-gray-950/80 text-xs uppercase tracking-widest text-gray-500">
             <tr>
               <th class="border-b border-gray-800 px-4 py-3">Date</th>
@@ -180,7 +193,12 @@ const japanWeeklyRows = computed(() => {
             >
               <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ row.date }}</td>
               <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ row.fee }}</td>
-              <td class="border-b border-gray-900 px-4 py-3 font-semibold text-white">{{ row.title }}</td>
+              <td
+                class="border-b border-gray-900 px-4 py-3 font-semibold text-white"
+                :class="props.dashboard ? 'whitespace-normal break-words' : ''"
+              >
+                {{ row.title }}
+              </td>
             </tr>
           </tbody>
         </table>

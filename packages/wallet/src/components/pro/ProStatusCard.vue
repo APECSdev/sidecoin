@@ -19,6 +19,12 @@ const pro = isProPlan(CURRENT_ENTITLEMENTS);
         Core wallet tools are ready. Advanced platform workflows unlock from
         deeper product areas.
       </p>
+      <router-link
+        to="/pro"
+        class="mt-3 inline-flex rounded border border-amber-500/60 px-3 py-2 font-bold text-amber-400 hover:bg-amber-500 hover:text-gray-950"
+      >
+        Upgrade to PRO
+      </router-link>
     </div>
   </div>
 </template>

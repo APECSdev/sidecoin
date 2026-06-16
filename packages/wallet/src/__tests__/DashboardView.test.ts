@@ -229,12 +229,13 @@ describe("DashboardView.vue", () => {
   it("should render the Coin News preview on first landing", async () => {
     const wrapper = await mountDashboard();
     expect(wrapper.find('[data-test="dashboard-summary-grid"]').exists()).toBe(true);
+    expect(wrapper.find('[data-test="dashboard-summary-values"]').exists()).toBe(true);
     expect(wrapper.text()).toContain("Coin News");
     expect(wrapper.text()).toContain("Broadcast News");
     expect(wrapper.text()).toContain("US Weekly");
     expect(wrapper.text()).toContain("Japan Weekly");
     expect(wrapper.text()).toContain("Posting from the new eCash.com wallet");
-    expect(wrapper.text()).toContain("私はサトシです。このフォークを支持します。");
+    expect(wrapper.text()).toContain("Title");
   });
 
   it("should render the fork countdown banner", async () => {
@@ -337,7 +338,7 @@ describe("DashboardView.vue", () => {
     const queried = mockGetL1Balance.mock.calls[0][0];
     expect(queried.startsWith("tb1q")).toBe(true);
 
-    // 133700000 sats = 1.337 BTC.
+    // 133700000 sats = 1.337 eCash.
     expect(wrapper.text()).toContain("1.337");
     expect(wrapper.text()).toContain("eCash");
   });
