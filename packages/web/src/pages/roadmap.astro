@@ -1,0 +1,311 @@
+---
+// packages/web/src/pages/roadmap.astro
+//
+// Public Sidecoin roadmap page.
+// Served from: sidecoin.app/roadmap
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const completed = [
+  {
+    title: "Monorepo foundation",
+    body: "Sidecoin now ships as a coordinated workspace across desktop, wallet, mobile, web, explorer, shared packages, API, and API client code.",
+  },
+  {
+    title: "Drivechain registry and launch positioning",
+    body: "The web and wallet surfaces describe the active Sidecoin sidechains, their sparse BIP-300 slots, and the broader Drivechains Financial Hub.",
+  },
+  {
+    title: "Wallet UX foundation",
+    body: "Core wallet flows now cover onboarding, receive, send, platform navigation, demo mode, PRO surfaces, and launch-ready screenshots.",
+  },
+  {
+    title: "Public API adapter",
+    body: "The Sidecoin API normalizes SupaQt read data into a stable, camelCase surface for wallet, explorer, and future app clients.",
+  },
+  {
+    title: "Explorer deployment",
+    body: "The standalone explorer app is deployed at explorer.sidecoin.app with CI, production deployment, and release workflow coverage.",
+  },
+  {
+    title: "L1, BitNames, and Thunder explorer reads",
+    body: "The API now exposes chain explorer read endpoints for blocks, transactions, address overview, and address history across L1, BitNames, and Thunder.",
+  },
+];
+
+const present = [
+  {
+    title: "API-backed explorer",
+    body: "Wire the public Explorer UI to the new chain read endpoints so users can browse live L1, BitNames, and Thunder blocks and transactions.",
+    status: "In progress",
+  },
+  {
+    title: "Wallet polish and launch QA",
+    body: "Stabilize Demo Mode, theme presentation, send/receive review flows, release checklists, and preview-surface documentation.",
+    status: "In progress",
+  },
+  {
+    title: "Sidecoin PRO and Founding Members",
+    body: "Continue refining the public PRO conversion path, crypto checkout flow, founder leaderboard, and Alpha Circle positioning.",
+    status: "Live + iterating",
+  },
+  {
+    title: "Deployment consistency",
+    body: "Keep master-push and tagged-release deployments aligned across web, wallet, explorer, and API properties.",
+    status: "Ongoing",
+  },
+];
+
+const future = [
+  {
+    title: "Asset swapping",
+    body: "Build simple, legible swap flows for moving value between L1 and supported Drivechain platforms, starting with safety-first quoting, review, and execution states.",
+    horizon: "Next",
+  },
+  {
+    title: "On-chain messaging with OP_RETURN",
+    body: "Explore lightweight public message posting using OP_RETURN metadata. The UX must make clear that on-chain messages are public, permanent, and should never contain secrets.",
+    horizon: "Next",
+  },
+  {
+    title: "BitNames identity workflows",
+    body: "Expand BitNames from explorer visibility into wallet-native identity, name reservation, profile, contact, and message discovery workflows.",
+    horizon: "Next",
+  },
+  {
+    title: "Thunder payments and liquidity UX",
+    body: "Turn Thunder preview surfaces into clearer payment, channel, liquidity, and activity workflows as backend support matures.",
+    horizon: "Next",
+  },
+  {
+    title: "Address intelligence",
+    body: "Add richer address pages with transaction history, UTXO views, totals, confirmations, and cross-platform context for L1 and sidechains.",
+    horizon: "Near future",
+  },
+  {
+    title: "More sidechain integrations",
+    body: "Extend real API-backed support beyond L1, BitNames, and Thunder as BitAssets, zSide, CoinShift, Photon, and Truthcoin indexing becomes available.",
+    horizon: "Near future",
+  },
+  {
+    title: "Hardware signing and advanced safety",
+    body: "Keep improving higher-assurance transaction review, signing, coin selection, and coinbase maturity protections.",
+    horizon: "Near future",
+  },
+  {
+    title: "Developer and protocol tooling",
+    body: "Publish clearer docs, OpenAPI examples, SDK helpers, and integration guides for builders using Sidecoin infrastructure.",
+    horizon: "Future",
+  },
+];
+
+const principles = [
+  "Open-source first",
+  "BigInt-safe monetary values",
+  "Clear separation between live features and preview surfaces",
+  "Public API stability over backend churn",
+  "No hidden custody assumptions",
+  "Safety-first UX for signing, swaps, and on-chain data",
+];
+---
+
+<BaseLayout
+  title="Sidecoin Roadmap — Past, Present, and Future"
+  description="Follow the Sidecoin roadmap: completed foundations, current work, and future plans for Drivechain explorer data, asset swapping, BitNames, Thunder, and OP_RETURN messaging."
+>
+  <main>
+    <!-- Hero -->
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-b from-ecash-950/25 via-gray-950 to-gray-950"></div>
+
+      <div class="relative mx-auto max-w-5xl px-6 pb-16 pt-24 text-center md:pt-32">
+        <p class="text-sm font-black uppercase tracking-[0.3em] text-ecash-400">
+          Public roadmap
+        </p>
+        <h1 class="mt-4 text-5xl font-black tracking-tight md:text-7xl">
+          Past, present, and
+          <span class="bg-gradient-to-r from-ecash-300 via-ecash-400 to-amber-300 bg-clip-text text-transparent">
+            future
+          </span>
+        </h1>
+        <p class="mx-auto mt-6 max-w-3xl text-lg leading-8 text-gray-400">
+          Sidecoin is building the Drivechains Financial Hub: wallet, explorer,
+          API, and platform workflows for L1, BitNames, Thunder, and the next
+          wave of Bitcoin sidechain applications.
+        </p>
+
+        <div class="mt-10 flex flex-wrap justify-center gap-4">
+          <a
+            href="https://explorer.sidecoin.app/"
+            class="rounded-xl bg-ecash-600 px-8 py-4 text-sm font-black text-white no-underline shadow-lg shadow-ecash-600/20 transition-colors hover:bg-ecash-500 hover:no-underline"
+          >
+            Open Explorer
+          </a>
+          <a
+            href="https://wallet.sidecoin.app/"
+            class="rounded-xl border border-gray-700 bg-gray-900 px-8 py-4 text-sm font-bold text-gray-200 no-underline transition-colors hover:border-ecash-500 hover:text-white hover:no-underline"
+          >
+            Launch Wallet
+          </a>
+          <a
+            href="https://github.com/APECSdev/sidecoin"
+            class="rounded-xl border border-gray-700 bg-gray-900 px-8 py-4 text-sm font-bold text-gray-200 no-underline transition-colors hover:border-gray-600 hover:text-white hover:no-underline"
+            target="_blank"
+            rel="noopener"
+          >
+            View Source
+          </a>
+        </div>
+
+        <p class="mx-auto mt-8 max-w-2xl text-sm leading-6 text-gray-500">
+          This roadmap is a living document. Priorities may change as the fork,
+          indexing infrastructure, wallet safety requirements, and user feedback
+          evolve.
+        </p>
+      </div>
+    </section>
+
+    <!-- Principles -->
+    <section class="mx-auto max-w-5xl px-6 pb-10">
+      <div class="rounded-2xl border border-gray-800 bg-gray-900/60 p-6">
+        <h2 class="text-xl font-black text-white">Guiding principles</h2>
+        <div class="mt-5 grid gap-3 md:grid-cols-3">
+          {principles.map((item) => (
+            <div class="rounded-xl border border-gray-800 bg-gray-950/60 px-4 py-3 text-sm font-semibold text-gray-300">
+              <span class="text-ecash-400">✓</span> {item}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Past -->
+    <section class="mx-auto max-w-5xl px-6 py-14">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-sm font-black uppercase tracking-[0.3em] text-gray-500">
+            Past
+          </p>
+          <h2 class="mt-3 text-3xl font-black md:text-4xl">
+            Completed foundations
+          </h2>
+        </div>
+        <p class="max-w-xl text-sm leading-6 text-gray-400">
+          High-level milestones already shipped or established. Some early
+          history is summarized for clarity rather than shown as a strict
+          date-by-date changelog.
+        </p>
+      </div>
+
+      <div class="mt-10 grid gap-4 md:grid-cols-2">
+        {completed.map((item) => (
+          <article class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6">
+            <div class="mb-4 inline-flex rounded-full bg-ecash-950/50 px-3 py-1 text-xs font-black uppercase tracking-widest text-ecash-400">
+              Shipped
+            </div>
+            <h3 class="text-lg font-black text-white">{item.title}</h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">{item.body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <!-- Present -->
+    <section class="mx-auto max-w-5xl px-6 py-14">
+      <div class="rounded-3xl border border-ecash-500/25 bg-ecash-950/10 p-6 md:p-8">
+        <p class="text-sm font-black uppercase tracking-[0.3em] text-ecash-400">
+          Present
+        </p>
+        <h2 class="mt-3 text-3xl font-black md:text-4xl">
+          What we are building now
+        </h2>
+        <p class="mt-4 max-w-3xl text-sm leading-6 text-gray-400">
+          Current work is focused on turning the newly deployed API and explorer
+          infrastructure into a live, useful browsing experience for users while
+          keeping wallet launch quality high.
+        </p>
+
+        <div class="mt-10 grid gap-4 md:grid-cols-2">
+          {present.map((item) => (
+            <article class="rounded-2xl border border-gray-800 bg-gray-950/60 p-6">
+              <div class="mb-4 inline-flex rounded-full border border-ecash-500/30 bg-ecash-950/50 px-3 py-1 text-xs font-black uppercase tracking-widest text-ecash-300">
+                {item.status}
+              </div>
+              <h3 class="text-lg font-black text-white">{item.title}</h3>
+              <p class="mt-3 text-sm leading-6 text-gray-400">{item.body}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- Future -->
+    <section class="mx-auto max-w-5xl px-6 py-14">
+      <div class="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p class="text-sm font-black uppercase tracking-[0.3em] text-amber-400">
+            Future
+          </p>
+          <h2 class="mt-3 text-3xl font-black md:text-4xl">
+            Where Sidecoin is going
+          </h2>
+        </div>
+        <p class="max-w-xl text-sm leading-6 text-gray-400">
+          The next phase expands from viewing and holding into using sidechains:
+          swaps, identity, messages, liquidity, analytics, and developer tools.
+        </p>
+      </div>
+
+      <div class="mt-10 grid gap-4 md:grid-cols-2">
+        {future.map((item) => (
+          <article class="rounded-2xl border border-gray-800 bg-gray-900/50 p-6 transition-colors hover:border-amber-500/40">
+            <div class="mb-4 inline-flex rounded-full border border-amber-500/25 bg-amber-950/20 px-3 py-1 text-xs font-black uppercase tracking-widest text-amber-300">
+              {item.horizon}
+            </div>
+            <h3 class="text-lg font-black text-white">{item.title}</h3>
+            <p class="mt-3 text-sm leading-6 text-gray-400">{item.body}</p>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="mx-auto max-w-5xl px-6 pb-24 pt-10">
+      <div class="rounded-3xl border border-gray-800 bg-gradient-to-br from-gray-900 to-gray-950 p-8 text-center">
+        <p class="text-sm font-black uppercase tracking-[0.3em] text-gray-500">
+          Build with us
+        </p>
+        <h2 class="mt-3 text-3xl font-black md:text-4xl">
+          Follow the roadmap in public
+        </h2>
+        <p class="mx-auto mt-4 max-w-2xl text-sm leading-6 text-gray-400">
+          Sidecoin is open-source infrastructure. Watch the repository, test
+          the wallet and explorer, and help shape the next Drivechain apps.
+        </p>
+
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+          <a
+            href="https://github.com/APECSdev/sidecoin"
+            class="rounded-xl bg-ecash-600 px-7 py-3 text-sm font-black text-white no-underline transition-colors hover:bg-ecash-500 hover:no-underline"
+            target="_blank"
+            rel="noopener"
+          >
+            GitHub
+          </a>
+          <a
+            href="/chains"
+            class="rounded-xl border border-gray-700 bg-gray-900 px-7 py-3 text-sm font-bold text-gray-200 no-underline transition-colors hover:border-ecash-500 hover:text-white hover:no-underline"
+          >
+            Explore Sidechains
+          </a>
+          <a
+            href="/pro"
+            class="rounded-xl border border-amber-500/30 bg-amber-950/20 px-7 py-3 text-sm font-bold text-amber-200 no-underline transition-colors hover:border-amber-400 hover:text-amber-100 hover:no-underline"
+          >
+            Become a Founder
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>
