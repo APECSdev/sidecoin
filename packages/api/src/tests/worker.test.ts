@@ -247,3 +247,149 @@ describe("derived balance", () => {
     expect((await readJson(res)).error.code).toBe("missing_address");
   });
 });
+
+describe("chain explorer endpoints", () => {
+  it("lists L1 blocks through the signet upstream alias", async () => {
+    const f = upstream({
+      "/v1/chains/signet/blocks?limit=2": {
+        status: 200,
+        body: {
+          chain_id: "signet",
+          tip_height: 101,
+          blocks: [
+            {
+              height: 101,
+              hash: "a".repeat(64),
+              previous_hash: "b".repeat(64),
+              timestamp: 1781619601,
+              confirmations: 1,
+              transaction_count: 2,
+              size: 1234,
+              weight: 4567,
+            },
+          ],
+          next_cursor: "101",
+        },
+      },
+    });
+
+    await withFetch(f, async () => {
+      const res = await worker.fetch(req("/v1/chains/l1/blocks?limit=2"), ENV);
+      expect(res.status).toBe(200);
+      const body = await readJson(res);
+      expect(body.chainId).toBe("l1");
+      expect(body.upstreamChainId).toBe("signet");
+      expect(body.tipHeight).toBe(101);
+      expect(body.nextCursor).toBe("101");
+      expect(body.blocks[0]).toMatchObject({
+        chainId: "l1",
+        upstreamChainId: "signet",
+        height: 101,
+        hash: "a".repeat(64),
+        previousHash: "b".repeat(64),
+        transactionCount: 2,
+        size: 1234,
+        weight: 4567,
+      });
+    });
+  });
+
+  it("returns a normalized BitNames transaction detail", async () => {
+    const txid = "95488f2ed8a822404091bb1d71da8512745a9ee86e3497c3e6f1527ec1782716";
+    const f = upstream({
+      [`/v1/chains/bitnames/transactions/${txid}`]: {
+        status: 200,
+        body: {
+          chain_id: "bitnames",
+          txid,
+          status: "confirmed",
+          coinbase: false,
+          block_height: 284,
+          block_hash: "4ad956acc5ebf314a124a4b7b6826bb86987e4375098cc3e6286aad84f4ea51f",
+          confirmations: 31,
+          timestamp: 1781373601,
+          size: null,
+          vsize: null,
+          weight: null,
+          version: null,
+          locktime: null,
+          total_output_sats: "90000000",
+          fee_sats: null,
+          fee_rate: null,
+          inputs: [
+            {
+              previous_txid: "de12441ff4e1d7b6e5feb588353319eb929b842f1c9bebb6fba53acd6deed195",
+              vout: 0,
+              address: null,
+              value_sats: null,
+            },
+          ],
+          outputs: [
+            {
+              vout: 0,
+              address: "3HK1xdAp97bvC5jxLzkuRYivN6fe",
+              value_sats: "90000000",
+              script_pubkey: null,
+              spent: false,
+            },
+          ],
+        },
+      },
+    });
+
+    await withFetch(f, async () => {
+      const res = await worker.fetch(
+        req(`/v1/chains/bitnames/transactions/${txid}`),
+        ENV,
+      );
+      expect(res.status).toBe(200);
+      const body = await readJson(res);
+      expect(body.chainId).toBe("bitnames");
+      expect(body.upstreamChainId).toBe("bitnames");
+      expect(body.transaction).toMatchObject({
+        chainId: "bitnames",
+        upstreamChainId: "bitnames",
+        txid,
+        status: "confirmed",
+        blockHeight: 284,
+        totalOutputSats: "90000000",
+      });
+      expect(body.transaction.inputs[0]).toMatchObject({
+        previousTxid: "de12441ff4e1d7b6e5feb588353319eb929b842f1c9bebb6fba53acd6deed195",
+        vout: 0,
+        valueSats: null,
+      });
+      expect(body.transaction.outputs[0]).toMatchObject({
+        vout: 0,
+        address: "3HK1xdAp97bvC5jxLzkuRYivN6fe",
+        valueSats: "90000000",
+        spent: false,
+      });
+    });
+  });
+
+  it("preserves existing chain address balance route ownership", async () => {
+    const f = upstream({
+      "/v1/chains/signet/address/tb1qabc/balance": {
+        status: 200,
+        body: {
+          chainId: "signet",
+          address: "tb1qabc",
+          balance: "0",
+          updated_at_height: -1,
+        },
+      },
+    });
+
+    await withFetch(f, async () => {
+      const res = await worker.fetch(
+        req("/v1/chains/signet/address/tb1qabc/balance"),
+        ENV,
+      );
+      expect(res.status).toBe(200);
+      const body = await readJson(res);
+      expect(body.source).toBe("indexed");
+      expect(body.totalSats).toBe("0");
+    });
+  });
+});

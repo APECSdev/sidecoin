@@ -24,6 +24,7 @@
 // Error envelope (normalized): { error: { code, message, details? } }
 
 import type { Env } from "../lib/shared.js";
+import { handleExplorerV1 } from "./explorer.js";
 import {
   CORS,
   MAX_PAGE,
@@ -615,6 +616,15 @@ export async function handleV1(req: Request, env: Env): Promise<Response> {
   // GET /sidechains — from OUR registry (active drivechains only).
   if (parts.length === 1 && parts[0] === "sidechains") {
     return json({ sidechains: listSidechains() });
+  }
+
+  // GET /chains/:chainId/(blocks|transactions|address/...) — explorer reads.
+  // Public "l1" maps to upstream "signet". Existing balance/utxo routes
+  // remain owned by the handlers below; handleExplorerV1 returns null for
+  // /address/:address/balance and /address/:address/utxos.
+  if (parts[0] === "chains") {
+    const explorerResponse = await handleExplorerV1(req, env, url, parts);
+    if (explorerResponse) return explorerResponse;
   }
 
   // GET /chains/:chainId/address/:address/balance
