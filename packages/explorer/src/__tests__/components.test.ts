@@ -95,3 +95,49 @@ describe("explorer components", () => {
     expect(wrapper.text()).toContain("Copied");
   });
 });
+
+describe("chain dashboard labels", () => {
+  it("uses live index labels for live chains", async () => {
+    vi.resetModules();
+
+    vi.doMock("../api", () => ({
+      getExplorerStatus: vi.fn(async () => ({
+        chainId: "l1",
+        network: "ecash-signet",
+        latestHeight: 1075,
+        latestBlockHash: "a".repeat(64),
+        indexedTransactions: 1,
+        mempoolTransactions: 0,
+        updatedAt: "2026-06-16T13:20:01.000Z",
+      })),
+      getLatestBlocks: vi.fn(async () => []),
+      getLatestTransactions: vi.fn(async () => []),
+    }));
+
+    const { default: ChainView } = await import("../views/ChainView.vue");
+
+    const router = createRouter({
+      history: createWebHistory(),
+      routes,
+    });
+
+    router.push("/l1");
+    await router.isReady();
+
+    const wrapper = mount(ChainView, {
+      global: {
+        plugins: [router],
+      },
+    });
+
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain("Live API index");
+    });
+
+    expect(wrapper.text()).toContain("Latest block transaction count");
+    expect(wrapper.text()).toContain("Confirmed-only index");
+    expect(wrapper.text()).not.toContain("Demo-backed scaffold");
+
+    vi.doUnmock("../api");
+  });
+});

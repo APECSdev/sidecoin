@@ -34,6 +34,21 @@ const chainId = computed(() => {
 });
 
 const chain = computed(() => getExplorerChain(chainId.value));
+const isLiveChain = computed(() =>
+  ["l1", "bitnames", "thunder"].includes(chainId.value),
+);
+
+const latestBlockNote = computed(() =>
+  isLiveChain.value ? "Live API index" : "Current demo index",
+);
+
+const indexedTransactionsNote = computed(() =>
+  isLiveChain.value ? "Latest block transaction count" : "Demo-backed scaffold",
+);
+
+const mempoolTransactionsNote = computed(() =>
+  isLiveChain.value ? "Confirmed-only index" : "Pending transactions",
+);
 
 const status = ref<ExplorerStatus | null>(null);
 const blocks = ref<ExplorerBlockSummary[]>([]);
@@ -115,17 +130,17 @@ watch(chainId, loadChain);
         <StatCard
           label="Latest Block"
           :value="truncateMiddle(status.latestBlockHash, 12, 10)"
-          note="Current demo index"
+          :note="latestBlockNote"
         />
         <StatCard
           label="Indexed Transactions"
           :value="formatNumber(status.indexedTransactions)"
-          note="Demo-backed scaffold"
+          :note="indexedTransactionsNote"
         />
         <StatCard
           label="Mempool Transactions"
           :value="formatNumber(status.mempoolTransactions)"
-          note="Pending transactions"
+          :note="mempoolTransactionsNote"
         />
       </div>
 
