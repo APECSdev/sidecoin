@@ -326,6 +326,45 @@ jobs:
       - name: Test Web
         run: pnpm --filter @sidecoin/web test
 
+  # ── Explorer — Chain-aware Block Explorer (standalone, labeled job) ──
+  #
+  # Pure TS/Vite/Vue — runs once on ubuntu. Appears as its own
+  # "explorer" entry in the Actions sidebar so explorer regressions
+  # are immediately distinguishable from wallet/web/api failures.
+  # Builds @sidecoin/shared first for consistency with other frontend
+  # packages, then builds + tests + type-checks the explorer app.
+  # Deployment is intentionally added in a separate commit.
+  # ─────────────────────────────────────────────────────────
+
+  explorer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Shared
+        run: pnpm --filter @sidecoin/shared build
+
+      - name: Build Explorer
+        run: pnpm --filter @sidecoin/explorer build
+
+      - name: Test Explorer
+        run: pnpm --filter @sidecoin/explorer test
+
+      - name: Type-check Explorer
+        run: pnpm --filter @sidecoin/explorer type-check
+
   # ── API adapter + client (standalone, labeled job) ───────
   #
   # Pure TS — runs once on ubuntu (no Rust/matrix needed).
