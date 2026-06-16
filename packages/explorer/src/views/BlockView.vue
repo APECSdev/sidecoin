@@ -17,6 +17,8 @@ import {
 } from "../explorer/format";
 import type { ExplorerBlockDetail } from "../explorer/types";
 
+const OFFICIAL_L1_EXPLORER_BASE = "https://explorer.signet.drivechain.info";
+
 const route = useRoute();
 
 const chainId = computed(() => {
@@ -31,6 +33,11 @@ const blockId = computed(() => {
 
 const chain = computed(() => getExplorerChain(chainId.value));
 const block = ref<ExplorerBlockDetail | null>(null);
+const officialL1BlockUrl = computed(() =>
+  chainId.value === "l1" && block.value?.hash
+    ? `${OFFICIAL_L1_EXPLORER_BASE}/block/${block.value.hash}`
+    : "",
+);
 const loading = ref(true);
 const error = ref("");
 
@@ -81,7 +88,18 @@ watch([chainId, blockId], loadBlock);
           </p>
         </div>
 
-        <CopyButton :value="block.hash" label="Copy hash" />
+        <div class="flex flex-wrap items-center gap-2">
+          <a
+            v-if="officialL1BlockUrl"
+            :href="officialL1BlockUrl"
+            target="_blank"
+            rel="noreferrer"
+            class="rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-gray-200 transition hover:border-yellow-300 hover:text-yellow-200"
+          >
+            Official L1 Explorer
+          </a>
+          <CopyButton :value="block.hash" label="Copy hash" />
+        </div>
       </div>
     </div>
 

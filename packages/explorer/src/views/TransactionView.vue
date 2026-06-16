@@ -17,6 +17,8 @@ import {
 } from "../explorer/format";
 import type { ExplorerTransactionDetail } from "../explorer/types";
 
+const OFFICIAL_L1_EXPLORER_BASE = "https://explorer.signet.drivechain.info";
+
 const route = useRoute();
 
 const chainId = computed(() => {
@@ -31,6 +33,11 @@ const txid = computed(() => {
 
 const chain = computed(() => getExplorerChain(chainId.value));
 const transaction = ref<ExplorerTransactionDetail | null>(null);
+const officialL1TransactionUrl = computed(() =>
+  chainId.value === "l1" && transaction.value?.txid
+    ? `${OFFICIAL_L1_EXPLORER_BASE}/tx/${transaction.value.txid}`
+    : "",
+);
 const loading = ref(true);
 const error = ref("");
 
@@ -86,6 +93,15 @@ watch([chainId, txid], loadTransaction);
           >
             {{ transaction.status }}
           </span>
+          <a
+            v-if="officialL1TransactionUrl"
+            :href="officialL1TransactionUrl"
+            target="_blank"
+            rel="noreferrer"
+            class="rounded-xl border border-gray-700 px-4 py-2 text-sm font-bold text-gray-200 transition hover:border-cyan-300 hover:text-cyan-200"
+          >
+            Official L1 Explorer
+          </a>
           <CopyButton :value="transaction.txid" label="Copy txid" />
         </div>
       </div>
