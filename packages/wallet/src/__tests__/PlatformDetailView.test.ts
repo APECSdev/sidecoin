@@ -235,6 +235,28 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("No live BitNames messages are indexed yet.");
   });
 
+  it("opens the local Coin News OP_RETURN composer from BitMessages", async () => {
+    const wrapper = await mountPlatform("/platforms/bitnames");
+    const messages = wrapper.findAll("button").find((b) => b.text() === "Messages");
+    expect(messages).toBeDefined();
+
+    await messages!.trigger("click");
+    await flushPromises();
+
+    const broadcast = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Broadcast News" && button.attributes("disabled") === undefined);
+    expect(broadcast).toBeDefined();
+
+    await broadcast!.trigger("click");
+
+    expect(wrapper.text()).toContain("Compose Coin News");
+    expect(wrapper.text()).toContain("Local OP_RETURN signing");
+    expect(wrapper.text()).toContain("Build Signed News Transaction");
+    expect(wrapper.text()).toContain("Public and permanent");
+  });
+
+
   it("does not render backend warning copy in the BitMessages screenshot UI", async () => {
     const wrapper = await mountPlatform("/platforms/bitnames");
     const messages = wrapper.findAll("button").find((b) => b.text() === "Messages");

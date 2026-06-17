@@ -2,6 +2,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import CoinNewsComposer from "./CoinNewsComposer.vue";
 import {
   getCoinNewsFeeds,
   getCoinNewsPosts,
@@ -23,6 +24,7 @@ const props = withDefaults(
   },
 );
 
+const composerOpen = ref(false);
 const feeds = ref<CoinNewsFeed[]>([]);
 const usWeeklyRows = ref<CoinNewsPost[]>([]);
 const japanWeeklyRows = ref<CoinNewsPost[]>([]);
@@ -148,6 +150,12 @@ function feedPostCount(feedId: string, rows: CoinNewsPost[]): number {
   return typeof feed?.post_count === "number" ? feed.post_count : rows.length;
 }
 
+function openComposer() {
+  if (!props.dashboard) {
+    composerOpen.value = true;
+  }
+}
+
 onMounted(() => {
   loadCoinNews();
 });
@@ -201,6 +209,8 @@ onMounted(() => {
       </div>
     </section>
 
+    <CoinNewsComposer v-if="composerOpen && !props.dashboard" />
+
     <section class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-950">
       <div class="flex flex-col gap-3 border-b border-gray-800 px-5 py-4 md:flex-row md:items-center md:justify-between">
         <div>
@@ -217,7 +227,9 @@ onMounted(() => {
           </select>
           <button
             type="button"
-            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500"
+            :disabled="props.dashboard"
+            class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-black text-white hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+            @click="openComposer"
           >
             Broadcast News
           </button>

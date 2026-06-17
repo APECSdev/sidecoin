@@ -127,18 +127,19 @@ function selectContact(contactName: string) {
           <h3 class="text-xl font-black text-white">Broadcast News</h3>
 
           <div class="mt-5 rounded-xl border border-gray-800 bg-gray-900 p-4">
-            <p class="text-sm font-semibold text-white">Composer not connected yet</p>
+            <p class="text-sm font-semibold text-white">Local composer available</p>
             <p class="mt-2 text-sm leading-6 text-gray-400">
-              Live Coin News reads are connected. Broadcast writing will appear
-              here once the write endpoint is available.
+              Use the Coin News feed panel to build, sign, review, and broadcast
+              a wallet-controlled OP_RETURN post.
             </p>
           </div>
 
           <button
             type="button"
-            class="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
+            disabled
+            class="mt-5 w-full cursor-not-allowed rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white opacity-60"
           >
-            Broadcast News
+            Use feed composer
           </button>
         </section>
 
