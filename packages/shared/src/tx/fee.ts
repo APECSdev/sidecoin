@@ -77,3 +77,85 @@ export function estimateP2wpkhFee(
   const vsize = estimateP2wpkhVsize(numInputs, numOutputs);
   return BigInt(Math.ceil(vsize * feeRateSatPerVb));
 }
+
+/**
+ * CompactSize length-prefix byte count for a scriptPubKey length.
+ *
+ * Transaction outputs serialize as:
+ *   value(8) compactSize(script length) script bytes
+ */
+export function compactSizeLengthBytes(length: number): number {
+  if (!Number.isInteger(length) || length < 0) {
+    throw new Error(`length must be a non-negative integer, got ${length}.`);
+  }
+
+  if (length < 0xfd) return 1;
+  if (length <= 0xffff) return 3;
+  if (length <= 0xffffffff) return 5;
+  return 9;
+}
+
+/**
+ * Estimate vbytes for a single zero-value OP_RETURN output.
+ *
+ * OP_RETURN outputs are non-witness transaction outputs, so vbytes equal bytes:
+ *   value(8) + compactSize(script length) + script bytes
+ */
+export function estimateOpReturnOutputVbytes(
+  opReturnScriptLength: number,
+): number {
+  if (!Number.isInteger(opReturnScriptLength) || opReturnScriptLength < 1) {
+    throw new Error(
+      `opReturnScriptLength must be a positive integer, got ${opReturnScriptLength}.`,
+    );
+  }
+
+  return 8 + compactSizeLengthBytes(opReturnScriptLength) + opReturnScriptLength;
+}
+
+/**
+ * Estimate the virtual size (vbytes) of a P2WPKH-funded OP_RETURN transaction.
+ *
+ * Shape:
+ *   inputs:  P2WPKH wallet inputs
+ *   outputs: one zero-value OP_RETURN output + optional P2WPKH change output
+ */
+export function estimateOpReturnVsize(
+  numInputs: number,
+  opReturnScriptLength: number,
+  hasChange: boolean,
+): number {
+  if (!Number.isInteger(numInputs) || numInputs < 1) {
+    throw new Error(`numInputs must be a positive integer, got ${numInputs}.`);
+  }
+
+  return Math.ceil(
+    TX_OVERHEAD_VBYTES +
+      P2WPKH_INPUT_VBYTES * numInputs +
+      estimateOpReturnOutputVbytes(opReturnScriptLength) +
+      (hasChange ? P2WPKH_OUTPUT_VBYTES : 0),
+  );
+}
+
+/**
+ * Estimate the absolute fee (satoshis) for a P2WPKH-funded OP_RETURN tx.
+ */
+export function estimateOpReturnFee(
+  numInputs: number,
+  opReturnScriptLength: number,
+  hasChange: boolean,
+  feeRateSatPerVb: number,
+): bigint {
+  if (!Number.isFinite(feeRateSatPerVb) || feeRateSatPerVb <= 0) {
+    throw new Error(
+      `feeRateSatPerVb must be a positive number, got ${feeRateSatPerVb}.`,
+    );
+  }
+
+  const vsize = estimateOpReturnVsize(
+    numInputs,
+    opReturnScriptLength,
+    hasChange,
+  );
+  return BigInt(Math.ceil(vsize * feeRateSatPerVb));
+}

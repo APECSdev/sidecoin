@@ -29,7 +29,7 @@
 // and therefore the required fee.
 
 import type { Utxo } from "../types/transaction";
-import { DUST_LIMIT_SATS, estimateP2wpkhFee } from "./fee";
+import { DUST_LIMIT_SATS, estimateOpReturnFee, estimateP2wpkhFee } from "./fee";
 
 /** Default minimum confirmations for a UTXO to be spendable. */
 export const DEFAULT_MIN_CONFIRMATIONS = 1;
@@ -185,6 +185,162 @@ export function selectCoins(params: CoinSelectionParams): CoinSelectionResult {
   throw new Error(
     `Insufficient funds: ${spendable.length} spendable UTXO(s) totalling ` +
       `${available} sat cannot cover target ${targetSatoshis} plus fee at ` +
+      `${feeRateSatPerVb} sat/vB.`,
+  );
+}
+
+
+/** Parameters for selecting coins for a zero-value OP_RETURN metadata spend. */
+export interface OpReturnCoinSelectionParams {
+  /** Candidate UTXOs (typically the wallet's full unspent set). */
+  readonly utxos: readonly Utxo[];
+
+  /** Full OP_RETURN scriptPubKey length in bytes. */
+  readonly opReturnScriptLength: number;
+
+  /** Fee rate in sat/vB used to size the fee as inputs are added. */
+  readonly feeRateSatPerVb: number;
+
+  /** Minimum confirmations to consider a UTXO spendable. Default 1. */
+  readonly minConfirmations?: number;
+
+  /** Confirmations required for a coinbase UTXO to be mature. Default 100. */
+  readonly coinbaseMaturity?: number;
+}
+
+/** The chosen inputs plus fee/change accounting for OP_RETURN tx building. */
+export interface OpReturnCoinSelectionResult {
+  /** UTXOs to spend, in selection order (largest-first). */
+  readonly selectedUtxos: readonly Utxo[];
+
+  /**
+   * Absolute fee in satoshis to pass to buildAndSignOpReturnTransaction().
+   * For the no-change case this equals totalInputSatoshis because the entire
+   * selected input value is paid as fee with only a zero-value OP_RETURN output.
+   */
+  readonly feeSatoshis: bigint;
+
+  /** Change output value, or 0 when change was folded into the fee. */
+  readonly changeSatoshis: bigint;
+
+  /** Whether a change output will be created. */
+  readonly hasChange: boolean;
+
+  /** Sum of all selected input values, in satoshis. */
+  readonly totalInputSatoshis: bigint;
+
+  /** Output count used to size the fee (1 = OP_RETURN, 2 = + change). */
+  readonly numOutputs: number;
+}
+
+/**
+ * Select P2WPKH coins for a metadata-only OP_RETURN transaction.
+ *
+ * The OP_RETURN output carries zero value. Inputs fund only the relay fee and
+ * optional wallet change. If the remainder does not strictly exceed dust, no
+ * change output is created and the entire selected input value becomes fee.
+ */
+export function selectCoinsForOpReturn(
+  params: OpReturnCoinSelectionParams,
+): OpReturnCoinSelectionResult {
+  const {
+    utxos,
+    opReturnScriptLength,
+    feeRateSatPerVb,
+    minConfirmations = DEFAULT_MIN_CONFIRMATIONS,
+    coinbaseMaturity = DEFAULT_COINBASE_MATURITY,
+  } = params;
+
+  // ----- validation -------------------------------------------------------
+  if (!Number.isInteger(opReturnScriptLength) || opReturnScriptLength < 1) {
+    throw new Error(
+      `opReturnScriptLength must be a positive integer, got ${opReturnScriptLength}.`,
+    );
+  }
+  if (!Number.isFinite(feeRateSatPerVb) || feeRateSatPerVb <= 0) {
+    throw new Error(
+      `feeRateSatPerVb must be a positive number, got ${feeRateSatPerVb}.`,
+    );
+  }
+
+  // ----- filter to spendable UTXOs (apply policy) -------------------------
+  const spendable = utxos.filter((u) => {
+    if (u.isLocked) return false;
+    if (u.confirmations < minConfirmations) return false;
+    // Coinbase maturity is independent of (and stricter than) the general
+    // min-confirmations floor: a coinbase needs >= coinbaseMaturity confs.
+    if (u.isCoinbase && u.confirmations < coinbaseMaturity) return false;
+    return true;
+  });
+
+  // ----- largest-first accumulation ---------------------------------------
+  const sorted = [...spendable].sort((a, b) =>
+    a.amountSatoshis < b.amountSatoshis
+      ? 1
+      : a.amountSatoshis > b.amountSatoshis
+        ? -1
+        : 0,
+  );
+
+  const selected: Utxo[] = [];
+  let totalInputSatoshis = 0n;
+
+  for (const utxo of sorted) {
+    selected.push(utxo);
+    totalInputSatoshis += utxo.amountSatoshis;
+    const numInputs = selected.length;
+
+    // Case 1 — try WITH a change output (OP_RETURN + change = 2 outputs).
+    const feeWithChange = estimateOpReturnFee(
+      numInputs,
+      opReturnScriptLength,
+      true,
+      feeRateSatPerVb,
+    );
+    if (totalInputSatoshis >= feeWithChange) {
+      const change = totalInputSatoshis - feeWithChange;
+      // Mirror the builder: change only if it strictly clears dust.
+      if (change > DUST_LIMIT_SATS) {
+        return {
+          selectedUtxos: selected,
+          feeSatoshis: feeWithChange,
+          changeSatoshis: change,
+          hasChange: true,
+          totalInputSatoshis,
+          numOutputs: 2,
+        };
+      }
+    }
+
+    // Case 2 — no worthwhile change: OP_RETURN only. If we can afford the
+    // relay-sized fee, fold the whole selected input into the effective fee.
+    const feeNoChange = estimateOpReturnFee(
+      numInputs,
+      opReturnScriptLength,
+      false,
+      feeRateSatPerVb,
+    );
+    if (totalInputSatoshis >= feeNoChange) {
+      return {
+        selectedUtxos: selected,
+        feeSatoshis: totalInputSatoshis,
+        changeSatoshis: 0n,
+        hasChange: false,
+        totalInputSatoshis,
+        numOutputs: 1,
+      };
+    }
+
+    // Otherwise this prefix cannot fund even the no-change metadata tx — add
+    // the next-largest input and try again.
+  }
+
+  // ----- insufficient funds -----------------------------------------------
+  let available = 0n;
+  for (const u of spendable) available += u.amountSatoshis;
+  throw new Error(
+    `Insufficient funds: ${spendable.length} spendable UTXO(s) totalling ` +
+      `${available} sat cannot cover OP_RETURN fee at ` +
       `${feeRateSatPerVb} sat/vB.`,
   );
 }
