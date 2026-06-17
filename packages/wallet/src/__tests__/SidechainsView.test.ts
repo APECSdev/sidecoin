@@ -76,11 +76,12 @@ describe("Platforms view", () => {
     expect(wrapper.text()).toContain("early access to proposed platforms like RISCy");
   });
 
-  it("should render all 8 platform cards", async () => {
+  it("should render all platform cards", async () => {
     const wrapper = await mountPlatforms();
     for (const sc of MOCK_SIDECHAINS) {
       expect(wrapper.text()).toContain(sc.displayName);
     }
+    expect(wrapper.text()).toContain("Elements Plus");
   });
 
   it("should display BitNames before Thunder while preserving the rest of the API order", async () => {
@@ -115,6 +116,7 @@ describe("Platforms view", () => {
     expect(hrefs).toContain("#/platforms/thunder");
     expect(hrefs).toContain("#/platforms/zside");
     expect(hrefs).toContain("#/platforms/riscy");
+    expect(hrefs).toContain("#/platforms/elementsplus");
   });
 
   it("should show 'Active' badge for active platforms", async () => {
@@ -128,6 +130,7 @@ describe("Platforms view", () => {
   it("should show 'Proposed' badge for proposed platforms", async () => {
     const wrapper = await mountPlatforms();
     expect(wrapper.text()).toContain("Proposed");
+    expect(wrapper.text()).toContain("Coming Soon");
   });
 
   it("should call getSidechains on mount", async () => {
@@ -159,6 +162,7 @@ describe("Platforms view", () => {
     mockGetSidechains.mockResolvedValue([]);
     const wrapper = await mountPlatforms();
     expect(wrapper.find("h2").text()).toBe("Platforms");
-    expect(wrapper.text()).not.toContain("Slot 9");
+    expect(wrapper.text()).toContain("Elements Plus");
+    expect(wrapper.text()).toContain("Slot TBD");
   });
 });

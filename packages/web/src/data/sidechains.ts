@@ -90,6 +90,15 @@ const PRESENTATION: Record<string, Presentation> = {
       "Multi-network bridge support",
     ],
   },
+  elementsplus: {
+    tagline: "Elements-based Drivechain coming soon",
+    features: [
+      "Elements-based BIP-300 L2 design",
+      "Advanced Bitcoin scripting features",
+      "Announced for L2L signet",
+      "Slot assignment pending",
+    ],
+  },
   riscy: {
     tagline: "Proposed RISC-V sidechain",
     features: [

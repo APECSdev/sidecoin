@@ -4,7 +4,7 @@
 // Static card for a sidechain on the landing page.
 
 interface Props {
-  slotNumber: number;
+  slotNumber: number | null;
   name: string;
   description: string;
   status: string;
@@ -13,6 +13,9 @@ interface Props {
 const { slotNumber, name, description, status } = Astro.props;
 
 const isActive = status === "active";
+const isComingSoon = status === "coming soon";
+const statusLabel = isActive ? "Active" : isComingSoon ? "Coming Soon" : "Proposed";
+const slotLabel = slotNumber == null ? "TBD" : String(slotNumber);
 ---
 
 <div class="rounded-xl border border-gray-800 bg-gray-900/60 p-5 backdrop-blur-sm transition-colors hover:border-ecash-800">
@@ -24,9 +27,9 @@ const isActive = status === "active";
         isActive ? "bg-ecash-900/50 text-ecash-400" : "bg-gray-800 text-gray-500",
       ]}
     >
-      {isActive ? "Active" : "Proposed"}
+      {statusLabel}
     </span>
   </div>
   <p class="mt-2 text-sm leading-relaxed text-gray-400">{description}</p>
-  <p class="mt-3 font-mono text-xs text-gray-600">Slot {slotNumber}</p>
+  <p class="mt-3 font-mono text-xs text-gray-600">Slot {slotLabel}</p>
 </div>

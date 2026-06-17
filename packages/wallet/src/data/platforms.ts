@@ -14,10 +14,10 @@ export interface PlatformFeatureTab {
 
 export interface PlatformScaffold {
   id: string;
-  slot: number;
+  slot: number | null;
   displayName: string;
   shortName: string;
-  status: "active" | "proposed";
+  status: "active" | "proposed" | "coming soon";
   tagline: string;
   description: string;
   primaryUseCase: string;
@@ -274,6 +274,40 @@ export const PLATFORMS: PlatformScaffold[] = [
         title: "Cross-chain safety",
         body: "Safety checks for timeouts, refunds, and chain-specific confirmations.",
         bullets: ["Timeout display", "Refund readiness", "Confirmations", "Risk notices"],
+      },
+    ],
+  },
+  {
+    id: "elementsplus",
+    slot: null,
+    displayName: "Elements Plus",
+    shortName: "Elements+",
+    status: "coming soon",
+    tagline: "Elements-based Drivechain coming soon.",
+    primaryUseCase: "Advanced scripting",
+    description:
+      "Elements Plus is announced for the L2L signet as an Elements-based BIP-300 L2. Its BIP-300 slot is still TBD, so the wallet shows it as coming soon and does not expose deposit flows yet.",
+    featureTabs: [
+      {
+        id: "elements",
+        label: "Elements",
+        title: "Elements-based workflows",
+        body: "Planned UI for Elements-style features adapted to a BIP-300 Drivechain environment.",
+        bullets: ["Elements-based chain model", "Advanced scripting features", "BIP-300 L2 framing", "Slot assignment pending"],
+      },
+      {
+        id: "scripting",
+        label: "Scripting",
+        title: "Advanced Bitcoin scripting",
+        body: "Future UI area for reviewing script-enabled workflows once protocol details and wallet safety rules are finalized.",
+        bullets: ["Script feature review", "Transaction safety", "Compatibility notes", "Explicit signing review"],
+      },
+      {
+        id: "status",
+        label: "Status",
+        title: "Coming soon status",
+        body: "Elements Plus is tracked in Sidecoin as a known coming-soon Drivechain with no assigned slot yet.",
+        bullets: ["Slot TBD", "No deposits yet", "No withdrawals yet", "No wallet broadcast flow yet"],
       },
     ],
   },

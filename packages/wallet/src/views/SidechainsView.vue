@@ -6,9 +6,17 @@ import { getSidechains } from "../api";
 import type { SidechainSummary } from "../api";
 import { deriveDrivechainAddress } from "@sidecoin/shared";
 import { loadWallet } from "../keystore";
-import { getPlatformById } from "../data/platforms";
+import { PLATFORMS, getPlatformById } from "../data/platforms";
 import { canAccessPlatform, isProPlatform } from "../entitlements";
 import ProBadge from "../components/pro/ProBadge.vue";
+
+interface WalletSidechainSummary {
+  slot: number | null;
+  id: string;
+  displayName: string;
+  description: string;
+  status: string;
+}
 
 const VERIFIED_ADDRESS_SLOTS = new Set<number>([9, 4]);
 const PLATFORM_DISPLAY_PRIORITY: Record<string, number> = {
@@ -16,7 +24,7 @@ const PLATFORM_DISPLAY_PRIORITY: Record<string, number> = {
   thunder: 1,
 };
 
-const sidechains = ref<SidechainSummary[]>([]);
+const sidechains = ref<WalletSidechainSummary[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
@@ -48,7 +56,7 @@ onMounted(async () => {
   }
 
   try {
-    sidechains.value = await getSidechains();
+    sidechains.value = mergePlatformSidechains(await getSidechains());
   } catch (e) {
     error.value = String(e);
     console.error("[SidechainsView] Failed to load sidechains:", e);
@@ -57,8 +65,30 @@ onMounted(async () => {
   }
 });
 
-function isVerified(slot: number): boolean {
-  return VERIFIED_ADDRESS_SLOTS.has(slot) && drivechainAddress.value !== "";
+function mergePlatformSidechains(apiSidechains: SidechainSummary[]): WalletSidechainSummary[] {
+  const byId = new Map<string, WalletSidechainSummary>();
+
+  for (const sidechain of apiSidechains) {
+    byId.set(sidechain.id, sidechain);
+  }
+
+  for (const platform of PLATFORMS) {
+    if (!byId.has(platform.id)) {
+      byId.set(platform.id, {
+        slot: platform.slot,
+        id: platform.id,
+        displayName: platform.displayName,
+        description: platform.description,
+        status: platform.status,
+      });
+    }
+  }
+
+  return Array.from(byId.values());
+}
+
+function isVerified(slot: number | null): boolean {
+  return slot != null && VERIFIED_ADDRESS_SLOTS.has(slot) && drivechainAddress.value !== "";
 }
 
 function platformHref(id: string): string {
@@ -73,8 +103,18 @@ function platformTagline(id: string): string {
   return getPlatformById(id)?.tagline ?? "";
 }
 
-async function copyAddress(slot: number) {
-  if (!drivechainAddress.value) return;
+function platformStatusLabel(status: string): string {
+  if (status === "active") return "Active";
+  if (status === "coming soon") return "Coming Soon";
+  return "Proposed";
+}
+
+function slotLabel(slot: number | null): string {
+  return slot == null ? "Slot TBD" : `Slot ${slot}`;
+}
+
+async function copyAddress(slot: number | null) {
+  if (slot == null || !drivechainAddress.value) return;
   try {
     await navigator.clipboard.writeText(drivechainAddress.value);
     copiedSlot.value = slot;
@@ -126,7 +166,7 @@ async function copyAddress(slot: number) {
     <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div
         v-for="sc in orderedSidechains"
-        :key="sc.slot"
+        :key="sc.id"
         class="rounded-xl border border-gray-800 bg-gray-900 p-4"
       >
         <div class="flex items-start justify-between gap-3">
@@ -141,7 +181,7 @@ async function copyAddress(slot: number) {
               class="rounded-full px-2 py-0.5 text-xs font-medium"
               :class="sc.status === 'active' ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-500'"
             >
-              {{ sc.status === "active" ? "Active" : "Proposed" }}
+              {{ platformStatusLabel(sc.status) }}
             </span>
           </div>
         </div>
@@ -149,7 +189,7 @@ async function copyAddress(slot: number) {
         <p class="mt-3 text-sm text-gray-400">{{ sc.description }}</p>
 
         <div class="mt-3 flex items-center justify-between text-xs">
-          <p class="font-mono text-gray-600">Slot {{ sc.slot }}</p>
+          <p class="font-mono text-gray-600">{{ slotLabel(sc.slot) }}</p>
           <span class="rounded-full bg-gray-800 px-2 py-0.5 text-gray-400">
             {{ platformUseCase(sc.id) }}
           </span>

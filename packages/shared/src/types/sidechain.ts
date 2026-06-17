@@ -1,36 +1,48 @@
 // packages/shared/src/types/sidechain.ts
 //
 // Type definitions for BIP-300/301 sidechains (Drivechains).
-// The eCash fork launches with 7 active drivechains plus 1 proposed
-// (riscy, slot 3). Slots are sparse per BIP-300 — not sequential.
+// The eCash fork launches with 7 active drivechains plus proposed / coming-soon
+// sidechains. Slots are sparse per BIP-300 — not sequential.
 
 /**
- * Unique sidechain slot number (0–255 per BIP-300).
- * Each sidechain occupies exactly one slot.
+ * Unique assigned sidechain slot number (0–255 per BIP-300).
+ * Each activated / assigned sidechain occupies exactly one slot.
  */
 export type SidechainSlot = number;
+
+/**
+ * Slot assignment for a known sidechain.
+ *
+ * Announced / coming-soon sidechains can be known before a BIP-300 slot is
+ * assigned. Those MUST use null rather than a temporary/fake slot number.
+ */
+export type SidechainSlotAssignment = SidechainSlot | null;
 
 /**
  * Current operational status of a sidechain from the mainchain's perspective.
  */
 export type SidechainStatus =
-  | "active"      // Sidechain is live and accepting deposits/withdrawals
-  | "proposed"    // Sidechain proposal is pending activation threshold
-  | "inactive"    // Sidechain exists but is not currently producing blocks
-  | "failed";     // Sidechain proposal failed to reach activation
+  | "active"       // Sidechain is live and accepting deposits/withdrawals
+  | "coming soon"  // Sidechain is announced / expected but slot or activation is not final
+  | "proposed"     // Sidechain proposal is pending activation threshold
+  | "inactive"     // Sidechain exists but is not currently producing blocks
+  | "failed";      // Sidechain proposal failed to reach activation
 
 /**
- * Descriptor for a single sidechain registered on the mainchain.
+ * Descriptor for a single sidechain registered or tracked by the mainchain.
  */
 export interface SidechainDescriptor {
-  /** BIP-300 slot number (sparse, 0–255; not sequential) */
-  readonly slot: SidechainSlot;
+  /** BIP-300 slot number (sparse, 0–255; not sequential), or null if TBD */
+  readonly slot: SidechainSlotAssignment;
 
   /** Machine-readable identifier, e.g. "thunder", "zside" */
   readonly id: string;
 
   /** Human-readable display name, e.g. "Thunder Network" */
   readonly displayName: string;
+
+  /** Short UI label, e.g. "Thunder", "Elements+" */
+  readonly shortName: string;
 
   /**
    * Short description of the sidechain's purpose.
@@ -66,7 +78,7 @@ export interface SidechainDeposit {
   /** Mainchain transaction ID containing the deposit */
   readonly mainchainTxid: string;
 
-  /** Target sidechain slot */
+  /** Target assigned sidechain slot */
   readonly slot: SidechainSlot;
 
   /** Amount in mainchain satoshis */
@@ -92,7 +104,7 @@ export interface WithdrawalBundle {
   /** Unique identifier for this bundle (hash of the bundle transaction) */
   readonly bundleHash: string;
 
-  /** Sidechain slot this bundle originates from */
+  /** Assigned sidechain slot this bundle originates from */
   readonly slot: SidechainSlot;
 
   /**

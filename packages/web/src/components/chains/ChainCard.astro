@@ -8,7 +8,7 @@
 import type { SidechainStatus } from "../../data/sidechains";
 
 interface Props {
-  slotNumber: number;
+  slotNumber: number | null;
   name: string;
   tagline: string;
   description: string;
@@ -26,6 +26,9 @@ const {
 } = Astro.props;
 
 const isActive = status === "active";
+const isComingSoon = status === "coming soon";
+const statusLabel = isActive ? "Active" : isComingSoon ? "Coming Soon" : "Proposed";
+const slotLabel = slotNumber == null ? "TBD" : String(slotNumber);
 ---
 
 <details class="group rounded-2xl border border-gray-800 bg-gray-900/40 transition-colors hover:border-gray-700 open:border-amber-800/30 open:bg-gray-900/60">
@@ -38,7 +41,7 @@ const isActive = status === "active";
       <div class="flex items-start gap-4">
         <!-- Slot number icon -->
         <div class="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl border border-gray-700 bg-gray-800 font-mono text-sm font-bold text-gray-400">
-          {slotNumber}
+          {slotLabel}
         </div>
 
         <div>
@@ -59,7 +62,7 @@ const isActive = status === "active";
             isActive ? "bg-ecash-900/50 text-ecash-400" : "bg-gray-800 text-gray-500",
           ]}
         >
-          {isActive ? "Active" : "Proposed"}
+          {statusLabel}
         </span>
         <svg
           class="h-5 w-5 flex-shrink-0 text-gray-500 transition-transform group-open:rotate-180"
@@ -95,7 +98,7 @@ const isActive = status === "active";
     )}
 
     <p class="mt-5 font-mono text-xs text-gray-600">
-      BIP-300 Slot {slotNumber} · Secured by Bitcoin hashrate via BIP-301
+      BIP-300 Slot {slotLabel} · Secured by Bitcoin hashrate via BIP-301
     </p>
   </div>
 

@@ -298,6 +298,14 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).not.toContain("SupaQt");
   });
 
+  it("renders Elements Plus as a coming-soon platform with Slot TBD", async () => {
+    const wrapper = await mountPlatform("/platforms/elementsplus");
+    expect(wrapper.text()).toContain("Elements Plus");
+    expect(wrapper.text()).toContain("Platform · Slot TBD");
+    expect(wrapper.text()).toContain("Coming Soon");
+    expect(wrapper.text()).toContain("Unlock Elements Plus with Sidecoin PRO");
+  });
+
   it("shows a not-found state for unknown platforms", async () => {
     const wrapper = await mountPlatform("/platforms/unknown");
     expect(wrapper.text()).toContain("Platform not found");

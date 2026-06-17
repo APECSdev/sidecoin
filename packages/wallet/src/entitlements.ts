@@ -28,6 +28,7 @@ export const PRO_PLATFORM_IDS = [
   "truthcoin",
   "coinshift",
   "riscy",
+  "elementsplus",
 ];
 
 export const COIN_CONTROL_FEATURE_ID = "wallet:coin-control";
@@ -48,6 +49,7 @@ export const PRO_FEATURES = [
   "platform:truthcoin",
   "platform:coinshift",
   "platform:riscy",
+  "platform:elementsplus",
   "hardware:signing",
   "analytics:historical",
   "platforms:early-access",

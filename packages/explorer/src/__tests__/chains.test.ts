@@ -27,6 +27,16 @@ describe("explorer chain registry", () => {
     expect(getExplorerChain("truthcoin")?.status).toBe("coming soon");
     expect(getExplorerChain("coinshift")?.status).toBe("coming soon");
     expect(getExplorerChain("riscy")?.status).toBe("coming soon");
+    expect(getExplorerChain("elementsplus")?.status).toBe("coming soon");
+  });
+
+  it("keeps authoritative sparse shared slots in explorer", () => {
+    expect(getExplorerChain("bitnames")?.slot).toBe(2);
+    expect(getExplorerChain("thunder")?.slot).toBe(9);
+    expect(getExplorerChain("zside")?.slot).toBe(98);
+    expect(getExplorerChain("truthcoin")?.slot).toBe(13);
+    expect(getExplorerChain("coinshift")?.slot).toBe(255);
+    expect(getExplorerChain("elementsplus")?.slot).toBeNull();
   });
 
   it("keeps the full explorer status policy explicit", () => {
@@ -36,14 +46,15 @@ describe("explorer chain registry", () => {
       ),
     ).toEqual({
       l1: "active",
-      bitnames: "active",
       thunder: "active",
       zside: "coming soon",
+      bitnames: "active",
       bitassets: "coming soon",
       photon: "coming soon",
       truthcoin: "coming soon",
       coinshift: "coming soon",
       riscy: "coming soon",
+      elementsplus: "coming soon",
     });
   });
 
@@ -65,10 +76,12 @@ describe("explorer chain registry", () => {
   it("resolves configured chain ids and labels", () => {
     expect(isExplorerChainId("bitnames")).toBe(true);
     expect(isExplorerChainId("thunder")).toBe(true);
+    expect(isExplorerChainId("elementsplus")).toBe(true);
     expect(isExplorerChainId("unknown")).toBe(false);
 
     expect(getChainLabel("bitnames")).toBe("BitNames");
     expect(getChainLabel("thunder")).toBe("Thunder Network");
+    expect(getChainLabel("elementsplus")).toBe("Elements Plus");
     expect(getChainLabel("unknown")).toBe("unknown");
   });
 });

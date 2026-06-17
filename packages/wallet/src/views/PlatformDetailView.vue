@@ -90,6 +90,16 @@ const locked = computed(() => {
   return platform.value ? !canAccessPlatform(platform.value.id) : false;
 });
 
+const platformSlotLabel = computed(() => {
+  return platform.value?.slot == null ? "Slot TBD" : `Slot ${platform.value.slot}`;
+});
+
+const platformStatusLabel = computed(() => {
+  if (platform.value?.status === "active") return "Active";
+  if (platform.value?.status === "coming soon") return "Coming Soon";
+  return "Proposed";
+});
+
 const platformTabs = computed<PlatformTab[]>(() => {
   if (!platform.value) return [];
 
@@ -327,7 +337,7 @@ function openBitNamesMessages(contactName: string) {
       <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
         <div>
           <p class="text-xs uppercase tracking-widest text-ecash-500">
-            Platform · Slot {{ platform.slot }}
+            Platform · {{ platformSlotLabel }}
           </p>
           <div class="mt-2 flex flex-wrap items-center gap-3">
             <h2 class="text-3xl font-extrabold text-white">
@@ -345,7 +355,7 @@ function openBitNamesMessages(contactName: string) {
             class="rounded-full px-3 py-1 text-xs font-semibold"
             :class="platform.status === 'active' ? 'bg-ecash-900 text-ecash-400' : 'bg-gray-800 text-gray-400'"
           >
-            {{ platform.status === "active" ? "Active" : "Proposed" }}
+            {{ platformStatusLabel }}
           </span>
           <span class="rounded-full bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-300">
             {{ platform.primaryUseCase }}

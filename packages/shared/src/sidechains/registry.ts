@@ -17,6 +17,7 @@
 //    98    zside        6098
 //    99    photon       6099
 //    255   coinshift    6255
+//    TBD   elementsplus (announced — no assigned slot yet)
 //
 // These are NOT sequential — BIP-300 slots are sparse, assigned per
 // proposal. Do not assume slot === array index.
@@ -34,6 +35,7 @@ export const SIDECHAIN_THUNDER: SidechainDescriptor = {
   slot: 9,
   id: "thunder",
   displayName: "Thunder Network",
+  shortName: "Thunder",
   description: "High-throughput scaling sidechain with a large, growing blocksize and fraud proofs. Fast, low-fee everyday payments.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK: populate from sidechain proposal TX
@@ -45,6 +47,7 @@ export const SIDECHAIN_ZSIDE: SidechainDescriptor = {
   slot: 98,
   id: "zside",
   displayName: "zSide",
+  shortName: "zSide",
   description: "Privacy-focused sidechain with shielded transactions. Zcash-style zero-knowledge proofs on a Bitcoin-secured chain.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK
@@ -56,6 +59,7 @@ export const SIDECHAIN_BITNAMES: SidechainDescriptor = {
   slot: 2,
   id: "bitnames",
   displayName: "BitNames",
+  shortName: "BitNames",
   description: "Decentralized naming and identity system. Register human-readable names anchored to the Bitcoin-secured mainchain.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK
@@ -67,6 +71,7 @@ export const SIDECHAIN_BITASSETS: SidechainDescriptor = {
   slot: 4,
   id: "bitassets",
   displayName: "BitAssets",
+  shortName: "BitAssets",
   description: "Tokenized assets — issue and trade ERC-20-style tokens, NFTs, and ICOs secured by Bitcoin hashrate.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK
@@ -78,6 +83,7 @@ export const SIDECHAIN_PHOTON: SidechainDescriptor = {
   slot: 99,
   id: "photon",
   displayName: "Photon",
+  shortName: "Photon",
   description: "Post-quantum cryptography sidechain. Quantum-resistant signatures securing value against future quantum attacks.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK
@@ -89,6 +95,7 @@ export const SIDECHAIN_TRUTHCOIN: SidechainDescriptor = {
   slot: 13,
   id: "truthcoin",
   displayName: "Truthcoin",
+  shortName: "Truthcoin",
   description: "Paul Sztorc's prediction market sidechain. Decentralized oracle system using peer-to-peer outcome resolution.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK
@@ -100,6 +107,7 @@ export const SIDECHAIN_COINSHIFT: SidechainDescriptor = {
   slot: 255,
   id: "coinshift",
   displayName: "CoinShift",
+  shortName: "CoinShift",
   description: "Cross-chain atomic swap sidechain. Trustless exchange between eCash and other cryptocurrency networks.",
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK
@@ -118,8 +126,28 @@ export const SIDECHAIN_RISCY: SidechainDescriptor = {
   slot: 3,
   id: "riscy",
   displayName: "RISCy",
+  shortName: "RISCy",
   description: "Proposed RISC-V-based sidechain. Reserved at slot 3; not yet activated and not accepting deposits.",
   status: "proposed",
+  keyHash: "",
+  supportsBmm: true,
+  infoUrl: "https://ecash.com",
+};
+
+//
+// Elements Plus — an announced coming-soon drivechain with no slot yet.
+//
+// Paul Sztorc announced Elements Plus for the L2L signet as an Elements-based
+// BIP-300 L2. No BIP-300 slot number has been assigned yet, so slot MUST stay
+// null until the authoritative slot is known.
+//
+export const SIDECHAIN_ELEMENTS_PLUS: SidechainDescriptor = {
+  slot: null,
+  id: "elementsplus",
+  displayName: "Elements Plus",
+  shortName: "Elements+",
+  description: "Elements-based BIP-300 Drivechain functionality with advanced Bitcoin scripting features.",
+  status: "coming soon",
   keyHash: "",
   supportsBmm: true,
   infoUrl: "https://ecash.com",
@@ -132,11 +160,12 @@ export const SIDECHAIN_RISCY: SidechainDescriptor = {
 /**
  * Complete list of all known drivechain sidechains.
  *
- * Contains the 7 ACTIVE drivechains plus the 1 PROPOSED chain (riscy).
+ * Contains the 7 ACTIVE drivechains plus proposed / coming-soon chains.
  * Use getActiveSidechains() for the 7 that are live at launch.
  *
  * NOTE: ordered by launch prominence, NOT by slot. Slots are sparse
- * (9, 98, 2, 4, 99, 13, 255, 3) — never use array index as a slot.
+ * (9, 98, 2, 4, 99, 13, 255, 3) and future announced chains can have
+ * null slots until assignment — never use array index as a slot.
  *
  * Usage:
  *   import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
@@ -151,10 +180,11 @@ export const LAUNCH_SIDECHAINS: readonly SidechainDescriptor[] = [
   SIDECHAIN_TRUTHCOIN,
   SIDECHAIN_COINSHIFT,
   SIDECHAIN_RISCY,
+  SIDECHAIN_ELEMENTS_PLUS,
 ] as const;
 
 /**
- * Lookup a sidechain by its slot number.
+ * Lookup a sidechain by its assigned slot number.
  *
  * @param slot - The BIP-300 slot number (0-255)
  * @returns The sidechain descriptor, or undefined if the slot is not registered
@@ -174,7 +204,7 @@ export function getSidechainById(id: string): SidechainDescriptor | undefined {
 }
 
 /**
- * Lookup a sidechain by its slot number, or throw.
+ * Lookup a sidechain by its assigned slot number, or throw.
  *
  * @param slot - The BIP-300 slot number
  * @returns The sidechain descriptor
@@ -184,7 +214,10 @@ export function getSidechainBySlotOrThrow(slot: SidechainSlot): SidechainDescrip
   const sc = getSidechainBySlot(slot);
 
   if (!sc) {
-    const validSlots = LAUNCH_SIDECHAINS.map((s) => s.slot).join(", ");
+    const validSlots = LAUNCH_SIDECHAINS
+      .map((s) => s.slot)
+      .filter((slot): slot is SidechainSlot => slot != null)
+      .join(", ");
     throw new Error(
       `Unknown sidechain slot ${slot}. Registered slots: ${validSlots}`
     );
@@ -202,7 +235,7 @@ export function getActiveSidechains(): readonly SidechainDescriptor[] {
 }
 
 /**
- * Returns the total number of registered sidechain slots.
+ * Returns the total number of known sidechains.
  */
 export function getSidechainCount(): number {
   return LAUNCH_SIDECHAINS.length;

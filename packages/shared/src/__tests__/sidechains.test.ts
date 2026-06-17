@@ -14,6 +14,7 @@ import {
   SIDECHAIN_TRUTHCOIN,
   SIDECHAIN_COINSHIFT,
   SIDECHAIN_RISCY,
+  SIDECHAIN_ELEMENTS_PLUS,
   getSidechainBySlot,
   getSidechainById,
   getSidechainBySlotOrThrow,
@@ -26,15 +27,17 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("Sidechain Registry", () => {
-  it("has 8 known sidechains (7 active drivechains + 1 proposed)", () => {
-    expect(LAUNCH_SIDECHAINS).toHaveLength(8);
+  it("has 9 known sidechains (7 active drivechains + proposed / coming-soon chains)", () => {
+    expect(LAUNCH_SIDECHAINS).toHaveLength(9);
   });
 
   it("slots are unique and match the authoritative BIP-300 assignments", () => {
-    const slots = LAUNCH_SIDECHAINS.map((sc) => sc.slot);
+    const slots = LAUNCH_SIDECHAINS
+      .map((sc) => sc.slot)
+      .filter((slot): slot is number => slot != null);
     const uniqueSlots = new Set(slots);
     expect(uniqueSlots.size).toBe(slots.length);
-    // Authoritative slots (dev.txt ports table), sorted ascending:
+    // Authoritative assigned slots (dev.txt ports table), sorted ascending:
     expect([...slots].sort((a, b) => a - b)).toEqual([2, 3, 4, 9, 13, 98, 99, 255]);
   });
 
@@ -67,8 +70,8 @@ describe("Sidechain Registry", () => {
     });
   });
 
-  it("getSidechainCount returns 8", () => {
-    expect(getSidechainCount()).toBe(8);
+  it("getSidechainCount returns 9", () => {
+    expect(getSidechainCount()).toBe(9);
   });
 });
 
@@ -117,6 +120,13 @@ describe("Individual Sidechains", () => {
     expect(SIDECHAIN_RISCY.id).toBe("riscy");
     expect(SIDECHAIN_RISCY.status).toBe("proposed");
   });
+
+  it("Elements Plus has no assigned slot yet and is coming soon", () => {
+    expect(SIDECHAIN_ELEMENTS_PLUS.slot).toBeNull();
+    expect(SIDECHAIN_ELEMENTS_PLUS.id).toBe("elementsplus");
+    expect(SIDECHAIN_ELEMENTS_PLUS.shortName).toBe("Elements+");
+    expect(SIDECHAIN_ELEMENTS_PLUS.status).toBe("coming soon");
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -157,7 +167,7 @@ describe("Sidechain Lookups", () => {
     expect(() => getSidechainBySlotOrThrow(0)).toThrow("Unknown sidechain slot 0");
   });
 
-  it("getActiveSidechains returns 7 active sidechains (riscy is proposed)", () => {
+  it("getActiveSidechains returns 7 active sidechains (riscy is proposed, elements plus is coming soon)", () => {
     const active = getActiveSidechains();
     expect(active).toHaveLength(7);
     active.forEach((sc) => {
@@ -165,9 +175,10 @@ describe("Sidechain Lookups", () => {
     });
   });
 
-  it("getActiveSidechains does not include the proposed riscy chain", () => {
+  it("getActiveSidechains does not include the proposed or coming-soon chains", () => {
     const active = getActiveSidechains();
     const ids = active.map((sc) => sc.id);
     expect(ids).not.toContain("riscy");
+    expect(ids).not.toContain("elementsplus");
   });
 });

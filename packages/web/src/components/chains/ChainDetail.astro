@@ -9,7 +9,7 @@ interface Props {
   name: string;
   description: string;
   features?: string[];
-  slotNumber: number;
+  slotNumber: number | null;
 }
 
 const {
@@ -18,6 +18,8 @@ const {
   features = [],
   slotNumber,
 } = Astro.props;
+
+const slotLabel = slotNumber == null ? "TBD" : String(slotNumber);
 ---
 
 <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
@@ -41,6 +43,6 @@ const {
   )}
 
   <p class="mt-4 font-mono text-xs text-gray-600">
-    BIP-300 Slot {slotNumber}
+    BIP-300 Slot {slotLabel}
   </p>
 </div>
