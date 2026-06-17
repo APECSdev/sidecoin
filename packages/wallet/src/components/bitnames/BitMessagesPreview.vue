@@ -31,7 +31,7 @@ const emit = defineEmits<{
 }>();
 
 const selectedContact = computed(() => {
-  return props.contacts.find((contact) => contact.name === props.selectedContactName) ?? props.contacts[0];
+  return props.contacts.find((contact) => contact.name === props.selectedContactName);
 });
 
 const selectedConversation = computed(() => {
@@ -66,12 +66,12 @@ function selectContact(contactName: string) {
 
         <div class="grid grid-cols-3 gap-3 rounded-2xl border border-gray-800 bg-gray-950/70 p-3 text-center">
           <div class="px-3 py-2">
-            <p class="text-lg font-black text-ecash-400">24</p>
+            <p class="text-lg font-black text-amber-400">—</p>
             <p class="text-[10px] uppercase tracking-wide text-gray-500">Messages</p>
           </div>
           <div class="border-x border-gray-800 px-3 py-2">
-            <p class="text-lg font-black text-ecash-400">2</p>
-            <p class="text-[10px] uppercase tracking-wide text-gray-500">Feeds</p>
+            <p class="text-lg font-black text-ecash-400">Live</p>
+            <p class="text-[10px] uppercase tracking-wide text-gray-500">News</p>
           </div>
           <div class="px-3 py-2">
             <p class="text-lg font-black text-ecash-400">Signet</p>
@@ -93,9 +93,14 @@ function selectContact(contactName: string) {
               <p class="text-xs uppercase tracking-widest text-gray-500">
                 Identity
               </p>
-              <h3 class="mt-2 text-xl font-black text-white">sidecoin.bit</h3>
+              <h3 class="mt-2 text-xl font-black text-white">
+                {{ selectedContact?.name ?? "No live identity selected" }}
+              </h3>
             </div>
-            <span class="rounded-full bg-ecash-900 px-3 py-1 text-xs font-black text-ecash-300">
+            <span
+              v-if="selectedContact"
+              class="rounded-full bg-ecash-900 px-3 py-1 text-xs font-black text-ecash-300"
+            >
               Resolved
             </span>
           </div>
@@ -111,22 +116,15 @@ function selectContact(contactName: string) {
             </div>
             <div class="flex justify-between gap-4">
               <dt class="text-gray-500">Contact</dt>
-              <dd class="font-mono text-gray-200">{{ selectedContact.name }}</dd>
+              <dd class="font-mono text-gray-200">
+                {{ selectedContact?.name ?? "—" }}
+              </dd>
             </div>
           </dl>
         </section>
 
         <section class="rounded-2xl border border-gray-800 bg-gray-950 p-5">
           <h3 class="text-xl font-black text-white">Broadcast News</h3>
-
-          <label class="mt-5 block">
-            <span class="text-xs uppercase tracking-widest text-gray-500">From</span>
-            <input
-              readonly
-              value="sidecoin.bit"
-              class="mt-2 w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 font-mono text-sm text-ecash-300"
-            />
-          </label>
 
           <div class="mt-5 rounded-xl border border-gray-800 bg-gray-900 p-4">
             <p class="text-sm font-semibold text-white">Composer not connected yet</p>
@@ -147,7 +145,11 @@ function selectContact(contactName: string) {
         <section class="rounded-2xl border border-gray-800 bg-gray-950 p-5">
           <h3 class="text-xl font-black text-white">Contacts</h3>
 
-          <div class="mt-4 space-y-2">
+          <div v-if="contacts.length === 0" class="mt-4 rounded-xl border border-gray-800 bg-gray-900 p-4 text-sm text-gray-500">
+            No live BitNames contacts are indexed yet.
+          </div>
+
+          <div v-else class="mt-4 space-y-2">
             <button
               v-for="contact in contacts"
               :key="contact.name"
@@ -164,9 +166,15 @@ function selectContact(contactName: string) {
 
         <section class="rounded-2xl border border-gray-800 bg-gray-950 p-5">
           <h3 class="text-xl font-black text-white">BitNames Thread</h3>
-          <p class="mt-1 text-sm text-gray-500">{{ selectedContact.paymentHint }}</p>
+          <p class="mt-1 text-sm text-gray-500">
+            {{ selectedContact?.paymentHint ?? "No live BitNames conversation selected." }}
+          </p>
 
-          <div class="mt-5 space-y-3">
+          <div v-if="selectedConversation.length === 0" class="mt-5 rounded-xl border border-gray-800 bg-gray-900 p-4 text-sm text-gray-500">
+            No live BitNames messages are indexed yet.
+          </div>
+
+          <div v-else class="mt-5 space-y-3">
             <div
               v-for="message in selectedConversation"
               :key="`${message.contact}-${message.time}-${message.body}`"

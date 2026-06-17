@@ -120,8 +120,8 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("Send Payment");
     expect(wrapper.text()).toContain("Create Invoice");
     expect(wrapper.text()).toContain("Route estimate");
-    expect(wrapper.text()).toContain("Payment ID");
-    expect(wrapper.text()).toContain("thunder-pay-7f4a");
+    expect(wrapper.text()).toContain("No live Thunder payments are indexed yet.");
+    expect(wrapper.text()).not.toContain("thunder-pay-7f4a");
   });
 
   it("can switch to the Thunder Channels tab", async () => {
@@ -136,9 +136,10 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("Inbound liquidity");
     expect(wrapper.text()).toContain("Outbound liquidity");
     expect(wrapper.text()).toContain("Average health");
-    expect(wrapper.text()).toContain("routing-peer-01");
-    expect(wrapper.text()).toContain("merchant-hub");
-    expect(wrapper.text()).toContain("backup-route");
+    expect(wrapper.text()).toContain("No live Thunder channels are indexed yet.");
+    expect(wrapper.text()).not.toContain("routing-peer-01");
+    expect(wrapper.text()).not.toContain("merchant-hub");
+    expect(wrapper.text()).not.toContain("backup-route");
   });
 
   it("can switch to the Thunder Liquidity tab", async () => {
@@ -154,14 +155,16 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("Route coverage");
     expect(wrapper.text()).toContain("Suggested action");
     expect(wrapper.text()).toContain("Recommendations");
-    expect(wrapper.text()).toContain("Add inbound capacity");
-    expect(wrapper.text()).toContain("Display-only liquidity view");
+    expect(wrapper.text()).toContain("No live Thunder liquidity recommendations are indexed yet.");
+    expect(wrapper.text()).toContain("No live Thunder liquidity diagnostics are indexed yet.");
+    expect(wrapper.text()).not.toContain("Add inbound capacity");
+    expect(wrapper.text()).not.toContain("Display-only liquidity view");
   });
 
   it("renders a clear PRO CTA for gated platforms", async () => {
     const wrapper = await mountPlatform("/platforms/zside");
     expect(wrapper.text()).toContain("Unlock zSide with Sidecoin PRO");
-    expect(wrapper.text()).toContain("Platform wallet preview");
+    expect(wrapper.text()).toContain("Platform wallet");
     expect(wrapper.text()).toContain("Historical analysis across platforms");
     expect(wrapper.text()).toContain("Early access to proposed platforms like RISCy");
   });
@@ -179,7 +182,8 @@ describe("PlatformDetailView.vue", () => {
     const wrapper = await mountPlatform("/platforms/bitnames");
     expect(wrapper.text()).toContain("Contacts");
     expect(wrapper.text()).toContain("Messages");
-    expect(wrapper.text()).toContain("demo conversation events");
+    expect(wrapper.text()).toContain("Live message data not indexed yet");
+    expect(wrapper.text()).not.toContain("demo conversation events");
   });
 
   it("can switch to the BitNames Contacts tab", async () => {
@@ -190,30 +194,25 @@ describe("PlatformDetailView.vue", () => {
     await contacts!.trigger("click");
 
     expect(wrapper.text()).toContain("BitNames contacts");
-    expect(wrapper.text()).toContain("alice.bit");
-    expect(wrapper.text()).toContain("merchant.bit");
-    expect(wrapper.text()).toContain("support.bit");
-    expect(wrapper.text()).toContain("Contact profile preview");
+    expect(wrapper.text()).toContain("No live BitNames contacts are indexed yet.");
+    expect(wrapper.text()).toContain("No live BitNames contact is selected.");
+    expect(wrapper.text()).toContain("Contact profile");
+    expect(wrapper.text()).not.toContain("alice.bit");
+    expect(wrapper.text()).not.toContain("merchant.bit");
+    expect(wrapper.text()).not.toContain("support.bit");
   });
 
-  it("can open the BitMessages preview from Contacts", async () => {
+  it("shows an empty BitNames contact state instead of fake contacts", async () => {
     const wrapper = await mountPlatform("/platforms/bitnames");
     const contacts = wrapper.findAll("button").find((b) => b.text() === "Contacts");
     expect(contacts).toBeDefined();
 
     await contacts!.trigger("click");
 
-    const message = wrapper.findAll("button").find((b) => b.text() === "Message");
-    expect(message).toBeDefined();
-
-    await message!.trigger("click");
-    await flushPromises();
-
-    expect(wrapper.text()).toContain("BitMessages");
-    expect(wrapper.text()).toContain("Coin News");
-    expect(wrapper.text()).toContain("Broadcast News");
-    expect(wrapper.text()).toContain("sidecoin.bit");
-    expect(wrapper.text()).toContain("Live API wallet post");
+    expect(wrapper.text()).toContain("No live BitNames contacts are indexed yet.");
+    expect(wrapper.text()).not.toContain("alice.bit");
+    expect(wrapper.text()).not.toContain("merchant.bit");
+    expect(wrapper.text()).not.toContain("support.bit");
   });
 
   it("can switch directly to the BitMessages tab", async () => {
@@ -232,6 +231,8 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("Fee");
     expect(wrapper.text()).toContain("Title");
     expect(wrapper.text()).toContain("Live API Japan post");
+    expect(wrapper.text()).toContain("No live BitNames contacts are indexed yet.");
+    expect(wrapper.text()).toContain("No live BitNames messages are indexed yet.");
   });
 
   it("does not render backend warning copy in the BitMessages screenshot UI", async () => {
@@ -240,6 +241,7 @@ describe("PlatformDetailView.vue", () => {
     expect(messages).toBeDefined();
 
     await messages!.trigger("click");
+    await flushPromises();
 
     expect(wrapper.text()).not.toContain("display-only");
     expect(wrapper.text()).not.toContain("no messages leave your wallet");

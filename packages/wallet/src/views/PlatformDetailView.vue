@@ -69,142 +69,17 @@ interface BitNamesMessage {
 
 const route = useRoute();
 const selectedTabId = ref("");
-const selectedBitNamesContact = ref("alice.bit");
+const selectedBitNamesContact = ref("");
 
-const thunderPaymentRows: ThunderPaymentRow[] = [
-  {
-    time: "14:40",
-    type: "Payment",
-    amount: "0.75000000",
-    status: "Settled",
-    paymentId: "thunder-pay-7f4a",
-  },
-  {
-    time: "14:12",
-    type: "Invoice",
-    amount: "0.12500000",
-    status: "Paid",
-    paymentId: "thunder-inv-52ac",
-  },
-  {
-    time: "13:58",
-    type: "Route probe",
-    amount: "0.00000000",
-    status: "Complete",
-    paymentId: "thunder-route-91bd",
-  },
-];
+const thunderPaymentRows: ThunderPaymentRow[] = [];
 
-const thunderChannelRows: ThunderChannelRow[] = [
-  {
-    peer: "routing-peer-01",
-    capacity: "3.00000000",
-    inbound: "1.20000000",
-    outbound: "1.80000000",
-    status: "Open",
-    health: "98%",
-  },
-  {
-    peer: "merchant-hub",
-    capacity: "2.50000000",
-    inbound: "0.90000000",
-    outbound: "1.60000000",
-    status: "Open",
-    health: "94%",
-  },
-  {
-    peer: "backup-route",
-    capacity: "1.25000000",
-    inbound: "0.85000000",
-    outbound: "0.40000000",
-    status: "Watch",
-    health: "81%",
-  },
-];
+const thunderChannelRows: ThunderChannelRow[] = [];
 
-const thunderLiquidityRecommendations: ThunderLiquidityRecommendation[] = [
-  {
-    title: "Add inbound capacity",
-    body: "Receiving capacity is healthy, but another inbound path would improve invoice reliability.",
-    priority: "Medium",
-  },
-  {
-    title: "Rebalance merchant-hub",
-    body: "Merchant routing has strong outbound capacity and could support more balanced two-way flow.",
-    priority: "Low",
-  },
-  {
-    title: "Keep backup route online",
-    body: "The backup route improves resilience for small payments and fallback routing.",
-    priority: "Low",
-  },
-];
+const thunderLiquidityRecommendations: ThunderLiquidityRecommendation[] = [];
 
-const bitNamesContacts: BitNamesContact[] = [
-  {
-    name: "alice.bit",
-    displayName: "Alice",
-    useCase: "Payments and messages",
-    status: "Resolved",
-    lastSeen: "2 min ago",
-    paymentHint: "Thunder invoice contact",
-  },
-  {
-    name: "merchant.bit",
-    displayName: "Merchant",
-    useCase: "Invoices and receipts",
-    status: "Resolved",
-    lastSeen: "Today",
-    paymentHint: "Preferred payment endpoint",
-  },
-  {
-    name: "support.bit",
-    displayName: "Support",
-    useCase: "Product support",
-    status: "Preview",
-    lastSeen: "Demo",
-    paymentHint: "Messaging preview",
-  },
-];
+const bitNamesContacts: BitNamesContact[] = [];
 
-const bitNamesMessages: BitNamesMessage[] = [
-  {
-    contact: "alice.bit",
-    side: "received",
-    time: "14:42",
-    body: "Payment received. Thanks!",
-  },
-  {
-    contact: "alice.bit",
-    side: "sent",
-    time: "14:43",
-    body: "Great — I’ll send the next invoice over Thunder.",
-  },
-  {
-    contact: "alice.bit",
-    side: "received",
-    time: "14:44",
-    body: "Perfect. BitNames makes this much easier than copying addresses.",
-  },
-  {
-    contact: "merchant.bit",
-    side: "received",
-    time: "13:30",
-    body: "Your order is ready. Send the payment to the resolved Thunder endpoint.",
-  },
-  {
-    contact: "merchant.bit",
-    side: "sent",
-    time: "13:31",
-    body: "Confirmed. I’ll review the invoice before broadcasting.",
-  },
-  {
-    contact: "support.bit",
-    side: "received",
-    time: "12:05",
-    body: "Welcome to the BitNames messaging preview.",
-  },
-];
+const bitNamesMessages: BitNamesMessage[] = [];
 
 const platform = computed(() => {
   const id = String(route.params.platformId ?? "");
@@ -278,7 +153,7 @@ const selectedTab = computed(() => {
 });
 
 const selectedContact = computed(() => {
-  return bitNamesContacts.find((contact) => contact.name === selectedBitNamesContact.value) ?? bitNamesContacts[0];
+  return bitNamesContacts.find((contact) => contact.name === selectedBitNamesContact.value);
 });
 
 const proBenefits = computed(() => [
@@ -293,19 +168,19 @@ const metricCards = computed<MetricCard[]>(() => {
 
   if (id === "thunder") {
     return [
-      { label: "Platform Balance", value: "8.25000000", caption: "eCash routed through Thunder" },
-      { label: "Payments", value: "12", caption: "recent payment events" },
-      { label: "Channels", value: "3", caption: "active liquidity paths" },
-      { label: "Liquidity", value: "94%", caption: "available route coverage" },
+      { label: "Platform Balance", value: "—", caption: "Live balance data not indexed yet" },
+      { label: "Payments", value: "—", caption: "Live payment data not indexed yet" },
+      { label: "Channels", value: "—", caption: "Live channel data not indexed yet" },
+      { label: "Liquidity", value: "—", caption: "Live liquidity data not indexed yet" },
     ];
   }
 
   if (id === "bitnames") {
     return [
-      { label: "Registered Names", value: "3", caption: "wallet identities" },
-      { label: "Records", value: "9", caption: "profile and address records" },
-      { label: "Contacts", value: "24", caption: "resolved identities" },
-      { label: "Messages", value: "6", caption: "demo conversation events" },
+      { label: "Registered Names", value: "—", caption: "Live name data not indexed yet" },
+      { label: "Records", value: "—", caption: "Live record data not indexed yet" },
+      { label: "Contacts", value: "—", caption: "Live contact data not indexed yet" },
+      { label: "Messages", value: "—", caption: "Live message data not indexed yet" },
     ];
   }
 
@@ -363,29 +238,7 @@ const metricCards = computed<MetricCard[]>(() => {
 });
 
 const activityRows = computed<ActivityRow[]>(() => {
-  const id = platform.value?.id;
-
-  if (id === "thunder") {
-    return [
-      { time: "2026-06-13 14:40", type: "Payment", amount: "0.75000000", status: "Settled", txid: "thunder-pay-7f4a" },
-      { time: "2026-06-13 14:12", type: "Invoice", amount: "0.12500000", status: "Paid", txid: "thunder-inv-52ac" },
-      { time: "2026-06-13 13:58", type: "Channel", amount: "1.00000000", status: "Open", txid: "thunder-chan-91bd" },
-    ];
-  }
-
-  if (id === "bitnames") {
-    return [
-      { time: "2026-06-13 13:20", type: "Register", amount: "1 name", status: "Confirmed", txid: "bitnames-reg-alice" },
-      { time: "2026-06-13 12:50", type: "Record", amount: "3 records", status: "Updated", txid: "bitnames-rec-44de" },
-      { time: "2026-06-13 12:15", type: "Resolve", amount: "contact", status: "Resolved", txid: "bitnames-res-09fa" },
-    ];
-  }
-
-  return [
-    { time: "2026-06-13 12:00", type: "Deposit", amount: "—", status: "PRO", txid: "unlock-history" },
-    { time: "2026-06-13 11:30", type: "Workflow", amount: "—", status: "PRO", txid: "unlock-workflows" },
-    { time: "2026-06-13 11:00", type: "Analytics", amount: "—", status: "PRO", txid: "unlock-analytics" },
-  ];
+  return [];
 });
 
 function actionLabel(): string {
@@ -398,7 +251,7 @@ function actionLabel(): string {
   if (id === "photon") return "Review migration";
   if (id === "truthcoin") return "Browse markets";
   if (id === "coinshift") return "Review route";
-  return "Open preview";
+  return "Open workflow";
 }
 
 function primaryFieldLabel(): string {
@@ -418,7 +271,7 @@ function primaryFieldPlaceholder(): string {
   const id = platform.value?.id;
 
   if (id === "thunder") return "invoice, contact, or Thunder address";
-  if (id === "bitnames") return "alice";
+  if (id === "bitnames") return "name.bit";
   if (id === "zside") return "shielded address";
   if (id === "bitassets") return "TOKEN";
   if (id === "photon") return "photon receive address";
@@ -585,7 +438,7 @@ function openBitNamesMessages(contactName: string) {
 
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Channel liquidity</p>
-              <p class="mt-2 font-semibold text-white">3 open paths · 94% route coverage</p>
+              <p class="mt-2 font-semibold text-white">Live channel data is not indexed yet</p>
               <button
                 class="mt-4 rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
                 @click="selectedTabId = 'channels'"
@@ -635,7 +488,11 @@ function openBitNamesMessages(contactName: string) {
           <p class="mb-3 text-xs uppercase tracking-widest text-gray-500">
             Recent activity
           </p>
-          <div class="overflow-x-auto">
+          <div v-if="activityRows.length === 0" class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-sm text-gray-500">
+            Live platform activity is not indexed yet.
+          </div>
+
+          <div v-else class="overflow-x-auto">
             <table class="w-full text-left text-xs">
               <thead class="text-gray-500">
                 <tr>
@@ -661,7 +518,7 @@ function openBitNamesMessages(contactName: string) {
           <div>
             <h3 class="text-xl font-bold text-white">Thunder Payments</h3>
             <p class="mt-3 text-sm leading-6 text-gray-400">
-              Preview fast Thunder payment flows for sending payments, creating
+              Prepare Thunder payment flows for sending payments, creating
               invoices, and reviewing route status before settlement.
             </p>
           </div>
@@ -746,7 +603,14 @@ function openBitNamesMessages(contactName: string) {
             </div>
           </div>
 
-          <div class="overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
+          <div
+            v-if="thunderPaymentRows.length === 0"
+            class="rounded-xl border border-gray-800 bg-gray-950 p-5 text-sm text-gray-500"
+          >
+            No live Thunder payments are indexed yet.
+          </div>
+
+          <div v-else class="overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
             <table class="w-full min-w-[760px] text-left text-sm">
               <thead class="text-xs uppercase tracking-widest text-gray-500">
                 <tr>
@@ -776,26 +640,11 @@ function openBitNamesMessages(contactName: string) {
               Route estimate
             </p>
             <h3 class="mt-2 text-xl font-black text-white">
-              Preview route quality
+              Live route quality
             </h3>
-            <dl class="mt-5 space-y-3 text-sm">
-              <div class="flex justify-between gap-4">
-                <dt class="text-gray-500">Route coverage</dt>
-                <dd class="font-mono text-ecash-400">94%</dd>
-              </div>
-              <div class="flex justify-between gap-4">
-                <dt class="text-gray-500">Estimated fee</dt>
-                <dd class="font-mono text-gray-300">0.00000120</dd>
-              </div>
-              <div class="flex justify-between gap-4">
-                <dt class="text-gray-500">Expected settlement</dt>
-                <dd class="font-mono text-gray-300">Instant preview</dd>
-              </div>
-              <div class="flex justify-between gap-4">
-                <dt class="text-gray-500">Fallback routes</dt>
-                <dd class="font-mono text-gray-300">2</dd>
-              </div>
-            </dl>
+            <div class="mt-5 rounded-xl border border-gray-800 bg-gray-900 p-4 text-sm text-gray-500">
+              Live Thunder route estimates are not indexed yet.
+            </div>
           </div>
 
           <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
@@ -808,7 +657,7 @@ function openBitNamesMessages(contactName: string) {
             <ul class="mt-5 space-y-3 text-sm text-gray-300">
               <li class="flex gap-2">
                 <span class="text-ecash-400">✓</span>
-                <span>Invoices and routes are preview-only in this scaffold.</span>
+                <span>Payment submission stays disabled until live route data is connected.</span>
               </li>
               <li class="flex gap-2">
                 <span class="text-ecash-400">✓</span>
@@ -836,27 +685,34 @@ function openBitNamesMessages(contactName: string) {
           <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Open channels</p>
-              <p class="mt-3 text-2xl font-black text-ecash-400">3</p>
-              <p class="mt-1 text-xs text-gray-500">active liquidity paths</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">—</p>
+              <p class="mt-1 text-xs text-gray-500">live data not indexed yet</p>
             </div>
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Inbound liquidity</p>
-              <p class="mt-3 text-2xl font-black text-ecash-400">2.95000000</p>
-              <p class="mt-1 text-xs text-gray-500">available to receive</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">—</p>
+              <p class="mt-1 text-xs text-gray-500">live data not indexed yet</p>
             </div>
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Outbound liquidity</p>
-              <p class="mt-3 text-2xl font-black text-ecash-400">3.80000000</p>
-              <p class="mt-1 text-xs text-gray-500">available to send</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">—</p>
+              <p class="mt-1 text-xs text-gray-500">live data not indexed yet</p>
             </div>
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Average health</p>
-              <p class="mt-3 text-2xl font-black text-ecash-400">91%</p>
-              <p class="mt-1 text-xs text-gray-500">weighted route score</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">—</p>
+              <p class="mt-1 text-xs text-gray-500">live data not indexed yet</p>
             </div>
           </div>
 
-          <div class="overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
+          <div
+            v-if="thunderChannelRows.length === 0"
+            class="rounded-xl border border-gray-800 bg-gray-950 p-5 text-sm text-gray-500"
+          >
+            No live Thunder channels are indexed yet.
+          </div>
+
+          <div v-else class="overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
             <table class="w-full min-w-[820px] text-left text-sm">
               <thead class="text-xs uppercase tracking-widest text-gray-500">
                 <tr>
@@ -909,12 +765,11 @@ function openBitNamesMessages(contactName: string) {
               Channel Summary
             </p>
             <h3 class="mt-2 text-xl font-black text-white">
-              Balanced liquidity
+              Live channel data pending
             </h3>
             <p class="mt-3 text-sm leading-6 text-gray-400">
-              Thunder’s preview channel set has more outbound than inbound
-              capacity, which is useful for paying but should be monitored for
-              receiving reliability.
+              Live Thunder channel capacity, inbound liquidity, outbound
+              liquidity, and health data are not indexed yet.
             </p>
           </div>
 
@@ -946,23 +801,23 @@ function openBitNamesMessages(contactName: string) {
           <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Available to send</p>
-              <p class="mt-3 text-2xl font-black text-ecash-400">3.80000000</p>
-              <p class="mt-1 text-xs text-gray-500">outbound capacity</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">—</p>
+              <p class="mt-1 text-xs text-gray-500">live data not indexed yet</p>
             </div>
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Available to receive</p>
-              <p class="mt-3 text-2xl font-black text-ecash-400">2.95000000</p>
-              <p class="mt-1 text-xs text-gray-500">inbound capacity</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">—</p>
+              <p class="mt-1 text-xs text-gray-500">live data not indexed yet</p>
             </div>
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Route coverage</p>
-              <p class="mt-3 text-2xl font-black text-ecash-400">94%</p>
-              <p class="mt-1 text-xs text-gray-500">payment reachability</p>
+              <p class="mt-3 text-2xl font-black text-ecash-400">—</p>
+              <p class="mt-1 text-xs text-gray-500">live data not indexed yet</p>
             </div>
             <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
               <p class="text-xs uppercase tracking-widest text-gray-500">Suggested action</p>
-              <p class="mt-3 text-2xl font-black text-amber-400">Inbound</p>
-              <p class="mt-1 text-xs text-gray-500">add receive capacity</p>
+              <p class="mt-3 text-2xl font-black text-amber-400">—</p>
+              <p class="mt-1 text-xs text-gray-500">live data not indexed yet</p>
             </div>
           </div>
 
@@ -972,7 +827,14 @@ function openBitNamesMessages(contactName: string) {
             </p>
             <div class="mt-4 space-y-3">
               <div
+                v-if="thunderLiquidityRecommendations.length === 0"
+                class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-sm text-gray-500"
+              >
+                No live Thunder liquidity recommendations are indexed yet.
+              </div>
+              <div
                 v-for="item in thunderLiquidityRecommendations"
+                v-else
                 :key="item.title"
                 class="rounded-xl border border-gray-800 bg-gray-900 p-4"
               >
@@ -1001,22 +863,9 @@ function openBitNamesMessages(contactName: string) {
               </thead>
               <tbody class="text-gray-300">
                 <tr>
-                  <td class="border-b border-gray-900 px-4 py-3">Outbound ratio</td>
-                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-ecash-400">56%</td>
-                  <td class="border-b border-gray-900 px-4 py-3">Healthy</td>
-                  <td class="border-b border-gray-900 px-4 py-3 text-gray-500">Good payment capacity</td>
-                </tr>
-                <tr>
-                  <td class="border-b border-gray-900 px-4 py-3">Inbound ratio</td>
-                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-ecash-400">44%</td>
-                  <td class="border-b border-gray-900 px-4 py-3">Watch</td>
-                  <td class="border-b border-gray-900 px-4 py-3 text-gray-500">Add capacity for invoices</td>
-                </tr>
-                <tr>
-                  <td class="border-b border-gray-900 px-4 py-3">Fallback routes</td>
-                  <td class="border-b border-gray-900 px-4 py-3 font-mono text-ecash-400">2</td>
-                  <td class="border-b border-gray-900 px-4 py-3">Ready</td>
-                  <td class="border-b border-gray-900 px-4 py-3 text-gray-500">Improves reliability</td>
+                  <td colspan="4" class="px-4 py-6 text-sm text-gray-500">
+                    No live Thunder liquidity diagnostics are indexed yet.
+                  </td>
                 </tr>
               </tbody>
             </table>
@@ -1029,12 +878,11 @@ function openBitNamesMessages(contactName: string) {
               Planner scope
             </p>
             <h3 class="mt-2 text-xl font-black text-white">
-              Display-only liquidity view
+              Live liquidity data pending
             </h3>
             <p class="mt-3 text-sm leading-6 text-gray-400">
               This planner does not open channels, rebalance funds, or move
-              value. It previews the wallet-native layout for Thunder liquidity
-              management.
+              value. Live Thunder liquidity data is not indexed yet.
             </p>
           </div>
 
@@ -1074,8 +922,8 @@ function openBitNamesMessages(contactName: string) {
             <span class="text-xs uppercase tracking-widest text-gray-500">Platform deposit address</span>
             <input
               disabled
-              value="s0_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-              class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-400"
+              placeholder="Live deposit address not indexed"
+              class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-400 placeholder-gray-600"
             />
           </label>
 
@@ -1140,7 +988,14 @@ function openBitNamesMessages(contactName: string) {
           class="mt-5 w-full rounded border border-gray-800 bg-gray-950 px-3 py-3 text-sm text-gray-400 placeholder-gray-600"
         />
 
-        <div class="mt-5 overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
+        <div
+          v-if="activityRows.length === 0"
+          class="mt-5 rounded-xl border border-gray-800 bg-gray-950 p-5 text-sm text-gray-500"
+        >
+          Live platform activity is not indexed yet.
+        </div>
+
+        <div v-else class="mt-5 overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
           <table class="w-full min-w-[760px] text-left text-sm">
             <thead class="text-xs uppercase tracking-widest text-gray-500">
               <tr>
@@ -1177,7 +1032,7 @@ function openBitNamesMessages(contactName: string) {
                 <span class="text-xs uppercase tracking-widest text-gray-500">Search or add BitName</span>
                 <input
                   disabled
-                  placeholder="alice.bit"
+                  placeholder="name.bit"
                   class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
                 />
               </label>
@@ -1191,7 +1046,14 @@ function openBitNamesMessages(contactName: string) {
               </button>
             </div>
 
-            <div class="mt-5 overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
+            <div
+              v-if="bitNamesContacts.length === 0"
+              class="mt-5 rounded-xl border border-gray-800 bg-gray-950 p-5 text-sm text-gray-500"
+            >
+              No live BitNames contacts are indexed yet.
+            </div>
+
+            <div v-else class="mt-5 overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">
               <table class="w-full min-w-[760px] text-left text-sm">
                 <thead class="text-xs uppercase tracking-widest text-gray-500">
                   <tr>
@@ -1238,10 +1100,10 @@ function openBitNamesMessages(contactName: string) {
 
         <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
           <p class="mb-3 text-xs uppercase tracking-widest text-gray-500">
-            Contact profile preview
+            Contact profile
           </p>
 
-          <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
+          <div v-if="selectedContact" class="rounded-xl border border-gray-800 bg-gray-900 p-4">
             <p class="text-lg font-black text-white">{{ selectedContact.name }}</p>
             <p class="mt-1 text-sm text-gray-400">{{ selectedContact.displayName }}</p>
             <dl class="mt-4 space-y-3 text-sm">
@@ -1253,19 +1115,20 @@ function openBitNamesMessages(contactName: string) {
                 <dt class="text-xs uppercase tracking-widest text-gray-500">Payment hint</dt>
                 <dd class="mt-1 text-gray-300">{{ selectedContact.paymentHint }}</dd>
               </div>
-              <div>
-                <dt class="text-xs uppercase tracking-widest text-gray-500">Preview scope</dt>
-                <dd class="mt-1 text-gray-300">Display-only contact and messaging UI.</dd>
-              </div>
             </dl>
           </div>
 
+          <div v-else class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-sm text-gray-500">
+            No live BitNames contact is selected.
+          </div>
+
           <button
+            v-if="selectedContact"
             type="button"
             class="mt-4 w-full rounded-lg bg-ecash-600 px-4 py-2 text-sm font-bold text-white hover:bg-ecash-500"
             @click="openBitNamesMessages(selectedContact.name)"
           >
-            Open Messages Preview
+            Open Messages
           </button>
         </div>
       </div>
@@ -1347,7 +1210,7 @@ function openBitNamesMessages(contactName: string) {
 
       <div class="mt-6 grid gap-6 xl:grid-cols-[1fr_0.8fr]">
         <div>
-          <h3 class="text-xl font-bold text-white">Platform wallet preview</h3>
+          <h3 class="text-xl font-bold text-white">Platform wallet</h3>
           <p class="mt-3 text-sm leading-6 text-gray-400">
             Sidecoin PRO unlocks the full {{ platform.displayName }} wallet
             experience, including platform-native workflows, parent-chain

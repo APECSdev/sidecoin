@@ -1,7 +1,7 @@
 // packages/wallet/src/data/platforms.ts
 //
-// Static platform scaffolding for Drivechain/sidechain detail pages.
-// These pages are UI scaffolds while the platform-specific wallet experiences
+// Static platform definitions for Drivechain/sidechain detail pages.
+// These pages are UI shells while the platform-specific wallet experiences
 // are being designed and implemented.
 
 export interface PlatformFeatureTab {
@@ -40,7 +40,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "payments",
         label: "Payments",
         title: "Fast payment flows",
-        body: "Scaffold for Thunder payment UX: invoices, send/receive states, route status, and confirmation feedback.",
+        body: "Planned UI for Thunder payment UX: invoices, send/receive states, route status, and confirmation feedback.",
         bullets: ["Invoice-style requests", "Fast transfer status", "Payment history", "Liquidity-aware routing"],
       },
       {
@@ -74,8 +74,8 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "shield",
         label: "Shield",
         title: "Shield funds",
-        body: "Scaffold for moving transparent coins into a privacy-preserving shielded context.",
-        bullets: ["Shield amount", "Privacy warnings", "Fee preview", "Confirmation state"],
+        body: "Planned UI for moving transparent coins into a privacy-preserving shielded context.",
+        bullets: ["Shield amount", "Privacy warnings", "Fee review", "Confirmation state"],
       },
       {
         id: "private-send",
@@ -88,7 +88,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "unshield",
         label: "Unshield",
         title: "Return to transparent funds",
-        body: "Scaffold for controlled unshielding with clear privacy warnings.",
+        body: "Planned UI for controlled unshielding with clear privacy warnings.",
         bullets: ["Unshield destination", "Amount controls", "Linkability warnings", "Review before broadcast"],
       },
     ],
@@ -102,13 +102,13 @@ export const PLATFORMS: PlatformScaffold[] = [
     tagline: "Names, identity, and human-readable records.",
     primaryUseCase: "Identity",
     description:
-      "BitNames is the naming and identity platform. The wallet UI will focus on registering names, managing records, resolving identities, contacts, and messaging previews.",
+      "BitNames is the naming and identity platform. The wallet UI will focus on registering names, managing records, resolving identities, contacts, and messaging workflows.",
     featureTabs: [
       {
         id: "register",
         label: "Register",
         title: "Register a name",
-        body: "Scaffold for searching and registering names directly from the wallet.",
+        body: "Planned UI for searching and registering names directly from the wallet.",
         bullets: ["Name search", "Availability state", "Registration fee", "Renewal reminders"],
       },
       {
@@ -122,22 +122,22 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "resolve",
         label: "Resolve",
         title: "Resolve identities",
-        body: "Scaffold for looking up names before sending or verifying identities.",
+        body: "Planned UI for looking up names before sending or verifying identities.",
         bullets: ["Name lookup", "Resolved addresses", "Trust hints", "Copy/share actions"],
       },
       {
         id: "contacts",
         label: "Contacts",
         title: "BitNames contacts",
-        body: "Preview contact book for resolved identities, payment addresses, and message shortcuts.",
+        body: "Contact book area for resolved identities, payment addresses, and message shortcuts.",
         bullets: ["Contact search", "Identity status", "Payment shortcuts", "Message shortcuts"],
       },
       {
         id: "messages",
         label: "Messages",
         title: "BitNames messages",
-        body: "Preview identity-based messaging tied to BitNames contacts and wallet records.",
-        bullets: ["Identity selection", "Contact list", "Demo conversation", "Disabled composer preview"],
+        body: "Identity-based messaging tied to BitNames contacts and wallet records.",
+        bullets: ["Identity selection", "Contact list", "Live conversation", "Composer availability"],
       },
     ],
   },
@@ -156,7 +156,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "balances",
         label: "Balances",
         title: "Asset portfolio",
-        body: "Scaffold for displaying issued assets alongside base-chain balances.",
+        body: "Planned UI for displaying issued assets alongside base-chain balances.",
         bullets: ["Asset list", "Metadata display", "Balance history", "Filtering"],
       },
       {
@@ -170,7 +170,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "issue",
         label: "Issue",
         title: "Issue new assets",
-        body: "Scaffold for issuer workflows once issuance rules are finalized.",
+        body: "Planned UI for issuer workflows once issuance rules are finalized.",
         bullets: ["Ticker/name", "Supply settings", "Issuer metadata", "Confirmation flow"],
       },
     ],
@@ -190,7 +190,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "addresses",
         label: "Addresses",
         title: "Photon address management",
-        body: "Scaffold for creating and managing Photon-specific receive addresses.",
+        body: "Planned UI for creating and managing Photon-specific receive addresses.",
         bullets: ["Address generation", "Format explanation", "Copy/QR actions", "Compatibility notes"],
       },
       {
@@ -198,7 +198,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         label: "Migration",
         title: "Migration flows",
         body: "Future UI for guided movement into Photon-safe outputs.",
-        bullets: ["Migration checklist", "Fee preview", "Batch support", "Status tracking"],
+        bullets: ["Migration checklist", "Fee review", "Batch support", "Status tracking"],
       },
       {
         id: "security",
@@ -224,7 +224,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "markets",
         label: "Markets",
         title: "Market discovery",
-        body: "Scaffold for browsing markets and understanding liquidity/status.",
+        body: "Planned UI for browsing markets and understanding liquidity/status.",
         bullets: ["Market list", "Categories", "Volume/liquidity placeholders", "Resolution status"],
       },
       {
@@ -238,7 +238,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "decisions",
         label: "Decisions",
         title: "Oracle decisions",
-        body: "Scaffold for tracking decisions, outcomes, and dispute windows.",
+        body: "Planned UI for tracking decisions, outcomes, and dispute windows.",
         bullets: ["Decision list", "Outcome status", "Vote/dispute placeholders", "History"],
       },
     ],
@@ -258,7 +258,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "routes",
         label: "Routes",
         title: "Route selection",
-        body: "Scaffold for choosing where value moves and how it settles.",
+        body: "Planned UI for choosing where value moves and how it settles.",
         bullets: ["Source/destination", "Route quote", "Timing estimate", "Failure handling"],
       },
       {
@@ -292,7 +292,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "contracts",
         label: "Contracts",
         title: "Contract interactions",
-        body: "Scaffold for future contract calls, permissions, and transaction review.",
+        body: "Planned UI for future contract calls, permissions, and transaction review.",
         bullets: ["Contract address", "Method/action picker", "Parameter review", "Simulation placeholder"],
       },
       {
@@ -306,7 +306,7 @@ export const PLATFORMS: PlatformScaffold[] = [
         id: "developer",
         label: "Developer",
         title: "Developer tools",
-        body: "Scaffold for contract developers and advanced users.",
+        body: "Planned UI for contract developers and advanced users.",
         bullets: ["ABI/schema placeholder", "Call data", "Dry-run output", "Debug logs"],
       },
     ],
