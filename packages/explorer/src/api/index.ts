@@ -1,20 +1,12 @@
 // packages/explorer/src/api/index.ts
 //
 // Explorer API adapter.
-// Live chains read from the public Sidecoin API:
+// Active chains read from the public Sidecoin API:
 //   https://sidecoin.app/v1/chains/:chainId/...
 //
-// Preview chains continue using the local demo adapter until their indexing
-// endpoints are available.
+// Non-indexed chains return empty dashboard state and never use mock rows.
 
-import {
-  getDemoAddress,
-  getDemoBlock,
-  getDemoExplorerStatus,
-  getDemoLatestBlocks,
-  getDemoLatestTransactions,
-  getDemoTransaction,
-} from "../data/demoExplorer";
+import { getExplorerChain } from "../explorer/chains";
 import { searchResultFromClassification } from "../explorer/search";
 import type {
   ExplorerAddressDetail,
@@ -35,10 +27,25 @@ type JsonObject = Record<string, unknown>;
 const SIDECOIN_API_BASE =
   import.meta.env.VITE_SIDECOIN_API_BASE ?? "https://sidecoin.app/v1";
 
-const LIVE_CHAIN_IDS = new Set(["l1", "bitnames", "thunder"]);
+function isIndexedChain(chainId: string): boolean {
+  return getExplorerChain(chainId)?.status === "active";
+}
 
-function isLiveChain(chainId: string): boolean {
-  return LIVE_CHAIN_IDS.has(chainId);
+function notIndexedMessage(chainId: string): string {
+  const label = getExplorerChain(chainId)?.displayName ?? chainId;
+  return `${label} explorer data is not indexed yet. SidΞcoin only shows live chain data.`;
+}
+
+function emptyExplorerStatus(chainId: string): ExplorerStatus {
+  return {
+    chainId,
+    network: "ecash-signet",
+    latestHeight: 0,
+    latestBlockHash: "",
+    indexedTransactions: 0,
+    mempoolTransactions: 0,
+    updatedAt: "",
+  };
 }
 
 function apiUrl(path: string): string {
@@ -197,8 +204,8 @@ function normalizeOutput(raw: unknown, index: number): ExplorerTransactionOutput
 export async function getExplorerStatus(
   chainId: string,
 ): Promise<ExplorerStatus> {
-  if (!isLiveChain(chainId)) {
-    return getDemoExplorerStatus(chainId);
+  if (!isIndexedChain(chainId)) {
+    return emptyExplorerStatus(chainId);
   }
 
   const blocks = await getLatestBlocks(chainId, 1);
@@ -219,8 +226,8 @@ export async function getLatestBlocks(
   chainId: string,
   limit = 8,
 ): Promise<ExplorerBlockSummary[]> {
-  if (!isLiveChain(chainId)) {
-    return getDemoLatestBlocks(chainId, limit);
+  if (!isIndexedChain(chainId)) {
+    return [];
   }
 
   const body = asObject(
@@ -236,8 +243,8 @@ export async function getLatestTransactions(
   chainId: string,
   limit = 8,
 ): Promise<ExplorerTransactionSummary[]> {
-  if (!isLiveChain(chainId)) {
-    return getDemoLatestTransactions(chainId, limit);
+  if (!isIndexedChain(chainId)) {
+    return [];
   }
 
   const body = asObject(
@@ -255,8 +262,8 @@ export async function getBlock(
   chainId: string,
   blockId: string,
 ): Promise<ExplorerBlockDetail> {
-  if (!isLiveChain(chainId)) {
-    return getDemoBlock(chainId, blockId);
+  if (!isIndexedChain(chainId)) {
+    throw new Error(notIndexedMessage(chainId));
   }
 
   const body = asObject(
@@ -295,8 +302,8 @@ export async function getTransaction(
   chainId: string,
   txid: string,
 ): Promise<ExplorerTransactionDetail> {
-  if (!isLiveChain(chainId)) {
-    return getDemoTransaction(chainId, txid);
+  if (!isIndexedChain(chainId)) {
+    throw new Error(notIndexedMessage(chainId));
   }
 
   const body = asObject(
@@ -330,8 +337,8 @@ export async function getAddress(
   chainId: string,
   address: string,
 ): Promise<ExplorerAddressDetail> {
-  if (!isLiveChain(chainId)) {
-    return getDemoAddress(chainId, address);
+  if (!isIndexedChain(chainId)) {
+    throw new Error(notIndexedMessage(chainId));
   }
 
   const [overviewBody, historyBody] = await Promise.all([

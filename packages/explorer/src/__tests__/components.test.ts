@@ -1,4 +1,4 @@
- // packages/explorer/src/__tests__/components.test.ts
+// packages/explorer/src/__tests__/components.test.ts
 
 import { mount } from "@vue/test-utils";
 import { createRouter, createWebHistory } from "vue-router";
@@ -136,7 +136,58 @@ describe("chain dashboard labels", () => {
 
     expect(wrapper.text()).toContain("Latest block transaction count");
     expect(wrapper.text()).toContain("Confirmed-only index");
+    expect(wrapper.text()).not.toContain("No live rows shown");
+
+    vi.doUnmock("../api");
+  });
+
+  it("shows coming soon copy and empty rows for non-indexed chains", async () => {
+    vi.resetModules();
+
+    const getExplorerStatus = vi.fn(async () => ({
+      chainId: "zside",
+      network: "ecash-signet",
+      latestHeight: 0,
+      latestBlockHash: "",
+      indexedTransactions: 0,
+      mempoolTransactions: 0,
+      updatedAt: "",
+    }));
+    const getLatestBlocks = vi.fn(async () => []);
+    const getLatestTransactions = vi.fn(async () => []);
+
+    vi.doMock("../api", () => ({
+      getExplorerStatus,
+      getLatestBlocks,
+      getLatestTransactions,
+    }));
+
+    const { default: ChainView } = await import("../views/ChainView.vue");
+
+    const router = createRouter({
+      history: createWebHistory(),
+      routes,
+    });
+
+    router.push("/zside");
+    await router.isReady();
+
+    const wrapper = mount(ChainView, {
+      global: {
+        plugins: [router],
+      },
+    });
+
+    await vi.waitFor(() => {
+      expect(wrapper.text()).toContain("Coming soon");
+    });
+
+    expect(wrapper.text()).toContain("This explorer view is not indexed yet");
+    expect(wrapper.text()).toContain("SidΞcoin only shows live chain data");
+    expect(wrapper.text()).toContain("No blocks found");
+    expect(wrapper.text()).toContain("No transactions found");
     expect(wrapper.text()).not.toContain("Demo-backed scaffold");
+    expect(wrapper.text()).not.toContain("Current demo index");
 
     vi.doUnmock("../api");
   });

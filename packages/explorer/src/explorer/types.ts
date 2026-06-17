@@ -1,7 +1,7 @@
 // packages/explorer/src/explorer/types.ts
 
 export type ExplorerChainKind = "l1" | "sidechain" | "proposed";
-export type ExplorerChainStatus = "active" | "preview" | "planned";
+export type ExplorerChainStatus = "active" | "coming soon" | "planned";
 export type ExplorerTransactionStatus = "confirmed" | "mempool";
 export type ExplorerAddressTransactionType = "receive" | "send" | "self";
 

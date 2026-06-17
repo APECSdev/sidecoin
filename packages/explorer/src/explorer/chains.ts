@@ -39,7 +39,7 @@ export const EXPLORER_CHAINS: ExplorerChain[] = [
     kind: "sidechain",
     slot: 3,
     description: "Privacy-focused Drivechain activity.",
-    status: "preview",
+    status: "coming soon",
   },
   {
     id: "bitassets",
@@ -48,7 +48,7 @@ export const EXPLORER_CHAINS: ExplorerChain[] = [
     kind: "sidechain",
     slot: 4,
     description: "Native asset issuance and transfer activity.",
-    status: "preview",
+    status: "coming soon",
   },
   {
     id: "photon",
@@ -57,7 +57,7 @@ export const EXPLORER_CHAINS: ExplorerChain[] = [
     kind: "sidechain",
     slot: 5,
     description: "High-throughput payment and settlement activity.",
-    status: "preview",
+    status: "coming soon",
   },
   {
     id: "truthcoin",
@@ -66,7 +66,7 @@ export const EXPLORER_CHAINS: ExplorerChain[] = [
     kind: "sidechain",
     slot: 6,
     description: "Prediction market and oracle activity.",
-    status: "preview",
+    status: "coming soon",
   },
   {
     id: "coinshift",
@@ -75,7 +75,7 @@ export const EXPLORER_CHAINS: ExplorerChain[] = [
     kind: "sidechain",
     slot: 7,
     description: "Swap and exchange activity across the Drivechains hub.",
-    status: "preview",
+    status: "coming soon",
   },
   {
     id: "riscy",
@@ -84,7 +84,7 @@ export const EXPLORER_CHAINS: ExplorerChain[] = [
     kind: "sidechain",
     slot: 8,
     description: "Programmable execution and contract activity.",
-    status: "preview",
+    status: "coming soon",
   },
 ];
 

@@ -80,14 +80,14 @@ describe("explorer API", () => {
 
   it("returns live latest blocks", async () => {
     mockApi({
-      "/v1/chains/bitnames/blocks?limit=2": {
-        chainId: "bitnames",
-        upstreamChainId: "bitnames",
+      "/v1/chains/l1/blocks?limit=2": {
+        chainId: "l1",
+        upstreamChainId: "signet",
         tipHeight: 284,
         blocks: [
           {
-            chainId: "bitnames",
-            upstreamChainId: "bitnames",
+            chainId: "l1",
+            upstreamChainId: "signet",
             height: 284,
             hash: "b".repeat(64),
             timestamp: 1781373601,
@@ -100,10 +100,10 @@ describe("explorer API", () => {
       },
     });
 
-    const blocks = await getLatestBlocks("bitnames", 2);
+    const blocks = await getLatestBlocks("l1", 2);
     expect(blocks).toHaveLength(1);
     expect(blocks[0]).toMatchObject({
-      chainId: "bitnames",
+      chainId: "l1",
       height: 284,
       hash: "b".repeat(64),
       transactionCount: 1,
@@ -290,13 +290,37 @@ describe("explorer API", () => {
     });
   });
 
-  it("keeps preview chains demo-backed", async () => {
+  it("returns empty dashboard data for non-indexed chains without fetching", async () => {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
 
+    const status = await getExplorerStatus("zside");
     const blocks = await getLatestBlocks("zside", 2);
-    expect(blocks).toHaveLength(2);
-    expect(blocks[0].chainId).toBe("zside");
+    const transactions = await getLatestTransactions("zside", 2);
+
+    expect(status).toMatchObject({
+      chainId: "zside",
+      latestHeight: 0,
+      latestBlockHash: "",
+      indexedTransactions: 0,
+      mempoolTransactions: 0,
+    });
+    expect(blocks).toEqual([]);
+    expect(transactions).toEqual([]);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("rejects detail lookups for non-indexed chains without fetching", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(getBlock("zside", "1337")).rejects.toThrow("not indexed yet");
+    await expect(getTransaction("zside", "a".repeat(64))).rejects.toThrow(
+      "not indexed yet",
+    );
+    await expect(getAddress("zside", "zside1qaddress")).rejects.toThrow(
+      "not indexed yet",
+    );
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

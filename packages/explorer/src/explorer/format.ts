@@ -10,7 +10,7 @@ export function formatNumber(value: number): string {
 }
 
 export function formatTimestamp(value: string | null): string {
-  if (value == null) return "Pending";
+  if (value == null || value === "") return "—";
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
   return date.toLocaleString();
@@ -25,8 +25,12 @@ export function statusClass(status: string): string {
     return "border-ecash-700 bg-ecash-950/50 text-ecash-300";
   }
 
-  if (status === "mempool" || status === "preview") {
+  if (status === "mempool") {
     return "border-yellow-700 bg-yellow-950/40 text-yellow-300";
+  }
+
+  if (status === "coming soon" || status === "planned") {
+    return "border-blue-700 bg-blue-950/40 text-blue-300";
   }
 
   return "border-gray-700 bg-gray-900 text-gray-300";

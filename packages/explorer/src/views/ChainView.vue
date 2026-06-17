@@ -34,20 +34,40 @@ const chainId = computed(() => {
 });
 
 const chain = computed(() => getExplorerChain(chainId.value));
-const isLiveChain = computed(() =>
-  ["l1", "bitnames", "thunder"].includes(chainId.value),
+const isIndexedChain = computed(() => chain.value?.status === "active");
+
+const latestHeightValue = computed(() =>
+  isIndexedChain.value && status.value ? formatNumber(status.value.latestHeight) : "—",
+);
+
+const latestBlockValue = computed(() =>
+  isIndexedChain.value && status.value?.latestBlockHash
+    ? truncateMiddle(status.value.latestBlockHash, 12, 10)
+    : "—",
+);
+
+const indexedTransactionsValue = computed(() =>
+  isIndexedChain.value && status.value
+    ? formatNumber(status.value.indexedTransactions)
+    : "—",
+);
+
+const mempoolTransactionsValue = computed(() =>
+  isIndexedChain.value && status.value
+    ? formatNumber(status.value.mempoolTransactions)
+    : "—",
 );
 
 const latestBlockNote = computed(() =>
-  isLiveChain.value ? "Live API index" : "Current demo index",
+  isIndexedChain.value ? "Live API index" : "Not indexed yet",
 );
 
 const indexedTransactionsNote = computed(() =>
-  isLiveChain.value ? "Latest block transaction count" : "Demo-backed scaffold",
+  isIndexedChain.value ? "Latest block transaction count" : "No live rows shown",
 );
 
 const mempoolTransactionsNote = computed(() =>
-  isLiveChain.value ? "Confirmed-only index" : "Pending transactions",
+  isIndexedChain.value ? "Confirmed-only index" : "No mempool index yet",
 );
 
 const status = ref<ExplorerStatus | null>(null);
@@ -121,25 +141,41 @@ watch(chainId, loadChain);
     />
 
     <template v-else>
-      <div v-if="status" class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <section
+        v-if="!isIndexedChain"
+        class="rounded-3xl border border-blue-900/70 bg-blue-950/30 p-6"
+      >
+        <p class="text-sm font-black uppercase tracking-[0.22em] text-blue-300">
+          Not indexed yet
+        </p>
+        <h2 class="mt-3 text-2xl font-black text-blue-100">Coming soon</h2>
+        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-100/80">
+          This explorer view is not indexed yet. SidΞcoin only shows live chain
+          data. Until SupaQt indexing is connected for this network, blocks,
+          transactions, addresses, balances, deposits, and withdrawals will
+          remain empty.
+        </p>
+      </section>
+
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
           label="Latest Height"
-          :value="formatNumber(status.latestHeight)"
-          :note="formatTimestamp(status.updatedAt)"
+          :value="latestHeightValue"
+          :note="isIndexedChain && status ? formatTimestamp(status.updatedAt) : 'Not indexed yet'"
         />
         <StatCard
           label="Latest Block"
-          :value="truncateMiddle(status.latestBlockHash, 12, 10)"
+          :value="latestBlockValue"
           :note="latestBlockNote"
         />
         <StatCard
           label="Indexed Transactions"
-          :value="formatNumber(status.indexedTransactions)"
+          :value="indexedTransactionsValue"
           :note="indexedTransactionsNote"
         />
         <StatCard
           label="Mempool Transactions"
-          :value="formatNumber(status.mempoolTransactions)"
+          :value="mempoolTransactionsValue"
           :note="mempoolTransactionsNote"
         />
       </div>

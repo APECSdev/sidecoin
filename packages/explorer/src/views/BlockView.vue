@@ -32,6 +32,7 @@ const blockId = computed(() => {
 });
 
 const chain = computed(() => getExplorerChain(chainId.value));
+const isIndexedChain = computed(() => chain.value?.status === "active");
 const block = ref<ExplorerBlockDetail | null>(null);
 const officialL1BlockUrl = computed(() =>
   chainId.value === "l1" && block.value?.hash
@@ -44,6 +45,13 @@ const error = ref("");
 async function loadBlock() {
   if (chain.value == null) {
     error.value = "This explorer chain is not configured.";
+    block.value = null;
+    loading.value = false;
+    return;
+  }
+
+  if (!isIndexedChain.value) {
+    error.value = "";
     block.value = null;
     loading.value = false;
     return;
@@ -72,6 +80,21 @@ watch([chainId, blockId], loadBlock);
     title="Loading block"
     :message="`Fetching block ${blockId} on ${chain.displayName}.`"
   />
+
+  <section
+    v-else-if="chain && !isIndexedChain"
+    class="rounded-3xl border border-blue-900/70 bg-blue-950/30 p-6"
+  >
+    <p class="text-sm font-black uppercase tracking-[0.22em] text-blue-300">
+      Not indexed yet
+    </p>
+    <h1 class="mt-3 text-2xl font-black text-blue-100">Coming soon</h1>
+    <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-100/80">
+      This block view is not indexed yet. SidΞcoin only shows live chain data.
+      Until SupaQt indexing is connected for {{ chain.displayName }}, block
+      details will remain empty.
+    </p>
+  </section>
 
   <section v-else-if="chain && block" class="space-y-6">
     <div class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6">

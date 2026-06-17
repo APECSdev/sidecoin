@@ -32,6 +32,7 @@ const txid = computed(() => {
 });
 
 const chain = computed(() => getExplorerChain(chainId.value));
+const isIndexedChain = computed(() => chain.value?.status === "active");
 const transaction = ref<ExplorerTransactionDetail | null>(null);
 const officialL1TransactionUrl = computed(() =>
   chainId.value === "l1" && transaction.value?.txid
@@ -44,6 +45,13 @@ const error = ref("");
 async function loadTransaction() {
   if (chain.value == null) {
     error.value = "This explorer chain is not configured.";
+    transaction.value = null;
+    loading.value = false;
+    return;
+  }
+
+  if (!isIndexedChain.value) {
+    error.value = "";
     transaction.value = null;
     loading.value = false;
     return;
@@ -73,6 +81,21 @@ watch([chainId, txid], loadTransaction);
     title="Loading transaction"
     :message="`Fetching transaction ${txid} on ${chain.displayName}.`"
   />
+
+  <section
+    v-else-if="chain && !isIndexedChain"
+    class="rounded-3xl border border-blue-900/70 bg-blue-950/30 p-6"
+  >
+    <p class="text-sm font-black uppercase tracking-[0.22em] text-blue-300">
+      Not indexed yet
+    </p>
+    <h1 class="mt-3 text-2xl font-black text-blue-100">Coming soon</h1>
+    <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-100/80">
+      This transaction view is not indexed yet. SidΞcoin only shows live chain
+      data. Until SupaQt indexing is connected for {{ chain.displayName }},
+      transaction details will remain empty.
+    </p>
+  </section>
 
   <section v-else-if="chain && transaction" class="space-y-6">
     <div class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6">
