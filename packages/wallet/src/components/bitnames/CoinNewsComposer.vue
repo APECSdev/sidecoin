@@ -23,6 +23,8 @@ import {
 } from "@sidecoin/shared";
 
 const FEE_RATE_SAT_PER_VB = 1;
+const MAX_COIN_NEWS_FIELD_BYTES = 255;
+const textEncoder = new TextEncoder();
 
 const feedOptions: { value: CoinNewsFeedSlug; label: string }[] = [
   { value: "us-weekly", label: "US Weekly" },
@@ -51,9 +53,17 @@ const error = ref<string | null>(null);
 const built = ref<BuiltCoinNewsTransaction | null>(null);
 const receipt = ref<BroadcastReceipt | null>(null);
 
+const titleBytes = computed(() => utf8ByteLength(title.value.trim()));
+const linkBytes = computed(() => utf8ByteLength(link.value.trim()));
+const bodyBytes = computed(() => utf8ByteLength(body.value.trim()));
+
 const canBuild = computed(() => {
   return title.value.trim().length > 0 && !building.value && !broadcasting.value;
 });
+
+function utf8ByteLength(value: string): number {
+  return textEncoder.encode(value).length;
+}
 
 function bytesToHex(bytes: Uint8Array): string {
   return Array.from(bytes)
@@ -225,8 +235,8 @@ function resetComposer() {
             class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-3 text-white placeholder-gray-600 focus:border-ecash-500 focus:outline-none"
           />
           <p class="mt-2 text-xs leading-5 text-gray-600">
-            Required. Encoded as UTF-8 with a one-byte length prefix, max 255
-            bytes.
+            Required. Encoded as UTF-8 with a one-byte length prefix.
+            {{ titleBytes }} / {{ MAX_COIN_NEWS_FIELD_BYTES }} bytes.
           </p>
         </label>
 
@@ -242,7 +252,8 @@ function resetComposer() {
             class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-3 text-white placeholder-gray-600 focus:border-ecash-500 focus:outline-none"
           />
           <p class="mt-2 text-xs leading-5 text-gray-600">
-            Optional TLV 0x01. Max 255 UTF-8 bytes.
+            Optional TLV 0x01.
+            {{ linkBytes }} / {{ MAX_COIN_NEWS_FIELD_BYTES }} bytes.
           </p>
         </label>
 
@@ -257,7 +268,8 @@ function resetComposer() {
             class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-3 text-white placeholder-gray-600 focus:border-ecash-500 focus:outline-none"
           ></textarea>
           <p class="mt-2 text-xs leading-5 text-gray-600">
-            Optional TLV 0x02. Max 255 UTF-8 bytes. Do not post secrets.
+            Optional TLV 0x02.
+            {{ bodyBytes }} / {{ MAX_COIN_NEWS_FIELD_BYTES }} bytes. Do not post secrets.
           </p>
         </label>
       </div>
@@ -285,6 +297,10 @@ function resetComposer() {
           <li class="flex gap-2">
             <span class="text-ecash-400">✓</span>
             <span>Flag byte is omitted unless protocol semantics are defined.</span>
+          </li>
+          <li class="flex gap-2">
+            <span class="text-ecash-400">✓</span>
+            <span>Title, link, and body are each capped at 255 UTF-8 bytes.</span>
           </li>
         </ul>
 
