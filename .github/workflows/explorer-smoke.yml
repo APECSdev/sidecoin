@@ -1,0 +1,51 @@
+# .github/workflows/explorer-smoke.yml
+#
+# Sidecoin Explorer Live API Smoke Check
+#
+# This workflow verifies that the public API endpoints used by indexed
+# explorer chains return sane JSON.
+#
+# It intentionally does NOT run as a deploy gate. Network/API availability
+# should alert maintainers without blocking normal application CI/deploys.
+
+name: Explorer API Smoke
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 */6 * * *"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
+jobs:
+  explorer-api-smoke:
+    name: explorer-api-smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Explorer API Smoke Check
+        run: pnpm --filter @sidecoin/explorer smoke:api
