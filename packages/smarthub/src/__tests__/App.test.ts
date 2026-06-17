@@ -19,12 +19,23 @@ describe("App", () => {
     expect(wrapper.text()).toContain("Coming Soon...");
   });
 
-  it("renders the Sidecoin challenge URI", () => {
+  it("renders the Sidecoin challenge URI with a generated nonce", () => {
     const wrapper = mount(App);
+    const text = wrapper.text();
 
-    expect(wrapper.text()).toContain("sidecoin://hub/challenge");
-    expect(wrapper.text()).toContain("hub=https%3A%2F%2Fhub.sidecoin.app");
-    expect(wrapper.text()).toContain("nonce=coming-soon");
+    expect(text).toContain("sidecoin://hub/challenge");
+    expect(text).toContain("hub=https%3A%2F%2Fhub.sidecoin.app");
+    expect(text).toMatch(/nonce=[0-9a-f]{32}/);
+    expect(text).not.toContain("nonce=coming-soon");
+  });
+
+  it("generates a fresh nonce for each mounted challenge", () => {
+    const first = mount(App).text().match(/nonce=([0-9a-f]{32})/);
+    const second = mount(App).text().match(/nonce=([0-9a-f]{32})/);
+
+    expect(first?.[1]).toBeDefined();
+    expect(second?.[1]).toBeDefined();
+    expect(first?.[1]).not.toBe(second?.[1]);
   });
 
   it("tells users to scan with the Sidecoin app", () => {

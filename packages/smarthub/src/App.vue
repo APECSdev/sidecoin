@@ -3,11 +3,38 @@
 <script setup lang="ts">
 import QrcodeVue from "qrcode.vue";
 
-const HUB_ORIGIN = "https://hub.sidecoin.app";
-const CHALLENGE_NONCE = "coming-soon";
+const CANONICAL_HOSTNAME = "hub.sidecoin.app";
+const LEGACY_SMARTHUB_HOSTNAME = "smarthub.sidecoin.app";
+const HUB_ORIGIN = `https://${CANONICAL_HOSTNAME}`;
+const NONCE_BYTES = 16;
+
+if (
+  typeof window !== "undefined" &&
+  window.location.hostname === LEGACY_SMARTHUB_HOSTNAME
+) {
+  const redirectUrl = new URL(window.location.href);
+  redirectUrl.hostname = CANONICAL_HOSTNAME;
+  window.location.replace(redirectUrl.toString());
+}
+
+function generateNonce(): string {
+  const bytes = new Uint8Array(NONCE_BYTES);
+
+  if (globalThis.crypto?.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let index = 0; index < bytes.length; index += 1) {
+      bytes[index] = Math.floor(Math.random() * 256);
+    }
+  }
+
+  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+const challengeNonce = generateNonce();
 const challengeUri =
   `sidecoin://hub/challenge?hub=${encodeURIComponent(HUB_ORIGIN)}` +
-  `&nonce=${encodeURIComponent(CHALLENGE_NONCE)}`;
+  `&nonce=${encodeURIComponent(challengeNonce)}`;
 </script>
 
 <template>
