@@ -13,11 +13,11 @@ interface Props {
 
 const {
   title = "Sidecoin — Drivechains Financial Hub",
-  description = "Open-source wallet for the eCash hard fork. BIP-300/301 Drivechains with 7 sidechains live at launch. Desktop, Mobile, and Web.",
+  description = "Sidecoin brings BIP-300/BIP-301 Drivechains to the eCash ecosystem: one wallet, one explorer, and at least 8 launch Drivechains for payments, identity, assets, privacy, markets, and more.",
 } = Astro.props;
 
 const canonicalUrl = new URL(Astro.url.pathname, Astro.site);
-const ogImage = new URL("/og-image.png", Astro.site);
+const ogImage = new URL("/images/og-sidecoin.png", Astro.site);
 ---
 
 <!doctype html>
@@ -38,7 +38,12 @@ const ogImage = new URL("/og-image.png", Astro.site);
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:image" content={ogImage} />
-    <meta property="og:image:alt" content="Sidecoin Wallet" />
+    <meta property="og:image:secure_url" content={ogImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Sidecoin — Drivechains Financial Hub" />
+    <meta property="og:site_name" content="Sidecoin" />
 
     <!-- Twitter -->
     <meta property="twitter:card" content="summary_large_image" />
@@ -46,6 +51,7 @@ const ogImage = new URL("/og-image.png", Astro.site);
     <meta property="twitter:title" content={title} />
     <meta property="twitter:description" content={description} />
     <meta property="twitter:image" content={ogImage} />
+    <meta property="twitter:image:alt" content="Sidecoin — Drivechains Financial Hub" />
 
     <!-- Favicons -->
     <link rel="icon" href="/favicon.ico" sizes="any" />

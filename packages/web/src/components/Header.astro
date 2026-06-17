@@ -10,10 +10,7 @@ const WALLET_URL = "https://wallet.sidecoin.app/";
 const links = [
   { href: "/#downloads", label: "Downloads" },
   { href: "/#chains", label: "Sidechains" },
-  { href: "/markets", label: "Markets" },
   { href: "/roadmap", label: "Roadmap" },
-  { href: "/benefits", label: "PRO" },
-  { href: "https://github.com/APECSdev/sidecoin", label: "GitHub", external: true },
 ];
 ---
 
@@ -34,7 +31,6 @@ const links = [
         <a
           href={l.href}
           class="rounded-lg border border-gray-800 bg-gray-900/70 px-4 py-2 text-sm font-semibold text-gray-200 no-underline transition-all hover:border-ecash-500/70 hover:bg-gray-800 hover:text-white hover:no-underline"
-          {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
         >
           {l.label}
         </a>
@@ -78,7 +74,6 @@ const links = [
         <a
           href={l.href}
           class="block rounded-lg border border-gray-800 bg-gray-900/70 px-3 py-2.5 text-center text-base font-semibold text-gray-200 no-underline transition-all hover:border-ecash-500/70 hover:bg-gray-800 hover:text-white hover:no-underline"
-          {...(l.external ? { target: "_blank", rel: "noopener" } : {})}
         >
           {l.label}
         </a>
