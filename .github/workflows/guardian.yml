@@ -360,10 +360,19 @@ jobs:
         run: pnpm --filter @sidecoin/explorer build
 
       - name: Test Explorer
-        run: pnpm --filter @sidecoin/explorer test
+        run: pnpm --filter @sidecoin/explorer test -- --coverage --coverage.reporter=lcov
 
       - name: Type-check Explorer
         run: pnpm --filter @sidecoin/explorer type-check
+
+      - name: Upload Explorer Coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: packages/explorer/coverage/lcov.info
+          flags: explorer
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
 
   # ── API adapter + client (standalone, labeled job) ───────
   #
