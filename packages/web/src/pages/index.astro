@@ -11,7 +11,7 @@ import { SIDECHAINS } from "../data/sidechains";
 
 <BaseLayout>
   <!-- ─── Hero ──────────────────────────────────────────────── -->
-  <header class="relative min-h-[640px] overflow-hidden border-b border-gray-800 bg-gray-950 md:min-h-[700px]">
+  <header class="relative min-h-[560px] overflow-hidden border-b border-gray-800 bg-gray-950 md:min-h-[620px]">
     <img
       src="/images/hero-drivechains-financial-hub.webp"
       alt="Sidecoin Drivechains Financial Hub"
@@ -23,7 +23,7 @@ import { SIDECHAINS } from "../data/sidechains";
     <div class="absolute inset-0 bg-gradient-to-b from-gray-950/45 via-gray-950/60 to-gray-950"></div>
     <div class="absolute inset-0 bg-gradient-to-r from-gray-950/50 via-transparent to-gray-950/50"></div>
 
-    <div class="relative mx-auto flex min-h-[640px] max-w-5xl flex-col items-center justify-center px-6 py-20 text-center md:min-h-[700px]">
+    <div class="relative mx-auto flex min-h-[560px] max-w-5xl flex-col items-center justify-center px-6 py-20 text-center md:min-h-[620px]">
       <p class="text-xs font-black uppercase tracking-[0.35em] text-ecash-400 drop-shadow-[0_2px_12px_rgba(0,0,0,0.9)]">
         Drivechains Financial Hub
       </p>
@@ -42,10 +42,6 @@ import { SIDECHAINS } from "../data/sidechains";
         one wallet, one explorer, and at least 8 launch Drivechains for
         payments, identity, assets, privacy, markets, and more.
       </p>
-
-      <div class="mt-10 w-full max-w-3xl">
-        <ForkCountdown client:load />
-      </div>
 
       <div class="mt-10 flex flex-wrap items-center justify-center gap-4">
         <a
@@ -69,6 +65,13 @@ import { SIDECHAINS } from "../data/sidechains";
       </div>
     </div>
   </header>
+
+  <!-- ─── Fork Countdown ────────────────────────────────────── -->
+  <section class="border-b border-gray-800 bg-gray-950 px-6 py-12">
+    <div class="mx-auto max-w-5xl">
+      <ForkCountdown client:load />
+    </div>
+  </section>
 
   <!-- ─── What is Sidecoin ──────────────────────────────────── -->
   <section id="downloads" class="mx-auto max-w-5xl px-6 py-20">
