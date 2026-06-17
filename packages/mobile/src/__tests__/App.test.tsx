@@ -7,6 +7,7 @@
 
 import React from "react";
 import { render, screen } from "@testing-library/react-native";
+import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
 import App from "../App";
 
 // ---------------------------------------------------------------------------
@@ -206,7 +207,7 @@ describe("App", () => {
 
   it("should display the Sidechains section with count", () => {
     render(<App />);
-    expect(screen.getByText("Sidechains (8)")).toBeTruthy();
+    expect(screen.getByText(`Sidechains (${LAUNCH_SIDECHAINS.length})`)).toBeTruthy();
   });
 
   it("should display Thunder Network sidechain", () => {
@@ -247,6 +248,11 @@ describe("App", () => {
   it("should display the proposed RISCy sidechain slot", () => {
     render(<App />);
     expect(screen.getByText(/#3 RISCy/)).toBeTruthy();
+  });
+
+  it("should display the coming-soon Elements Plus sidechain without a fake slot", () => {
+    render(<App />);
+    expect(screen.getByText(/Slot TBD Elements Plus/)).toBeTruthy();
   });
 
   it("should display workspace validation success", () => {

@@ -54,6 +54,10 @@ const queryClient = new QueryClient({
   },
 });
 
+function formatSidechainSlot(slot: number | null): string {
+  return slot == null ? "Slot TBD" : `#${slot}`;
+}
+
 // ──────────────────────────────────────────────────────
 // Placeholder home screen.
 // This will be replaced by the navigation shell in the
@@ -109,8 +113,8 @@ function PlaceholderHome(): React.JSX.Element {
             Sidechains ({LAUNCH_SIDECHAINS.length})
           </Text>
           {LAUNCH_SIDECHAINS.map((sc) => (
-            <Text key={sc.slot} style={styles.detail}>
-              #{sc.slot} {sc.displayName} — {sc.status}
+            <Text key={sc.id} style={styles.detail}>
+              {formatSidechainSlot(sc.slot)} {sc.displayName} — {sc.status}
             </Text>
           ))}
         </View>
