@@ -1,10 +1,25 @@
 // packages/wallet/src/__tests__/PlatformDetailView.test.ts
 
-import { describe, it, expect } from "vitest";
-import { mount } from "@vue/test-utils";
+import { beforeEach, describe, it, expect, vi } from "vitest";
+import { mount, flushPromises } from "@vue/test-utils";
 import { createRouter, createWebHashHistory } from "vue-router";
 import PlatformDetailView from "../views/PlatformDetailView.vue";
 import SidechainsView from "../views/SidechainsView.vue";
+
+vi.mock("../api", async () => {
+  const actual = await vi.importActual<typeof import("../api")>("../api");
+  return {
+    ...actual,
+    getCoinNewsFeeds: vi.fn(),
+    getCoinNewsPosts: vi.fn(),
+  };
+});
+
+import { getCoinNewsFeeds, getCoinNewsPosts } from "../api";
+
+const mockGetCoinNewsFeeds = vi.mocked(getCoinNewsFeeds);
+const mockGetCoinNewsPosts = vi.mocked(getCoinNewsPosts);
+
 
 async function mountPlatform(path: string) {
   const router = createRouter({
@@ -27,6 +42,48 @@ async function mountPlatform(path: string) {
 }
 
 describe("PlatformDetailView.vue", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetCoinNewsFeeds.mockResolvedValue([
+      {
+        id: "us-weekly",
+        name: "US Weekly",
+        language: "en",
+        enabled: true,
+        post_count: 1,
+      },
+      {
+        id: "japan-weekly",
+        name: "Japan Weekly",
+        language: "ja",
+        enabled: true,
+        post_count: 1,
+      },
+    ]);
+    mockGetCoinNewsPosts.mockImplementation(async (feedId: string) => ({
+      feed: {
+        id: feedId,
+        name: feedId === "japan-weekly" ? "Japan Weekly" : "US Weekly",
+      },
+      posts: [
+        {
+          id: `post_${feedId}`,
+          title: feedId === "japan-weekly" ? "Live API Japan post" : "Live API wallet post",
+          body: null,
+          link: null,
+          author: null,
+          created_at: 1781568001,
+          fee_sats: "1108",
+          flag: null,
+          txid: "a".repeat(64),
+          status: "confirmed",
+        },
+      ],
+      next_cursor: null,
+    }));
+  });
+
+
   it("renders Thunder as a dedicated platform page", async () => {
     const wrapper = await mountPlatform("/platforms/thunder");
     expect(wrapper.text()).toContain("Thunder Network");
@@ -150,12 +207,13 @@ describe("PlatformDetailView.vue", () => {
     expect(message).toBeDefined();
 
     await message!.trigger("click");
+    await flushPromises();
 
     expect(wrapper.text()).toContain("BitMessages");
     expect(wrapper.text()).toContain("Coin News");
     expect(wrapper.text()).toContain("Broadcast News");
     expect(wrapper.text()).toContain("sidecoin.bit");
-    expect(wrapper.text()).toContain("Posting from the new eCash.com wallet");
+    expect(wrapper.text()).toContain("Live API wallet post");
   });
 
   it("can switch directly to the BitMessages tab", async () => {
@@ -164,15 +222,16 @@ describe("PlatformDetailView.vue", () => {
     expect(messages).toBeDefined();
 
     await messages!.trigger("click");
+    await flushPromises();
 
     expect(wrapper.text()).toContain("BitMessages");
-    expect(wrapper.text()).toContain("Preview mode");
+    expect(wrapper.text()).toContain("Live Coin News");
     expect(wrapper.text()).toContain("US Weekly");
     expect(wrapper.text()).toContain("Japan Weekly");
     expect(wrapper.text()).toContain("Date");
     expect(wrapper.text()).toContain("Fee");
     expect(wrapper.text()).toContain("Title");
-    expect(wrapper.text()).toContain("私はサトシです。このフォークを支持します。");
+    expect(wrapper.text()).toContain("Live API Japan post");
   });
 
   it("does not render backend warning copy in the BitMessages screenshot UI", async () => {

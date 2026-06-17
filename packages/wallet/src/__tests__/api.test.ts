@@ -12,6 +12,10 @@ import {
   setApiBaseUrl,
   getApiBaseUrl,
   getClient,
+  getCoinNewsFeeds,
+  getCoinNewsPosts,
+  getMarketPrice,
+  SUPAQT_BASE_URL,
   ApiError,
 } from "../api";
 import { DEFAULT_BASE_URL, SidecoinClient } from "@sidecoin/api-client";
@@ -375,5 +379,121 @@ describe("getWalletBalance", () => {
     const err = await getWalletBalance(0, "tb1qexample").catch((e) => e);
     expect(err).toBeInstanceOf(ApiError);
     expect(err.code).toBe("bad_amount");
+  });
+});
+
+
+// ---------------------------------------------------------------------------
+// SupaQt live data helpers
+// ---------------------------------------------------------------------------
+
+describe("SupaQt live data helpers", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("should load Coin News feeds from SupaQt", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        feeds: [
+          {
+            id: "us-weekly",
+            name: "US Weekly",
+            language: "en",
+            enabled: true,
+            post_count: 4,
+          },
+        ],
+      }),
+    );
+
+    const feeds = await getCoinNewsFeeds();
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `${SUPAQT_BASE_URL}/coin-news/feeds`,
+      expect.objectContaining({ headers: { accept: "application/json" } }),
+    );
+    expect(feeds).toEqual([
+      {
+        id: "us-weekly",
+        name: "US Weekly",
+        language: "en",
+        enabled: true,
+        post_count: 4,
+      },
+    ]);
+  });
+
+  it("should load Coin News posts from SupaQt with query params", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        feed: { id: "us-weekly", name: "US Weekly" },
+        posts: [
+          {
+            id: "post_live",
+            title: "Live API wallet post",
+            body: null,
+            link: null,
+            author: null,
+            created_at: 1781568001,
+            fee_sats: "1108",
+            flag: 1,
+            txid: "a".repeat(64),
+            status: "confirmed",
+          },
+        ],
+        next_cursor: null,
+      }),
+    );
+
+    const page = await getCoinNewsPosts("us-weekly", {
+      limit: 5,
+      cursor: "abc",
+    });
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `${SUPAQT_BASE_URL}/coin-news/feeds/us-weekly/posts?limit=5&cursor=abc`,
+      expect.objectContaining({ headers: { accept: "application/json" } }),
+    );
+    expect(page.posts[0].title).toBe("Live API wallet post");
+  });
+
+  it("should load the ECX market price from SupaQt", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse({
+        asset: "ECX",
+        name: "eCash",
+        price_usd: "30.00",
+        source: "hardcoded",
+        as_of: "2026-06-16T00:00:00Z",
+      }),
+    );
+
+    const price = await getMarketPrice("ecash");
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      `${SUPAQT_BASE_URL}/market/price/ecash`,
+      expect.objectContaining({ headers: { accept: "application/json" } }),
+    );
+    expect(price).toEqual({
+      asset: "ECX",
+      name: "eCash",
+      price_usd: "30.00",
+      source: "hardcoded",
+      as_of: "2026-06-16T00:00:00Z",
+    });
+  });
+
+  it("should throw when SupaQt returns an error", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonResponse(
+        { error: { message: "service unavailable" } },
+        { ok: false, status: 503 },
+      ),
+    );
+
+    await expect(getMarketPrice("ecash")).rejects.toThrow(
+      "service unavailable",
+    );
   });
 });

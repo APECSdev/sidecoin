@@ -17,6 +17,7 @@ const links = [
   { to: "/send", label: "Send" },
   { to: "/receive", label: "Receive" },
   { to: "/swap", label: "Swap" },
+  { to: "/markets", label: "Markets" },
   { to: "/platforms", label: "Platforms" },
   { to: "/hardware", label: "Hardware" },
   { to: "/toolbox", label: "Tools" },

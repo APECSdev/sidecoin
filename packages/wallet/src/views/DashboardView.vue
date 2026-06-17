@@ -2,8 +2,8 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from "vue";
-import { getSidechains, getDeposits, getL1Balance, satsToBtc } from "../api";
-import type { SidechainSummary, ChainBalance } from "../api";
+import { getSidechains, getDeposits, getL1Balance, getMarketPrice, satsToBtc } from "../api";
+import type { SidechainSummary, ChainBalance, MarketPrice } from "../api";
 import { deriveReceiveAddress } from "@sidecoin/shared";
 import { loadWallet } from "../keystore";
 import {
@@ -39,6 +39,10 @@ const l1Address = ref("");
 const l1Balance = ref<ChainBalance | null>(null);
 const l1Loading = ref(true);
 const l1Error = ref<string | null>(null);
+
+const marketPrice = ref<MarketPrice | null>(null);
+const marketLoading = ref(true);
+const marketError = ref<string | null>(null);
 
 const platformCountLabel = computed(() => {
   return rows.value.length === 1 ? "platform" : "platforms";
@@ -164,6 +168,22 @@ async function loadL1Balance() {
   }
 }
 
+async function loadMarketPrice() {
+  marketLoading.value = true;
+  marketError.value = null;
+
+  try {
+    marketPrice.value = await getMarketPrice("ecash");
+  } catch (e) {
+    console.error("[DashboardView] Failed to load market price:", e);
+    marketPrice.value = null;
+    marketError.value =
+      "We couldn't load the live ECX market price. Please try again.";
+  } finally {
+    marketLoading.value = false;
+  }
+}
+
 function handleDemoModeChanged() {
   demoMode.value = isDemoModeEnabled();
   load();
@@ -174,6 +194,7 @@ onMounted(() => {
   window.addEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
   load();
   loadL1Balance();
+  loadMarketPrice();
 });
 
 onBeforeUnmount(() => {
@@ -293,6 +314,43 @@ function platformHref(platformId: string): string {
               {{ l1Address }}
             </p>
           </template>
+        </div>
+
+        <div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <p class="text-sm text-gray-400">ECX Market Price</p>
+            <span class="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-semibold text-gray-400">
+              SupaQt
+            </span>
+          </div>
+
+          <div v-if="marketLoading" class="mt-2 text-gray-400">
+            Loading market price…
+          </div>
+
+          <div v-else-if="marketError" class="mt-2 text-sm text-yellow-500">
+            <p>{{ marketError }}</p>
+            <button
+              class="mt-2 rounded-lg bg-yellow-900/40 px-3 py-1.5 text-xs font-semibold text-yellow-200 hover:bg-yellow-900/60"
+              @click="loadMarketPrice"
+            >
+              Retry
+            </button>
+          </div>
+
+          <template v-else-if="marketPrice">
+            <p class="mt-2 text-4xl font-bold text-ecash-400">
+              USD {{ marketPrice.price_usd }}
+              <span class="text-lg text-gray-500">{{ marketPrice.asset }}</span>
+            </p>
+            <p class="mt-2 font-mono text-xs text-gray-600">
+              {{ marketPrice.as_of }}
+            </p>
+          </template>
+
+          <div v-else class="mt-2 text-sm text-gray-500">
+            No live market price is available.
+          </div>
         </div>
 
         <!-- Loading state -->

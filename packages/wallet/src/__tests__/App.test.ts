@@ -29,6 +29,7 @@ function createTestRouter() {
       { path: "/send", name: "send", component: createStubComponent("Send") },
       { path: "/receive", name: "receive", component: createStubComponent("Receive") },
       { path: "/swap", name: "swap", component: createStubComponent("Swap") },
+      { path: "/markets", name: "markets", component: createStubComponent("Markets") },
       { path: "/platforms", name: "platforms", component: createStubComponent("Platforms") },
       { path: "/hardware", name: "hardware", component: createStubComponent("Hardware") },
       { path: "/toolbox", name: "toolbox", component: createStubComponent("Toolbox") },
@@ -94,7 +95,7 @@ describe("App.vue", () => {
     expect(wrapper.classes()).toContain("theme-cypherpunk");
   });
 
-  it("should render navigation links for all 8 primary wallet routes", async () => {
+  it("should render navigation links for all 9 primary wallet routes", async () => {
     const wrapper = await mountApp();
     const hrefs = wrapper.findAll("a").map((l) => l.attributes("href"));
 
@@ -102,6 +103,7 @@ describe("App.vue", () => {
     expect(hrefs).toContain("#/send");
     expect(hrefs).toContain("#/receive");
     expect(hrefs).toContain("#/swap");
+    expect(hrefs).toContain("#/markets");
     expect(hrefs).toContain("#/platforms");
     expect(hrefs).toContain("#/hardware");
     expect(hrefs).toContain("#/toolbox");
@@ -117,6 +119,7 @@ describe("App.vue", () => {
     expect(nav.text()).toContain("Send");
     expect(nav.text()).toContain("Receive");
     expect(nav.text()).toContain("Swap");
+    expect(nav.text()).toContain("Markets");
     expect(nav.text()).toContain("Platforms");
     expect(nav.text()).toContain("Hardware");
     expect(nav.text()).toContain("Tools");

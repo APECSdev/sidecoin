@@ -1,14 +1,14 @@
 <!-- packages/wallet/src/components/bitnames/CoinNewsPreview.vue -->
 
 <script setup lang="ts">
-import { computed } from "vue";
-
-interface CoinNewsRow {
-  feed: "US Weekly" | "Japan Weekly";
-  date: string;
-  fee: string;
-  title: string;
-}
+import { computed, onMounted, ref } from "vue";
+import {
+  getCoinNewsFeeds,
+  getCoinNewsPosts,
+  satsToBtc,
+  type CoinNewsFeed,
+  type CoinNewsPost,
+} from "../../api";
 
 const props = withDefaults(
   defineProps<{
@@ -23,45 +23,133 @@ const props = withDefaults(
   },
 );
 
-const coinNewsRows: CoinNewsRow[] = [
-  {
-    feed: "US Weekly",
-    date: "2026 Jun 15 20:00",
-    fee: "0.00001108 BTC",
-    title: "Posting from the new eCash.com wallet",
-  },
-  {
-    feed: "US Weekly",
-    date: "2026 Jun 15 14:20",
-    fee: "0.00133700 BTC",
-    title: "Introducing SidΞcoin",
-  },
-  {
-    feed: "US Weekly",
-    date: "2026 Jun 10 23:00",
-    fee: "0.00000192 BTC",
-    title: "If you see this message, broadcast more news",
-  },
-  {
-    feed: "US Weekly",
-    date: "2026 Jun 10 22:10",
-    fee: "0.00000193 BTC",
-    title: "Are fees supposed to be the only anti-spam rule?",
-  },
-  {
-    feed: "Japan Weekly",
-    date: "2026 Jun 13 09:20",
-    fee: "0.00002000 BTC",
-    title: "私はサトシです。このフォークを支持します。",
-  },
-];
+const feeds = ref<CoinNewsFeed[]>([]);
+const usWeeklyRows = ref<CoinNewsPost[]>([]);
+const japanWeeklyRows = ref<CoinNewsPost[]>([]);
+const feedsLoading = ref(true);
+const usWeeklyLoading = ref(true);
+const japanWeeklyLoading = ref(true);
+const feedsError = ref<string | null>(null);
+const usWeeklyError = ref<string | null>(null);
+const japanWeeklyError = ref<string | null>(null);
 
-const usWeeklyRows = computed(() => {
-  return coinNewsRows.filter((row) => row.feed === "US Weekly");
+const enabledFeeds = computed(() => {
+  return feeds.value.filter((feed) => feed.enabled !== false);
 });
 
-const japanWeeklyRows = computed(() => {
-  return coinNewsRows.filter((row) => row.feed === "Japan Weekly");
+const totalPostCount = computed(() => {
+  const indexedTotal = feeds.value.reduce((acc, feed) => {
+    return acc + (typeof feed.post_count === "number" ? feed.post_count : 0);
+  }, 0);
+
+  if (indexedTotal > 0) {
+    return indexedTotal;
+  }
+
+  return usWeeklyRows.value.length + japanWeeklyRows.value.length;
+});
+
+async function loadFeeds() {
+  feedsLoading.value = true;
+  feedsError.value = null;
+
+  try {
+    feeds.value = await getCoinNewsFeeds();
+  } catch (e) {
+    console.error("[CoinNewsPreview] Failed to load feeds:", e);
+    feedsError.value = "Live Coin News feeds are unavailable.";
+  } finally {
+    feedsLoading.value = false;
+  }
+}
+
+async function loadFeedPosts(
+  feedId: "us-weekly" | "japan-weekly",
+  target: typeof usWeeklyRows,
+  setLoading: (value: boolean) => void,
+  setError: (value: string | null) => void,
+) {
+  setLoading(true);
+  setError(null);
+
+  try {
+    const page = await getCoinNewsPosts(feedId, {
+      limit: props.dashboard ? 5 : 10,
+    });
+    target.value = page.posts;
+  } catch (e) {
+    console.error(`[CoinNewsPreview] Failed to load ${feedId}:`, e);
+    target.value = [];
+    setError("Live Coin News posts are unavailable.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+async function loadCoinNews() {
+  await Promise.all([
+    loadFeeds(),
+    loadFeedPosts(
+      "us-weekly",
+      usWeeklyRows,
+      (value) => {
+        usWeeklyLoading.value = value;
+      },
+      (value) => {
+        usWeeklyError.value = value;
+      },
+    ),
+    props.showJapanFeed
+      ? loadFeedPosts(
+          "japan-weekly",
+          japanWeeklyRows,
+          (value) => {
+            japanWeeklyLoading.value = value;
+          },
+          (value) => {
+            japanWeeklyError.value = value;
+          },
+        )
+      : Promise.resolve(),
+  ]);
+}
+
+function formatDate(timestamp: number): string {
+  if (!Number.isFinite(timestamp)) {
+    return "—";
+  }
+
+  const date = new Date(timestamp * 1000);
+  if (Number.isNaN(date.getTime())) {
+    return "—";
+  }
+
+  const month = date.toLocaleString("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const hour = String(date.getUTCHours()).padStart(2, "0");
+  const minute = String(date.getUTCMinutes()).padStart(2, "0");
+
+  return `${date.getUTCFullYear()} ${month} ${day} ${hour}:${minute}`;
+}
+
+function formatFee(feeSats: string): string {
+  try {
+    return `${satsToBtc(BigInt(feeSats))} BTC`;
+  } catch {
+    return "—";
+  }
+}
+
+function feedPostCount(feedId: string, rows: CoinNewsPost[]): number {
+  const feed = feeds.value.find((candidate) => candidate.id === feedId);
+  return typeof feed?.post_count === "number" ? feed.post_count : rows.length;
+}
+
+onMounted(() => {
+  loadCoinNews();
 });
 </script>
 
@@ -78,24 +166,31 @@ const japanWeeklyRows = computed(() => {
               Broadcast feed
             </p>
             <span class="rounded-full border border-ecash-500/40 bg-ecash-950/60 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-ecash-300">
-              Preview mode
+              Live
             </span>
           </div>
 
           <h3 class="mt-3 text-3xl font-black text-white">Coin News</h3>
           <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-400">
             Signed news posts, weekly broadcasts, and BitNames-linked messages
-            across Signet.
+            indexed from Signet by SupaQt.
+          </p>
+          <p v-if="feedsError" class="mt-3 text-sm text-yellow-500">
+            {{ feedsError }}
           </p>
         </div>
 
         <div class="grid grid-cols-3 gap-3 rounded-2xl border border-gray-800 bg-gray-950/70 p-3 text-center">
           <div class="px-3 py-2">
-            <p class="text-lg font-black text-ecash-400">5</p>
+            <p class="text-lg font-black text-ecash-400">
+              {{ feedsLoading ? "…" : totalPostCount }}
+            </p>
             <p class="text-[10px] uppercase tracking-wide text-gray-500">Posts</p>
           </div>
           <div class="border-x border-gray-800 px-3 py-2">
-            <p class="text-lg font-black text-ecash-400">2</p>
+            <p class="text-lg font-black text-ecash-400">
+              {{ feedsLoading ? "…" : enabledFeeds.length }}
+            </p>
             <p class="text-[10px] uppercase tracking-wide text-gray-500">Feeds</p>
           </div>
           <div class="px-3 py-2">
@@ -114,9 +209,11 @@ const japanWeeklyRows = computed(() => {
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <select class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-semibold text-white">
+          <select
+            disabled
+            class="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-80"
+          >
             <option>US Weekly</option>
-            <option>Japan Weekly</option>
           </select>
           <button
             type="button"
@@ -127,7 +224,19 @@ const japanWeeklyRows = computed(() => {
         </div>
       </div>
 
-      <div class="overflow-x-auto">
+      <div v-if="usWeeklyLoading" class="px-5 py-6 text-sm text-gray-400">
+        Loading live US Weekly posts…
+      </div>
+
+      <div v-else-if="usWeeklyError" class="px-5 py-6 text-sm text-yellow-500">
+        {{ usWeeklyError }}
+      </div>
+
+      <div v-else-if="usWeeklyRows.length === 0" class="px-5 py-6 text-sm text-gray-500">
+        No live US Weekly posts are indexed yet.
+      </div>
+
+      <div v-else class="overflow-x-auto">
         <table
           class="text-left text-sm"
           :class="props.dashboard ? 'w-full table-fixed' : 'w-full min-w-[760px]'"
@@ -142,10 +251,10 @@ const japanWeeklyRows = computed(() => {
           <tbody class="text-gray-300">
             <tr
               v-for="row in usWeeklyRows"
-              :key="`${row.feed}-${row.date}-${row.title}`"
+              :key="row.id"
             >
-              <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ row.date }}</td>
-              <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ row.fee }}</td>
+              <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ formatDate(row.created_at) }}</td>
+              <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ formatFee(row.fee_sats) }}</td>
               <td
                 class="border-b border-gray-900 px-4 py-3 font-semibold text-white"
                 :class="props.dashboard ? 'whitespace-normal break-words' : ''"
@@ -155,6 +264,10 @@ const japanWeeklyRows = computed(() => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="border-t border-gray-900 px-5 py-3 text-xs text-gray-600">
+        {{ feedPostCount("us-weekly", usWeeklyRows) }} indexed posts
       </div>
     </section>
 
@@ -168,13 +281,27 @@ const japanWeeklyRows = computed(() => {
           <p class="mt-1 text-sm text-gray-500">Japan Weekly</p>
         </div>
 
-        <select class="w-fit rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-semibold text-white">
+        <select
+          disabled
+          class="w-fit rounded-lg border border-gray-700 bg-gray-900 px-3 py-2 text-sm font-semibold text-white disabled:opacity-80"
+        >
           <option>Japan Weekly</option>
-          <option>US Weekly</option>
         </select>
       </div>
 
-      <div class="overflow-x-auto">
+      <div v-if="japanWeeklyLoading" class="px-5 py-6 text-sm text-gray-400">
+        Loading live Japan Weekly posts…
+      </div>
+
+      <div v-else-if="japanWeeklyError" class="px-5 py-6 text-sm text-yellow-500">
+        {{ japanWeeklyError }}
+      </div>
+
+      <div v-else-if="japanWeeklyRows.length === 0" class="px-5 py-6 text-sm text-gray-500">
+        No live Japan Weekly posts are indexed yet.
+      </div>
+
+      <div v-else class="overflow-x-auto">
         <table
           class="text-left text-sm"
           :class="props.dashboard ? 'w-full table-fixed' : 'w-full min-w-[760px]'"
@@ -189,10 +316,10 @@ const japanWeeklyRows = computed(() => {
           <tbody class="text-gray-300">
             <tr
               v-for="row in japanWeeklyRows"
-              :key="`${row.feed}-${row.date}-${row.title}`"
+              :key="row.id"
             >
-              <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ row.date }}</td>
-              <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ row.fee }}</td>
+              <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ formatDate(row.created_at) }}</td>
+              <td class="border-b border-gray-900 px-4 py-3 font-mono text-xs text-gray-300">{{ formatFee(row.fee_sats) }}</td>
               <td
                 class="border-b border-gray-900 px-4 py-3 font-semibold text-white"
                 :class="props.dashboard ? 'whitespace-normal break-words' : ''"
@@ -202,6 +329,10 @@ const japanWeeklyRows = computed(() => {
             </tr>
           </tbody>
         </table>
+      </div>
+
+      <div class="border-t border-gray-900 px-5 py-3 text-xs text-gray-600">
+        {{ feedPostCount("japan-weekly", japanWeeklyRows) }} indexed posts
       </div>
     </section>
   </div>

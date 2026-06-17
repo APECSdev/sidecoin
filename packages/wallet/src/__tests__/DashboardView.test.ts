@@ -26,14 +26,20 @@ vi.mock("../api", async () => {
     getSidechains: vi.fn(),
     getDeposits: vi.fn(),
     getL1Balance: vi.fn(),
+    getCoinNewsFeeds: vi.fn(),
+    getCoinNewsPosts: vi.fn(),
+    getMarketPrice: vi.fn(),
   };
 });
 
-import { getSidechains, getDeposits, getL1Balance } from "../api";
+import { getSidechains, getDeposits, getL1Balance, getCoinNewsFeeds, getCoinNewsPosts, getMarketPrice } from "../api";
 
 const mockGetSidechains = vi.mocked(getSidechains);
 const mockGetDeposits = vi.mocked(getDeposits);
 const mockGetL1Balance = vi.mocked(getL1Balance);
+const mockGetCoinNewsFeeds = vi.mocked(getCoinNewsFeeds);
+const mockGetCoinNewsPosts = vi.mocked(getCoinNewsPosts);
+const mockGetMarketPrice = vi.mocked(getMarketPrice);
 
 const VALID_12 =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
@@ -140,6 +146,40 @@ describe("DashboardView.vue", () => {
       deposits: [deposit(100000000n, slot)],
       nextCursor: null,
     }));
+    mockGetCoinNewsFeeds.mockResolvedValue([
+      {
+        id: "us-weekly",
+        name: "US Weekly",
+        language: "en",
+        enabled: true,
+        post_count: 1,
+      },
+    ]);
+    mockGetCoinNewsPosts.mockResolvedValue({
+      feed: { id: "us-weekly", name: "US Weekly" },
+      posts: [
+        {
+          id: "post_live",
+          title: "Live API wallet post",
+          body: null,
+          link: null,
+          author: null,
+          created_at: 1781568001,
+          fee_sats: "1108",
+          flag: 1,
+          txid: "a".repeat(64),
+          status: "confirmed",
+        },
+      ],
+      next_cursor: null,
+    });
+    mockGetMarketPrice.mockResolvedValue({
+      asset: "ECX",
+      name: "eCash",
+      price_usd: "30.00",
+      source: "hardcoded",
+      as_of: "2026-06-16T00:00:00Z",
+    });
   });
 
   afterEach(() => {
@@ -233,9 +273,11 @@ describe("DashboardView.vue", () => {
     expect(wrapper.text()).toContain("Coin News");
     expect(wrapper.text()).toContain("Broadcast News");
     expect(wrapper.text()).toContain("US Weekly");
-    expect(wrapper.text()).toContain("Japan Weekly");
-    expect(wrapper.text()).toContain("Posting from the new eCash.com wallet");
+    expect(wrapper.text()).toContain("Live API wallet post");
     expect(wrapper.text()).toContain("Title");
+    expect(mockGetCoinNewsPosts).toHaveBeenCalledWith("us-weekly", {
+      limit: 5,
+    });
   });
 
   it("should render the fork countdown banner", async () => {
@@ -300,6 +342,15 @@ describe("DashboardView.vue", () => {
     }));
     const wrapper = await mountDashboard();
     expect(wrapper.text()).toContain("21000000.00000000");
+  });
+
+  it("should render the live ECX market price", async () => {
+    const wrapper = await mountDashboard();
+
+    expect(wrapper.text()).toContain("ECX Market Price");
+    expect(wrapper.text()).toContain("USD 30.00");
+    expect(wrapper.text()).toContain("ECX");
+    expect(mockGetMarketPrice).toHaveBeenCalledWith("ecash");
   });
 
   it("should use Demo Mode display data when enabled", async () => {

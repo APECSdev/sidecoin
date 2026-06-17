@@ -78,6 +78,126 @@ export function getClient(): SidecoinClient {
   return _client;
 }
 
+
+// ---------------------------------------------------------------------------
+// SupaQt live data helpers
+// ---------------------------------------------------------------------------
+
+/** Read-only SupaQt API base for Coin News and market data. */
+export const SUPAQT_BASE_URL = "https://supaqt.com/v1";
+
+export interface CoinNewsFeed {
+  id: string;
+  name: string;
+  language?: string;
+  enabled?: boolean;
+  post_count?: number;
+}
+
+export interface CoinNewsPost {
+  id: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  author: string | null;
+  created_at: number;
+  fee_sats: string;
+  flag: number | null;
+  txid: string;
+  status: string;
+}
+
+export interface CoinNewsPostsPage {
+  feed: {
+    id: string;
+    name: string;
+  };
+  posts: CoinNewsPost[];
+  next_cursor: string | null;
+}
+
+export interface CoinNewsPostsParams {
+  limit?: number;
+  cursor?: string;
+}
+
+export interface MarketPrice {
+  asset: string;
+  name: string;
+  price_usd: string;
+  source: string;
+  as_of: string;
+}
+
+async function supaqtGet<T>(path: string): Promise<T> {
+  const res = await globalThis.fetch(`${SUPAQT_BASE_URL}${path}`, {
+    headers: { accept: "application/json" },
+  });
+
+  const text = await res.text();
+  let body: unknown = null;
+
+  if (text.trim()) {
+    try {
+      body = JSON.parse(text);
+    } catch (e) {
+      console.error("[api] Failed to parse SupaQt response:", e);
+      throw new Error("SupaQt returned invalid JSON.");
+    }
+  }
+
+  if (!res.ok) {
+    const message =
+      body &&
+      typeof body === "object" &&
+      "error" in body &&
+      body.error &&
+      typeof body.error === "object" &&
+      "message" in body.error &&
+      typeof body.error.message === "string"
+        ? body.error.message
+        : `SupaQt request failed with HTTP ${res.status}.`;
+
+    throw new Error(message);
+  }
+
+  return body as T;
+}
+
+/** GET /coin-news/feeds — enabled Coin News feeds indexed by SupaQt. */
+export async function getCoinNewsFeeds(): Promise<CoinNewsFeed[]> {
+  const page = await supaqtGet<{ feeds: CoinNewsFeed[] }>("/coin-news/feeds");
+  return Array.isArray(page.feeds) ? page.feeds : [];
+}
+
+/** GET /coin-news/feeds/:feedId/posts — live Coin News posts for one feed. */
+export async function getCoinNewsPosts(
+  feedId: string,
+  params: CoinNewsPostsParams = {},
+): Promise<CoinNewsPostsPage> {
+  const qs = new URLSearchParams();
+
+  if (params.limit !== undefined) {
+    qs.set("limit", String(params.limit));
+  }
+
+  if (params.cursor) {
+    qs.set("cursor", params.cursor);
+  }
+
+  const query = qs.toString();
+  return supaqtGet<CoinNewsPostsPage>(
+    `/coin-news/feeds/${encodeURIComponent(feedId)}/posts${query ? `?${query}` : ""}`,
+  );
+}
+
+/** GET /market/price/:asset — live market price for ECX/eCash aliases. */
+export async function getMarketPrice(asset: string): Promise<MarketPrice> {
+  return supaqtGet<MarketPrice>(
+    `/market/price/${encodeURIComponent(asset.toLowerCase())}`,
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Display helpers
 // ---------------------------------------------------------------------------

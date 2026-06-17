@@ -53,7 +53,7 @@ function selectContact(contactName: string) {
               BitNames identity
             </p>
             <span class="rounded-full border border-ecash-500/40 bg-ecash-950/60 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-ecash-300">
-              Preview mode
+              Live Coin News
             </span>
           </div>
 
@@ -103,11 +103,11 @@ function selectContact(contactName: string) {
           <dl class="mt-5 space-y-3 text-sm">
             <div class="flex justify-between gap-4">
               <dt class="text-gray-500">Default feed</dt>
-              <dd class="font-semibold text-gray-200">US Weekly</dd>
+              <dd class="font-semibold text-gray-200">Live indexed feed</dd>
             </div>
             <div class="flex justify-between gap-4">
               <dt class="text-gray-500">Message fee</dt>
-              <dd class="font-mono text-ecash-300">0.00001108 BTC</dd>
+              <dd class="font-mono text-ecash-300">Indexed live</dd>
             </div>
             <div class="flex justify-between gap-4">
               <dt class="text-gray-500">Contact</dt>
@@ -128,32 +128,13 @@ function selectContact(contactName: string) {
             />
           </label>
 
-          <label class="mt-4 block">
-            <span class="text-xs uppercase tracking-widest text-gray-500">Channel</span>
-            <input
-              readonly
-              value="US Weekly"
-              class="mt-2 w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200"
-            />
-          </label>
-
-          <label class="mt-4 block">
-            <span class="text-xs uppercase tracking-widest text-gray-500">Title</span>
-            <input
-              readonly
-              value="Posting from the new eCash.com wallet"
-              class="mt-2 w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-white"
-            />
-          </label>
-
-          <label class="mt-4 block">
-            <span class="text-xs uppercase tracking-widest text-gray-500">Message</span>
-            <textarea
-              readonly
-              rows="4"
-              class="mt-2 w-full rounded-lg border border-gray-800 bg-gray-900 px-3 py-2 text-sm leading-6 text-gray-200"
-            >Introducing SidΞcoin BitMessages on Signet.</textarea>
-          </label>
+          <div class="mt-5 rounded-xl border border-gray-800 bg-gray-900 p-4">
+            <p class="text-sm font-semibold text-white">Composer not connected yet</p>
+            <p class="mt-2 text-sm leading-6 text-gray-400">
+              Live Coin News reads are connected. Broadcast writing will appear
+              here once the write endpoint is available.
+            </p>
+          </div>
 
           <button
             type="button"
