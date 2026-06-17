@@ -18,8 +18,8 @@
     "@sidecoin/shared": "workspace:*",
     "@tailwindcss/vite": "4.1.11",
     "astro": "6.3.8",
-    "jdenticon": "^3.3.0",
-    "nostr-tools": "^2.23.5",
+    "jdenticon": "3.3.0",
+    "nostr-tools": "2.23.5",
     "tailwindcss": "4.1.11",
     "vue": "3.5.22"
   },
