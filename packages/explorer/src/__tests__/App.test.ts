@@ -23,5 +23,6 @@ describe("App", () => {
 
     expect(wrapper.text()).toContain("SidΞcoin Explorer");
     expect(wrapper.text()).toContain("L1 + Drivechains");
+    expect(wrapper.find('img[src="/favicon-48x48.png"]').exists()).toBe(true);
   });
 });

@@ -19,10 +19,14 @@ const activeChain = computed(() => {
       <div class="flex flex-col justify-between gap-4 md:flex-row md:items-center">
         <RouterLink to="/" class="group inline-flex items-center gap-3">
           <div
-            class="grid h-10 w-10 place-items-center rounded-xl border border-yellow-500/70 bg-yellow-500/10 text-lg font-black text-yellow-300 shadow-lg shadow-yellow-500/10"
+            class="grid h-10 w-10 place-items-center rounded-xl border border-yellow-500/70 bg-yellow-500/10 p-1 shadow-lg shadow-yellow-500/10"
             aria-hidden="true"
           >
-            Ξ
+            <img
+              src="/favicon-48x48.png"
+              alt=""
+              class="h-8 w-8 rounded-lg"
+            />
           </div>
           <div>
             <p class="text-lg font-black tracking-tight text-white">
