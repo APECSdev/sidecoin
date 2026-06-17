@@ -33,6 +33,10 @@ function formatAsOf(value: string): string {
   return date.toISOString().replace(".000Z", "Z");
 }
 
+function formatSource(value: string): string {
+  return value && value.toLowerCase() !== "hardcoded" ? value : "SupaQt";
+}
+
 onMounted(() => {
   loadMarketPrice();
 });
@@ -93,7 +97,7 @@ onMounted(() => {
           <p class="mt-2 text-xl font-black text-ecash-400">
             USD {{ price.price_usd }}
           </p>
-          <p class="mt-1 text-sm text-gray-500">{{ price.source }}</p>
+          <p class="mt-1 text-sm text-gray-500">{{ formatSource(price.source) }}</p>
         </div>
 
         <div class="rounded-xl border border-gray-800 bg-gray-950 p-4">
@@ -107,6 +111,37 @@ onMounted(() => {
 
       <div v-else class="mt-6 text-sm text-gray-500">
         No live market price is available.
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
+      <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div>
+          <p class="text-xs uppercase tracking-widest text-gray-500">
+            Charts
+          </p>
+          <h3 class="mt-2 text-2xl font-black text-white">
+            Market charts coming soon
+          </h3>
+          <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-400">
+            Historical market data is not indexed yet. This panel will display
+            ECX/eCash charts once time-series market data is available.
+          </p>
+        </div>
+
+        <span class="w-fit rounded-full border border-gray-700 bg-gray-950 px-3 py-1 text-xs font-black uppercase tracking-wide text-gray-400">
+          Placeholder
+        </span>
+      </div>
+
+      <div class="mt-6 rounded-xl border border-dashed border-gray-700 bg-gray-950 p-6 text-center">
+        <p class="text-sm font-black uppercase tracking-widest text-gray-500">
+          No chart data loaded
+        </p>
+        <p class="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-500">
+          No mocked candles, generated lines, or sample history are shown here.
+          Live charts will appear after historical market indexing is available.
+        </p>
       </div>
     </section>
   </div>

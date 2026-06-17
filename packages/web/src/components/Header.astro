@@ -10,6 +10,7 @@ const WALLET_URL = "https://wallet.sidecoin.app/";
 const links = [
   { href: "/#downloads", label: "Downloads" },
   { href: "/#chains", label: "Sidechains" },
+  { href: "/markets", label: "Markets" },
   { href: "/roadmap", label: "Roadmap" },
   { href: "/benefits", label: "PRO" },
   { href: "https://github.com/APECSdev/sidecoin", label: "GitHub", external: true },
@@ -22,6 +23,13 @@ const links = [
 
     <!-- Desktop links -->
     <div class="hidden items-center gap-3 md:flex">
+      <a
+        href="/markets"
+        class="rounded-lg border border-ecash-500/40 bg-ecash-950/40 px-3 py-2 text-xs font-black uppercase tracking-wide text-ecash-300 no-underline transition-all hover:border-ecash-400 hover:bg-ecash-900/60 hover:text-ecash-100 hover:no-underline"
+        aria-label="Open live ECX market price"
+      >
+        <span data-ecx-price>ECX …</span>
+      </a>
       {links.map((l) => (
         <a
           href={l.href}
@@ -60,6 +68,12 @@ const links = [
   <!-- Mobile menu -->
   <div id="mobile-menu" class="hidden border-t border-gray-800 md:hidden">
     <div class="space-y-2 px-6 py-4">
+      <a
+        href="/markets"
+        class="block rounded-lg border border-ecash-500/40 bg-ecash-950/40 px-3 py-2.5 text-center text-sm font-black uppercase tracking-wide text-ecash-300 no-underline transition-all hover:border-ecash-400 hover:bg-ecash-900/60 hover:text-ecash-100 hover:no-underline"
+      >
+        <span data-ecx-price>ECX …</span>
+      </a>
       {links.map((l) => (
         <a
           href={l.href}
@@ -104,5 +118,31 @@ const links = [
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") setOpen(false);
     });
+
+    async function loadHeaderMarketPrice() {
+      const nodes = document.querySelectorAll("[data-ecx-price]");
+      if (nodes.length === 0) return;
+
+      try {
+        const res = await fetch("https://supaqt.com/v1/market/price/ecash", {
+          headers: { accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const price = await res.json();
+        const priceUsd =
+          price && typeof price.price_usd === "string" ? price.price_usd : "";
+
+        nodes.forEach((node) => {
+          node.textContent = priceUsd ? `ECX USD ${priceUsd}` : "ECX live";
+        });
+      } catch {
+        nodes.forEach((node) => {
+          node.textContent = "ECX live";
+        });
+      }
+    }
+
+    loadHeaderMarketPrice();
   </script>
 </header>

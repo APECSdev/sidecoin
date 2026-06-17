@@ -1,0 +1,301 @@
+---
+// packages/web/src/pages/markets.astro
+//
+// Public Sidecoin markets page.
+// Served from: sidecoin.app/markets
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+
+const WALLET_MARKETS_URL = "https://wallet.sidecoin.app/#/markets";
+const PUMP_FUN_URL = "https://pump.fun/coin/cTxqg4vt21u1Q2f9DSEig6S1fxmxLSsUV2v2wWspump";
+---
+
+<BaseLayout
+  title="Sidecoin Markets — ECX, eCash, and Live Market Data"
+  description="Track live ECX/eCash market data, the Solana ECASH meme token market, and future Sidecoin market charts."
+>
+  <main>
+    <section class="relative overflow-hidden">
+      <div class="absolute inset-0 bg-gradient-to-b from-ecash-950/25 via-gray-950 to-gray-950"></div>
+
+      <div class="relative mx-auto max-w-5xl px-6 pb-16 pt-24 text-center md:pt-32">
+        <p class="text-sm font-black uppercase tracking-[0.3em] text-ecash-400">
+          Live markets
+        </p>
+        <h1 class="mt-4 text-5xl font-black tracking-tight md:text-7xl">
+          Sidecoin
+          <span class="bg-gradient-to-r from-ecash-300 via-ecash-400 to-amber-300 bg-clip-text text-transparent">
+            Markets
+          </span>
+        </h1>
+        <p class="mx-auto mt-6 max-w-3xl text-lg leading-8 text-gray-400">
+          Track canonical ECX/eCash pricing from SupaQt and the external Solana
+          ECASH meme token market from a single public page.
+        </p>
+
+        <div class="mt-10 flex flex-wrap justify-center gap-4">
+          <a
+            href={WALLET_MARKETS_URL}
+            class="rounded-xl bg-ecash-600 px-8 py-4 text-sm font-black text-white no-underline shadow-lg shadow-ecash-600/20 transition-colors hover:bg-ecash-500 hover:no-underline"
+          >
+            Open Wallet Markets
+          </a>
+          <a
+            href={PUMP_FUN_URL}
+            class="rounded-xl border border-gray-700 bg-gray-900 px-8 py-4 text-sm font-bold text-gray-200 no-underline transition-colors hover:border-ecash-500 hover:text-white hover:no-underline"
+            target="_blank"
+            rel="noopener"
+          >
+            View Solana Token
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-5xl px-6 pb-12">
+      <div class="grid gap-6 lg:grid-cols-2">
+        <article class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="text-xs font-black uppercase tracking-[0.25em] text-ecash-400">
+                Canonical
+              </p>
+              <h2 class="mt-3 text-3xl font-black text-white">ECX / eCash</h2>
+              <p class="mt-2 text-sm leading-6 text-gray-400">
+                Live ECX/eCash price data from SupaQt.
+              </p>
+            </div>
+            <span class="w-fit rounded-full border border-ecash-500/30 bg-ecash-950/40 px-3 py-1 text-xs font-black uppercase tracking-wide text-ecash-300">
+              SupaQt
+            </span>
+          </div>
+
+          <div id="ecx-loading" class="mt-8 text-sm text-gray-400">
+            Loading live ECX market price…
+          </div>
+
+          <div id="ecx-error" class="mt-8 hidden rounded-xl border border-yellow-800 bg-yellow-950/30 p-4 text-sm text-yellow-400">
+            Live ECX market data is unavailable.
+          </div>
+
+          <div id="ecx-data" class="mt-8 hidden grid gap-4 sm:grid-cols-3">
+            <div class="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Asset</p>
+              <p id="ecx-asset" class="mt-2 text-2xl font-black text-white">—</p>
+              <p id="ecx-name" class="mt-1 text-sm text-gray-500">—</p>
+            </div>
+
+            <div class="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Price</p>
+              <p id="ecx-price" class="mt-2 text-2xl font-black text-ecash-400">—</p>
+              <p class="mt-1 text-sm text-gray-500">Live price</p>
+            </div>
+
+            <div class="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">As of</p>
+              <p id="ecx-as-of" class="mt-2 break-all font-mono text-xs font-semibold text-white">—</p>
+              <p class="mt-1 text-sm text-gray-500">Indexed</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6">
+          <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p class="text-xs font-black uppercase tracking-[0.25em] text-amber-400">
+                External market
+              </p>
+              <h2 class="mt-3 text-3xl font-black text-white">Solana ECASH Token</h2>
+              <p class="mt-2 text-sm leading-6 text-gray-400">
+                Live market view for the external Solana meme token associated
+                with the pump.fun market.
+              </p>
+            </div>
+            <span class="w-fit rounded-full border border-amber-500/30 bg-amber-950/20 px-3 py-1 text-xs font-black uppercase tracking-wide text-amber-300">
+              Solana
+            </span>
+          </div>
+
+          <div id="meme-loading" class="mt-8 text-sm text-gray-400">
+            Loading live Solana token market…
+          </div>
+
+          <div id="meme-error" class="mt-8 hidden rounded-xl border border-yellow-800 bg-yellow-950/30 p-4 text-sm text-yellow-400">
+            Live Solana token market data is unavailable.
+          </div>
+
+          <div id="meme-data" class="mt-8 hidden grid gap-4 sm:grid-cols-3">
+            <div class="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Token</p>
+              <p id="meme-symbol" class="mt-2 text-2xl font-black text-white">—</p>
+              <p id="meme-pair" class="mt-1 text-sm text-gray-500">—</p>
+            </div>
+
+            <div class="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Price</p>
+              <p id="meme-price" class="mt-2 text-2xl font-black text-amber-400">—</p>
+              <p id="meme-change" class="mt-1 text-sm text-gray-500">—</p>
+            </div>
+
+            <div class="rounded-2xl border border-gray-800 bg-gray-950/70 p-4">
+              <p class="text-xs uppercase tracking-widest text-gray-500">Market cap</p>
+              <p id="meme-market-cap" class="mt-2 text-2xl font-black text-white">—</p>
+              <p id="meme-liquidity" class="mt-1 text-sm text-gray-500">—</p>
+            </div>
+          </div>
+
+          <p class="mt-5 break-all font-mono text-xs text-gray-600">
+            cTxqg4vt21u1Q2f9DSEig6S1fxmxLSsUV2v2wWspump
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mx-auto max-w-5xl px-6 pb-20">
+      <div class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6">
+        <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          <div>
+            <p class="text-xs font-black uppercase tracking-[0.25em] text-gray-500">
+              Charts
+            </p>
+            <h2 class="mt-3 text-3xl font-black text-white">
+              Market charts coming soon
+            </h2>
+            <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-400">
+              Historical market data is not indexed yet. This panel will display
+              ECX/eCash and Solana token charts once time-series market data is
+              available.
+            </p>
+          </div>
+          <span class="w-fit rounded-full border border-gray-700 bg-gray-950 px-3 py-1 text-xs font-black uppercase tracking-wide text-gray-400">
+            Placeholder
+          </span>
+        </div>
+
+        <div class="mt-8 rounded-2xl border border-dashed border-gray-700 bg-gray-950/60 p-8 text-center">
+          <p class="text-sm font-black uppercase tracking-[0.25em] text-gray-500">
+            No chart data loaded
+          </p>
+          <p class="mx-auto mt-3 max-w-xl text-sm leading-6 text-gray-500">
+            No mocked candles, generated lines, or sample history are shown
+            here. Live charts will appear after historical market indexing is
+            available.
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script is:inline>
+    const ECX_PRICE_URL = "https://supaqt.com/v1/market/price/ecash";
+    const MEME_TOKEN_URL =
+      "https://api.dexscreener.com/latest/dex/tokens/cTxqg4vt21u1Q2f9DSEig6S1fxmxLSsUV2v2wWspump";
+
+    function setText(id, value) {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    }
+
+    function show(id) {
+      document.getElementById(id)?.classList.remove("hidden");
+    }
+
+    function hide(id) {
+      document.getElementById(id)?.classList.add("hidden");
+    }
+
+    function formatUsd(value) {
+      if (value === null || value === undefined || value === "") return "—";
+      const n = Number(value);
+      if (!Number.isFinite(n)) return `USD ${String(value)}`;
+      return `USD ${n.toLocaleString("en-US", {
+        maximumFractionDigits: n < 1 ? 8 : 2,
+      })}`;
+    }
+
+    function formatNumber(value) {
+      const n = Number(value);
+      if (!Number.isFinite(n)) return "—";
+      return n.toLocaleString("en-US", {
+        maximumFractionDigits: 2,
+      });
+    }
+
+    async function loadEcxMarket() {
+      try {
+        const res = await fetch(ECX_PRICE_URL, {
+          headers: { accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const price = await res.json();
+
+        setText("ecx-asset", price.asset || "ECX");
+        setText("ecx-name", price.name || "eCash");
+        setText("ecx-price", formatUsd(price.price_usd));
+        setText("ecx-as-of", price.as_of || "—");
+
+        hide("ecx-loading");
+        hide("ecx-error");
+        show("ecx-data");
+      } catch {
+        hide("ecx-loading");
+        hide("ecx-data");
+        show("ecx-error");
+      }
+    }
+
+    async function loadMemeMarket() {
+      try {
+        const res = await fetch(MEME_TOKEN_URL, {
+          headers: { accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        const pairs = Array.isArray(data.pairs) ? data.pairs : [];
+        const pair =
+          pairs.find((candidate) => candidate.chainId === "solana" && candidate.priceUsd) ||
+          pairs.find((candidate) => candidate.priceUsd) ||
+          pairs[0];
+
+        if (!pair) throw new Error("No token pairs returned.");
+
+        const base = pair.baseToken || {};
+        const quote = pair.quoteToken || {};
+        const change =
+          pair.priceChange && typeof pair.priceChange.h24 !== "undefined"
+            ? `${pair.priceChange.h24}% 24h`
+            : "24h change unavailable";
+        const liquidity =
+          pair.liquidity && typeof pair.liquidity.usd !== "undefined"
+            ? `Liquidity ${formatUsd(pair.liquidity.usd)}`
+            : "Liquidity unavailable";
+
+        setText("meme-symbol", base.symbol || "ECASH");
+        setText(
+          "meme-pair",
+          `${base.symbol || "ECASH"} / ${quote.symbol || "SOL"}`
+        );
+        setText("meme-price", formatUsd(pair.priceUsd));
+        setText("meme-change", change);
+        setText(
+          "meme-market-cap",
+          pair.marketCap ? formatUsd(pair.marketCap) : pair.fdv ? formatUsd(pair.fdv) : "—"
+        );
+        setText("meme-liquidity", liquidity);
+
+        hide("meme-loading");
+        hide("meme-error");
+        show("meme-data");
+      } catch {
+        hide("meme-loading");
+        hide("meme-data");
+        show("meme-error");
+      }
+    }
+
+    loadEcxMarket();
+    loadMemeMarket();
+  </script>
+</BaseLayout>
