@@ -18,6 +18,8 @@
     "build:wallet": "pnpm --filter @sidecoin/wallet build",
     "build:explorer": "pnpm --filter @sidecoin/explorer build",
     "build:shared": "pnpm --filter @sidecoin/shared build",
+    "coverage:explorer": "pnpm --filter @sidecoin/explorer test -- --coverage --coverage.reporter=lcov",
+    "validate:explorer": "pnpm --filter @sidecoin/explorer test && pnpm --filter @sidecoin/explorer type-check && pnpm --filter @sidecoin/explorer build && pnpm --filter @sidecoin/explorer smoke:api",
     "test": "pnpm -r test",
     "lint": "pnpm -r lint",
     "type-check": "pnpm -r type-check"
