@@ -47,6 +47,11 @@ describe("explorer static assets", () => {
     expect(indexHtml).not.toContain("favicon.svg");
   });
 
+  it("keeps the explorer document title unstyled", () => {
+    expect(indexHtml).toContain("<title>Sidecoin Explorer</title>");
+    expect(indexHtml).not.toContain("<title>SidΞcoin Explorer</title>");
+  });
+
   it("keeps the explorer app entrypoint and analytics wiring", () => {
     expect(indexHtml).toContain('<div id="app"></div>');
     expect(indexHtml).toContain(

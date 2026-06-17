@@ -2,6 +2,7 @@
 
 import { mount } from "@vue/test-utils";
 import { createRouter, createWebHistory } from "vue-router";
+import ComingSoonCta from "../components/ComingSoonCta.vue";
 import CopyButton from "../components/CopyButton.vue";
 import EmptyState from "../components/EmptyState.vue";
 import ErrorState from "../components/ErrorState.vue";
@@ -45,6 +46,32 @@ describe("explorer components", () => {
 
     expect(wrapper.text()).toContain("Loading block");
     expect(wrapper.text()).toContain("Fetching block data.");
+  });
+
+  it("renders coming soon founder cta text and links", () => {
+    const wrapper = mount(ComingSoonCta, {
+      props: {
+        chainName: "zSide",
+      },
+    });
+
+    expect(wrapper.text()).toContain("Coming soon");
+    expect(wrapper.text()).toContain("This explorer view is not indexed yet");
+    expect(wrapper.text()).toContain("SidΞcoin only shows live chain data");
+    expect(wrapper.text()).toContain("Want early access when zSide comes online?");
+    expect(wrapper.text()).toContain("Become a Founding Member");
+    expect(wrapper.text()).toContain("View Founder Leaderboard");
+    expect(wrapper.text()).toContain("Yearly PRO is the Founder path");
+    expect(wrapper.text()).toContain("Monthly PRO unlocks product features");
+
+    const links = wrapper.findAll("a");
+    expect(links).toHaveLength(2);
+    expect(links[0].attributes("href")).toBe(
+      "https://sidecoin.app/pro?utm_source=explorer&utm_medium=coming_soon&utm_campaign=founder_cta",
+    );
+    expect(links[1].attributes("href")).toBe(
+      "https://sidecoin.app/founders?utm_source=explorer&utm_medium=coming_soon&utm_campaign=founder_cta",
+    );
   });
 
   it("renders a truncated hash link", async () => {
@@ -137,11 +164,13 @@ describe("chain dashboard labels", () => {
     expect(wrapper.text()).toContain("Latest block transaction count");
     expect(wrapper.text()).toContain("Confirmed-only index");
     expect(wrapper.text()).not.toContain("No live rows shown");
+    expect(wrapper.text()).not.toContain("Become a Founding Member");
+    expect(wrapper.text()).not.toContain("View Founder Leaderboard");
 
     vi.doUnmock("../api");
   });
 
-  it("shows coming soon copy and empty rows for non-indexed chains", async () => {
+  it("shows coming soon copy, founder cta, and empty rows for non-indexed chains", async () => {
     vi.resetModules();
 
     const getExplorerStatus = vi.fn(async () => ({
@@ -184,10 +213,30 @@ describe("chain dashboard labels", () => {
 
     expect(wrapper.text()).toContain("This explorer view is not indexed yet");
     expect(wrapper.text()).toContain("SidΞcoin only shows live chain data");
+    expect(wrapper.text()).toContain("Want early access when zSide comes online?");
+    expect(wrapper.text()).toContain("Become a Founding Member");
+    expect(wrapper.text()).toContain("View Founder Leaderboard");
+    expect(wrapper.text()).toContain("Yearly PRO is the Founder path");
     expect(wrapper.text()).toContain("No blocks found");
     expect(wrapper.text()).toContain("No transactions found");
     expect(wrapper.text()).not.toContain("Demo-backed scaffold");
     expect(wrapper.text()).not.toContain("Current demo index");
+
+    const links = wrapper.findAll("a");
+    expect(
+      links.some(
+        (link) =>
+          link.attributes("href") ===
+          "https://sidecoin.app/pro?utm_source=explorer&utm_medium=coming_soon&utm_campaign=founder_cta",
+      ),
+    ).toBe(true);
+    expect(
+      links.some(
+        (link) =>
+          link.attributes("href") ===
+          "https://sidecoin.app/founders?utm_source=explorer&utm_medium=coming_soon&utm_campaign=founder_cta",
+      ),
+    ).toBe(true);
 
     vi.doUnmock("../api");
   });

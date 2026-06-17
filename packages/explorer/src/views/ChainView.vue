@@ -4,6 +4,7 @@
 import { computed, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 import BlocksTable from "../components/BlocksTable.vue";
+import ComingSoonCta from "../components/ComingSoonCta.vue";
 import ErrorState from "../components/ErrorState.vue";
 import LoadingState from "../components/LoadingState.vue";
 import SearchBox from "../components/SearchBox.vue";
@@ -141,21 +142,7 @@ watch(chainId, loadChain);
     />
 
     <template v-else>
-      <section
-        v-if="!isIndexedChain"
-        class="rounded-3xl border border-blue-900/70 bg-blue-950/30 p-6"
-      >
-        <p class="text-sm font-black uppercase tracking-[0.22em] text-blue-300">
-          Not indexed yet
-        </p>
-        <h2 class="mt-3 text-2xl font-black text-blue-100">Coming soon</h2>
-        <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-100/80">
-          This explorer view is not indexed yet. SidΞcoin only shows live chain
-          data. Until SupaQt indexing is connected for this network, blocks,
-          transactions, addresses, balances, deposits, and withdrawals will
-          remain empty.
-        </p>
-      </section>
+      <ComingSoonCta v-if="!isIndexedChain" :chain-name="chain.displayName" />
 
       <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <StatCard
