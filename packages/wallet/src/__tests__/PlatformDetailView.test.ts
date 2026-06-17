@@ -249,6 +249,30 @@ describe("PlatformDetailView.vue", () => {
     expect(broadcast).toBeDefined();
 
     await broadcast!.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Compose Coin News");
+    expect(wrapper.text()).toContain("Local OP_RETURN signing");
+    expect(wrapper.text()).toContain("Build Signed News Transaction");
+    expect(wrapper.text()).toContain("Public and permanent");
+  });
+
+  it("opens the local Coin News OP_RETURN composer from the sidebar button", async () => {
+    const wrapper = await mountPlatform("/platforms/bitnames");
+    const messages = wrapper.findAll("button").find((b) => b.text() === "Messages");
+    expect(messages).toBeDefined();
+
+    await messages!.trigger("click");
+    await flushPromises();
+
+    const sidebarButton = wrapper
+      .findAll("button")
+      .find((button) => button.text() === "Open Feed Composer");
+    expect(sidebarButton).toBeDefined();
+    expect(sidebarButton!.attributes("disabled")).toBeUndefined();
+
+    await sidebarButton!.trigger("click");
+    await flushPromises();
 
     expect(wrapper.text()).toContain("Compose Coin News");
     expect(wrapper.text()).toContain("Local OP_RETURN signing");

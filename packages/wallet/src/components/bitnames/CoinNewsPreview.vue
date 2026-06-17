@@ -1,7 +1,7 @@
 <!-- packages/wallet/src/components/bitnames/CoinNewsPreview.vue -->
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import CoinNewsComposer from "./CoinNewsComposer.vue";
 import {
   getCoinNewsFeeds,
@@ -16,15 +16,18 @@ const props = withDefaults(
     dashboard?: boolean;
     showHero?: boolean;
     showJapanFeed?: boolean;
+    composerOpenNonce?: number;
   }>(),
   {
     dashboard: false,
     showHero: true,
     showJapanFeed: true,
+    composerOpenNonce: 0,
   },
 );
 
 const composerOpen = ref(false);
+const composerHost = ref<HTMLElement | null>(null);
 const feeds = ref<CoinNewsFeed[]>([]);
 const usWeeklyRows = ref<CoinNewsPost[]>([]);
 const japanWeeklyRows = ref<CoinNewsPost[]>([]);
@@ -150,11 +153,27 @@ function feedPostCount(feedId: string, rows: CoinNewsPost[]): number {
   return typeof feed?.post_count === "number" ? feed.post_count : rows.length;
 }
 
-function openComposer() {
-  if (!props.dashboard) {
-    composerOpen.value = true;
+async function openComposer() {
+  if (props.dashboard) {
+    return;
   }
+
+  composerOpen.value = true;
+  await nextTick();
+  composerHost.value?.scrollIntoView?.({
+    behavior: "smooth",
+    block: "start",
+  });
 }
+
+watch(
+  () => props.composerOpenNonce,
+  (value, oldValue) => {
+    if (value > 0 && value !== oldValue) {
+      void openComposer();
+    }
+  },
+);
 
 onMounted(() => {
   loadCoinNews();
@@ -209,7 +228,12 @@ onMounted(() => {
       </div>
     </section>
 
-    <CoinNewsComposer v-if="composerOpen && !props.dashboard" />
+    <div
+      v-if="composerOpen && !props.dashboard"
+      ref="composerHost"
+    >
+      <CoinNewsComposer />
+    </div>
 
     <section class="overflow-hidden rounded-2xl border border-gray-800 bg-gray-950">
       <div class="flex flex-col gap-3 border-b border-gray-800 px-5 py-4 md:flex-row md:items-center md:justify-between">

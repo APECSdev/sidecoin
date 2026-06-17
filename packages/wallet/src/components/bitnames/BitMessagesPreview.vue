@@ -1,7 +1,7 @@
 <!-- packages/wallet/src/components/bitnames/BitMessagesPreview.vue -->
 
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import CoinNewsPreview from "./CoinNewsPreview.vue";
 
 interface BitNamesContact {
@@ -38,8 +38,14 @@ const selectedConversation = computed(() => {
   return props.messages.filter((message) => message.contact === props.selectedContactName);
 });
 
+const composerOpenNonce = ref(0);
+
 function selectContact(contactName: string) {
   emit("update:selectedContactName", contactName);
+}
+
+function openFeedComposer() {
+  composerOpenNonce.value += 1;
 }
 </script>
 
@@ -83,7 +89,10 @@ function selectContact(contactName: string) {
 
     <div class="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(360px,0.75fr)]">
       <div>
-        <CoinNewsPreview :show-hero="false" />
+        <CoinNewsPreview
+          :show-hero="false"
+          :composer-open-nonce="composerOpenNonce"
+        />
       </div>
 
       <aside class="space-y-6">
@@ -136,10 +145,10 @@ function selectContact(contactName: string) {
 
           <button
             type="button"
-            disabled
-            class="mt-5 w-full cursor-not-allowed rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white opacity-60"
+            class="mt-5 w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-black text-white hover:bg-blue-500"
+            @click="openFeedComposer"
           >
-            Use feed composer
+            Open Feed Composer
           </button>
         </section>
 
