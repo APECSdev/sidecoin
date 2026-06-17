@@ -374,6 +374,50 @@ jobs:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  # ── Smart Hub — Secure Portal Challenge (standalone, labeled job) ──
+  #
+  # Pure TS/Vite/Vue — runs once on ubuntu. Appears as its own
+  # "smarthub" entry in the Actions sidebar so portal regressions
+  # are immediately distinguishable from wallet/web/explorer/api failures.
+  # Builds + tests + type-checks the Smart Hub landing page.
+  # deploy-smarthub gates on this job.
+  # ─────────────────────────────────────────────────────────
+
+  smarthub:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Smart Hub
+        run: pnpm --filter @sidecoin/smarthub build
+
+      - name: Test Smart Hub
+        run: pnpm --filter @sidecoin/smarthub test -- --coverage --coverage.reporter=lcov
+
+      - name: Type-check Smart Hub
+        run: pnpm --filter @sidecoin/smarthub type-check
+
+      - name: Upload Smart Hub Coverage
+        uses: codecov/codecov-action@v5
+        with:
+          files: packages/smarthub/coverage/lcov.info
+          flags: smarthub
+          fail_ci_if_error: false
+          verbose: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   # ── API adapter + client (standalone, labeled job) ───────
   #
   # Pure TS — runs once on ubuntu (no Rust/matrix needed).
@@ -520,6 +564,39 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy packages/explorer/dist --project-name=sidecoin-explorer --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+  # ── Cloudflare Pages — Smart Hub ─────────────────────────
+
+  deploy-smarthub:
+    needs: smarthub
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    environment:
+      name: production-smarthub
+      url: https://hub.sidecoin.app
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build Smart Hub
+        run: pnpm --filter @sidecoin/smarthub build
+
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy packages/smarthub/dist --project-name=sidecoin-hub --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
