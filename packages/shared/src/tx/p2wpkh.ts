@@ -13,14 +13,14 @@
 // material is logged or returned. This matches the wallet's existing
 // client-side trust model.
 //
-// ⚠️  WIRE-CORRECTNESS GATE: the byte-exact output of this builder MUST be
+// !!  WIRE-CORRECTNESS GATE: the byte-exact output of this builder MUST be
 //     validated against the signet node's `testmempoolaccept` before any
 //     produced hex is trusted on-chain. Two things in particular are only
 //     provable live, not by unit test:
 //       1. txid byte-order passed to addInput (see TXID note below).
 //       2. final witness / sighash correctness end-to-end.
 //     The unit suite proves determinism, structure, fee accounting, and
-//     validation — necessary but not sufficient for "this will confirm".
+//     validation -- necessary but not sufficient for "this will confirm".
 
 import * as btc from "@scure/btc-signer";
 import { hexToBytes, bytesToHex } from "@noble/hashes/utils";
@@ -40,7 +40,7 @@ const SEQUENCE_FINAL = 0xffffffff;
 
 /**
  * Parameters for building + signing a P2WPKH transaction.
- * The fee is explicit — compute it with estimateP2wpkhFee() upstream.
+ * The fee is explicit -- compute it with estimateP2wpkhFee() upstream.
  */
 export interface BuildP2wpkhParams {
   /** Network whose bech32 HRP the recipient address must match. */
@@ -66,6 +66,19 @@ export interface BuildP2wpkhParams {
 
   /** Signal Replace-By-Fee (BIP-125). Defaults to true. */
   readonly enableRbf?: boolean;
+
+  /**
+   * Optional transaction nVersion override. When omitted the builder
+   * preserves prior behavior exactly (no constructor opts -> @scure/btc-signer's
+   * DEFAULT_VERSION of 2). The fork's signet simulation sets this to 0xFD (253)
+   * as the per-transaction replay marker; because @scure/btc-signer folds
+   * nVersion into the BIP-143 preimage as its FIRST field (serialized
+   * little-endian, 253 -> bytes FD 00 00 00), the marker is committed by every
+   * input signature. This contradicts the team's claim that the replay byte
+   * "does not feed the sighash preimage" -- harmless for the signet sim, but
+   * MUST be flagged before any forknet work.
+   */
+  readonly version?: number;
 }
 
 /** A fully-signed transaction plus the accounting needed for UI + records. */
@@ -158,6 +171,7 @@ export function buildAndSignP2wpkhTransaction(
     changeScriptPubKey,
     signingKeys,
     enableRbf = true,
+    version,
   } = params;
 
   // ----- validation -------------------------------------------------------
@@ -178,6 +192,18 @@ export function buildAndSignP2wpkhTransaction(
   }
   if (feeSatoshis < 0n) {
     throw new Error(`Fee must be non-negative, got ${feeSatoshis}.`);
+  }
+  // nVersion, when overridden, must fit the 4-byte on-wire field. We do NOT
+  // reject "non-standard" values (e.g. 0xFD): Bitcoin Core accepts arbitrary
+  // nVersion at consensus, and the whole point of the replay marker is to be
+  // non-standard. Range is the only real constraint here.
+  if (
+    version !== undefined &&
+    (!Number.isInteger(version) || version < 0 || version > 0xffffffff)
+  ) {
+    throw new Error(
+      `Transaction version must be a uint32 (0..0xffffffff), got ${version}.`,
+    );
   }
 
   const config = getNetworkOrThrow(network);
@@ -206,7 +232,16 @@ export function buildAndSignP2wpkhTransaction(
   const rawChange = totalInputSatoshis - amountSatoshis - feeSatoshis;
 
   // ----- build ------------------------------------------------------------
-  const tx = new btc.Transaction();
+  // nVersion: when `version` is provided we pass it through to the signer,
+  // otherwise we preserve the prior behavior EXACTLY (undefined opts == no
+  // constructor argument -> btc-signer's DEFAULT_VERSION of 2). @scure/btc-signer
+  // writes nVersion as the first field of both the serialized tx AND the
+  // BIP-143 sighash preimage, so a 0xFD marker is committed by every input
+  // signature -- the replay byte DOES feed the preimage (flag for forknet;
+  // harmless for the signet sim).
+  const tx = new btc.Transaction(
+    version !== undefined ? { version } : undefined,
+  );
   const sequence = enableRbf ? SEQUENCE_RBF : SEQUENCE_FINAL;
 
   // Track which distinct keys we actually use, so we sign each exactly once.
@@ -223,7 +258,7 @@ export function buildAndSignP2wpkhTransaction(
     }
     usedKeys.set(scriptHex, key);
 
-    // ⚠️ TXID byte-order: passed as decoded display-order hex. @scure/btc-signer
+    // !! TXID byte-order: passed as decoded display-order hex. @scure/btc-signer
     //    is expected to reverse to internal LE order on serialization. This is
     //    the one assumption that MUST be confirmed by testmempoolaccept before
     //    trusting on-chain; if the node reports a missing/unknown prevout, the
@@ -242,7 +277,7 @@ export function buildAndSignP2wpkhTransaction(
   // Recipient output.
   tx.addOutput({ script: recipientScript, amount: amountSatoshis });
 
-  // Change output — only if it clears the dust limit. Otherwise the change
+  // Change output -- only if it clears the dust limit. Otherwise the change
   // is left on the table and absorbed into the fee (standard wallet behavior).
   let changeSatoshis = 0n;
   let hasChange = false;
