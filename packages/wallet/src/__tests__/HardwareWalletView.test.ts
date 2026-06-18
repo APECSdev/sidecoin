@@ -10,7 +10,7 @@ function fakeWallet(overrides: Partial<HardwareWallet> = {}): HardwareWallet {
     name: "OneKey",
     connect: vi.fn().mockResolvedValue(undefined),
     getAddress: vi.fn().mockResolvedValue({
-      path: "m/44'/0'/0'/0/0",
+      path: "m/84'/0'/0'/0/0",
       address: "bc1qexampleaddress",
       publicKey: "02abcd",
     }),
@@ -41,7 +41,7 @@ describe("HardwareWalletView", () => {
     await getBtn.trigger("click");
     await flushPromises();
 
-    expect(wallet.getAddress).toHaveBeenCalledWith("m/44'/0'/0'/0/0", {
+    expect(wallet.getAddress).toHaveBeenCalledWith("m/84'/0'/0'/0/0", {
       coin: "btc",
       showOnDevice: true,
     });

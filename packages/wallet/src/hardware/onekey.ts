@@ -13,6 +13,7 @@ export class OneKeyHardwareWallet implements HardwareWallet {
   private initialized = false;
   private connectId: string | null = null;
   private deviceId: string | null = null;
+  private addressInFlight = false;
 
   private async ensureSdk(): Promise<any> {
     if (this.sdk) return this.sdk;
@@ -53,21 +54,31 @@ export class OneKeyHardwareWallet implements HardwareWallet {
     path: string,
     opts: GetAddressOpts = {},
   ): Promise<HardwareAccount> {
-    const HardwareSDK = await this.ensureSdk();
-    if (!this.connectId || !this.deviceId) {
-      throw new Error("Device not connected.");
+    if (this.addressInFlight) {
+      throw new Error("Address request already in progress.");
     }
-    const res = await HardwareSDK.btcGetAddress(this.connectId, this.deviceId, {
-      path,
-      coin: opts.coin ?? "btc",
-      showOnOneKey: opts.showOnDevice ?? false,
-    });
-    if (!res.success) throw new Error(res.payload.error);
-    return {
-      path,
-      address: res.payload.address,
-      publicKey: (res.payload as any).publicKey ?? "",
-    };
+
+    this.addressInFlight = true;
+    try {
+      const HardwareSDK = await this.ensureSdk();
+      if (!this.connectId || !this.deviceId) {
+        throw new Error("Device not connected.");
+      }
+
+      const res = await HardwareSDK.btcGetAddress(this.connectId, this.deviceId, {
+        path,
+        coin: opts.coin ?? "btc",
+        showOnOneKey: opts.showOnDevice ?? false,
+      });
+      if (!res.success) throw new Error(res.payload.error);
+      return {
+        path,
+        address: res.payload.address,
+        publicKey: (res.payload as any).publicKey ?? "",
+      };
+    } finally {
+      this.addressInFlight = false;
+    }
   }
 
   async disconnect(): Promise<void> {
@@ -75,7 +86,7 @@ export class OneKeyHardwareWallet implements HardwareWallet {
     this.deviceId = null;
   }
 
-  /** Prefer on-device PIN/passphrase entry — no custom keypad UI, most secure. */
+  /** Prefer on-device PIN/passphrase entry - no custom keypad UI, most secure. */
   private async bindEvents(HardwareSDK: any): Promise<void> {
     const { UI_EVENT, UI_REQUEST, UI_RESPONSE } = await import("@onekeyfe/hd-core");
     HardwareSDK.on(UI_EVENT, async (message: any) => {

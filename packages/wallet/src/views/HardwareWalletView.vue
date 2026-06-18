@@ -10,8 +10,9 @@ const props = defineProps<{ wallet?: HardwareWallet }>();
 const wallet: HardwareWallet = props.wallet ?? new OneKeyHardwareWallet();
 
 const status = ref<"idle" | "connecting" | "connected" | "error">("idle");
+const busy = ref(false);
 const error = ref("");
-const path = ref("m/44'/0'/0'/0/0");
+const path = ref("m/84'/0'/0'/0/0");
 const coin = ref("btc");
 const showOnDevice = ref(true);
 const account = ref<HardwareAccount | null>(null);
@@ -23,6 +24,8 @@ const quickStart = [
 ];
 
 async function connect() {
+  if (busy.value || status.value === "connecting") return;
+
   error.value = "";
   status.value = "connecting";
   try {
@@ -35,6 +38,9 @@ async function connect() {
 }
 
 async function fetchAddress() {
+  if (busy.value) return;
+
+  busy.value = true;
   error.value = "";
   try {
     account.value = await wallet.getAddress(path.value, {
@@ -43,6 +49,8 @@ async function fetchAddress() {
     });
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    busy.value = false;
   }
 }
 </script>
@@ -79,7 +87,7 @@ async function fetchAddress() {
           </div>
           <button
             class="mt-4 w-full rounded-lg bg-ecash-500 px-4 py-2 text-sm font-semibold text-gray-950 hover:bg-ecash-400 disabled:opacity-40"
-            :disabled="status === 'connecting'"
+            :disabled="busy || status === 'connecting'"
             @click="connect"
           >
             {{ status === "connected" ? "Reconnect OneKey" : "Connect OneKey" }}
@@ -105,7 +113,7 @@ async function fetchAddress() {
       <div class="rounded-xl border border-gray-800 bg-gray-900 p-5">
         <h3 class="font-semibold text-white">Address verification</h3>
         <p class="mt-1 text-xs text-gray-500">
-          Chromium + HTTPS or localhost · WebUSB required
+          Chromium + HTTPS or localhost - WebUSB required
         </p>
 
         <div class="mt-5 space-y-4 rounded-lg border border-gray-800 bg-gray-950 p-4">
@@ -131,11 +139,11 @@ async function fetchAddress() {
           </label>
 
           <button
-            class="rounded border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
-            :disabled="status !== 'connected'"
+            class="rounded border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800 disabled:opacity-40"
+            :disabled="status !== 'connected' || busy"
             @click="fetchAddress"
           >
-            Show address
+            {{ busy ? "Waiting for device..." : "Show address" }}
           </button>
         </div>
 
@@ -158,9 +166,9 @@ async function fetchAddress() {
         <div class="rounded-xl border border-gray-800 bg-gray-900 p-4">
           <h3 class="font-semibold text-white">Basic hardware tools</h3>
           <ul class="mt-3 space-y-2 text-sm text-gray-400">
-            <li>✓ Device discovery</li>
-            <li>✓ Address derivation</li>
-            <li>✓ On-device address confirmation</li>
+            <li>[x] Device discovery</li>
+            <li>[x] Address derivation</li>
+            <li>[x] On-device address confirmation</li>
           </ul>
         </div>
 
