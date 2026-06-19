@@ -9,8 +9,8 @@ const ACTIVE_EXPLORER_CHAIN_IDS = new Set(["l1", "bitnames", "thunder"]);
 
 const L1_CHAIN: ExplorerChain = {
   id: "l1",
-  displayName: "L1",
-  shortName: "L1",
+  displayName: "eCash",
+  shortName: "eCash",
   kind: "l1",
   slot: null,
   description: "eCash (Signet) L1 parent chain activity.",
