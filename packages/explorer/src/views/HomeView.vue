@@ -17,7 +17,7 @@ import { statusClass } from "../explorer/format";
         Search L1 and Drivechain activity.
       </h1>
       <p class="mt-4 max-w-2xl text-lg text-gray-400">
-        Explore blocks, transactions, and addresses across the SidΞcoin L1
+        Explore blocks, transactions, and addresses across the eCash (Signet) L1
         parent chain and supported sidechain surfaces.
       </p>
 

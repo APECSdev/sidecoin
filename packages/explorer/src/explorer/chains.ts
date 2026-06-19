@@ -13,7 +13,7 @@ const L1_CHAIN: ExplorerChain = {
   shortName: "L1",
   kind: "l1",
   slot: null,
-  description: "SidΞcoin L1 parent chain activity.",
+  description: "eCash (Signet) L1 parent chain activity.",
   status: "active",
 };
 
