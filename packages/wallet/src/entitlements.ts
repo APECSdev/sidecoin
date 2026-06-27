@@ -33,11 +33,16 @@ export const PRO_PLATFORM_IDS = [
 
 export const COIN_CONTROL_FEATURE_ID = "wallet:coin-control";
 
+// Hardware signing is FREE for everyone — it is a safety primitive, not a
+// premium feature. The coin-splitter (also free) reuses this surface after
+// the Aug 21 fork. PRO gating for *advanced* hardware workflows (multi-key,
+// policy scripts) will be added later under a distinct feature id.
 export const BASIC_FEATURES = [
   "l1",
   "swap",
   "toolbox",
   "hardware:read",
+  "hardware:signing",
   "platform:thunder",
   "platform:bitnames",
 ];
@@ -50,7 +55,6 @@ export const PRO_FEATURES = [
   "platform:coinshift",
   "platform:riscy",
   "platform:elementsplus",
-  "hardware:signing",
   "analytics:historical",
   "platforms:early-access",
   COIN_CONTROL_FEATURE_ID,

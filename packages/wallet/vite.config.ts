@@ -40,6 +40,12 @@ export default defineConfig({
     }),
   ],
 
+  // Rewrite bare `global` references (common in Node-origin SDKs) to globalThis.
+  // Pairs with the runtime polyfill in src/polyfills.ts.
+  define: {
+    global: "globalThis",
+  },
+
   server: {
     port: 5174,
     strictPort: false,

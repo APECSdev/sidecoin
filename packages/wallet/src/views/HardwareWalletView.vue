@@ -5,17 +5,29 @@ import { ref } from "vue";
 import type { HardwareWallet, HardwareAccount } from "../hardware/types";
 import { OneKeyHardwareWallet } from "../hardware/onekey";
 import ProGate from "../components/pro/ProGate.vue";
+import { loadWallet } from "../keystore";
+import { getL1Balance, satsToBtc } from "../api";
 
 const props = defineProps<{ wallet?: HardwareWallet }>();
 const wallet: HardwareWallet = props.wallet ?? new OneKeyHardwareWallet();
 
+// Network-aware defaults: derive path + coin id from the wallet's stored
+// network so the hardware address matches the software wallet's index-0 key.
+// Signet -> m/84'/1'/0'/0/0 + coin "test" (tb1... address). Previously these
+// were hardcoded to mainnet (m/84'/0'/0'/0/0 + "btc"), which produced a bc1...
+// address that could NOT receive signet funds.
+const stored = loadWallet();
+const isMainnet = stored?.network === "mainnet";
+const coinType = isMainnet ? 0 : 1;
+
 const status = ref<"idle" | "connecting" | "connected" | "error">("idle");
 const busy = ref(false);
 const error = ref("");
-const path = ref("m/84'/0'/0'/0/0");
-const coin = ref("btc");
+const path = ref(`m/84'/${coinType}'/0'/0/0`);
+const coin = ref(isMainnet ? "btc" : "test");
 const showOnDevice = ref(true);
 const account = ref<HardwareAccount | null>(null);
+const balanceSats = ref<bigint | null>(null);
 
 const quickStart = [
   "Connect your OneKey over WebUSB",
@@ -42,11 +54,23 @@ async function fetchAddress() {
 
   busy.value = true;
   error.value = "";
+  balanceSats.value = null;
   try {
     account.value = await wallet.getAddress(path.value, {
       coin: coin.value,
       showOnDevice: showOnDevice.value,
     });
+
+    // Read the L1/signet balance for the derived address so the test flow
+    // (fund -> wait 1 block -> confirm balance) is visible in-UI. Unknown
+    // addresses return totalSats 0n, so this is safe before funding.
+    try {
+      const bal = await getL1Balance(account.value.address);
+      balanceSats.value = bal.totalSats;
+    } catch {
+      // Balance read is best-effort; do not block address display on it.
+      balanceSats.value = null;
+    }
   } catch (e) {
     error.value = e instanceof Error ? e.message : String(e);
   } finally {
@@ -155,6 +179,14 @@ async function fetchAddress() {
           <p class="mb-1 text-xs uppercase tracking-wide text-gray-500">Derived address</p>
           <p class="break-all font-mono text-sm text-ecash-400">{{ account.address }}</p>
           <p class="mt-2 break-all font-mono text-xs text-gray-600">{{ account.path }}</p>
+
+          <div class="mt-3 flex items-center gap-2 border-t border-gray-800 pt-3">
+            <span class="text-xs uppercase tracking-wide text-gray-500">Balance</span>
+            <span class="font-mono text-sm font-semibold text-white">
+              {{ balanceSats !== null ? satsToBtc(balanceSats) : "…" }}
+            </span>
+            <span class="text-xs text-gray-600">sBTC (signet)</span>
+          </div>
         </div>
 
         <p v-if="error" class="mt-4 text-sm text-red-400" data-test="hw-error">
