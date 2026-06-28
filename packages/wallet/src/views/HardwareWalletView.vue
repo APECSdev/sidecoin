@@ -1,12 +1,27 @@
 <!-- packages/wallet/src/views/HardwareWalletView.vue -->
 
 <script setup lang="ts">
-import { ref } from "vue";
-import type { HardwareWallet, HardwareAccount } from "../hardware/types";
+import { ref, computed } from "vue";
+import type {
+  HardwareWallet,
+  HardwareAccount,
+  HardwareSignRequest,
+} from "../hardware/types";
 import { OneKeyHardwareWallet } from "../hardware/onekey";
 import ProGate from "../components/pro/ProGate.vue";
 import { loadWallet } from "../keystore";
-import { getL1Balance, satsToBtc } from "../api";
+import { toSpendableUtxo, parseCoinsToSats } from "../send";
+import {
+  getL1Balance,
+  getL1Utxos,
+  broadcastTransaction,
+  satsToBtc,
+  L1_CHAIN_ID,
+  ApiError,
+  type BroadcastReceipt,
+} from "../api";
+import { selectCoins, type NetworkId } from "@sidecoin/shared";
+import { address as btcAddress, networks as btcNetworks } from "bitcoinjs-lib";
 
 const props = defineProps<{ wallet?: HardwareWallet }>();
 const wallet: HardwareWallet = props.wallet ?? new OneKeyHardwareWallet();
@@ -19,6 +34,7 @@ const wallet: HardwareWallet = props.wallet ?? new OneKeyHardwareWallet();
 const stored = loadWallet();
 const isMainnet = stored?.network === "mainnet";
 const coinType = isMainnet ? 0 : 1;
+const walletNetwork: NetworkId = (stored?.network as NetworkId) ?? "signet";
 
 const status = ref<"idle" | "connecting" | "connected" | "error">("idle");
 const busy = ref(false);
@@ -76,6 +92,128 @@ async function fetchAddress() {
   } finally {
     busy.value = false;
   }
+}
+
+// ---- hardware signing (Step 4) ----------------------------------------
+// Signing is FREE for everyone (hardware:signing is in BASIC_FEATURES). The
+// flow: fetch UTXOs -> coin-select -> build HardwareSignRequest -> sign on
+// device -> review -> broadcast. No private key material ever leaves the device.
+
+/** Flat signet fee rate (matches the software Send view). */
+const FEE_RATE_SAT_PER_VB = 1;
+
+const sendAddress = ref("");
+const sendAmount = ref("");
+const signing = ref(false);
+const broadcasting = ref(false);
+const signError = ref<string | null>(null);
+const receipt = ref<BroadcastReceipt | null>(null);
+
+interface HwBuiltTx {
+  hex: string;
+  txid: string;
+  amountSatoshis: bigint;
+  feeSatoshis: bigint;
+}
+const built = ref<HwBuiltTx | null>(null);
+
+/** bitcoinjs-lib network object for the wallet's network (signet == testnet). */
+const networkObj = computed(() =>
+  walletNetwork === "mainnet"
+    ? btcNetworks.bitcoin
+    : walletNetwork === "regtest"
+      ? btcNetworks.regtest
+      : btcNetworks.testnet,
+);
+
+async function handleSign() {
+  signing.value = true;
+  signError.value = null;
+  built.value = null;
+  receipt.value = null;
+  try {
+    if (!account.value) {
+      signError.value = "Connect and derive an address first.";
+      return;
+    }
+
+    const amountSatoshis = parseCoinsToSats(sendAmount.value);
+
+    // Fetch the full UTXO set for the derived address. If the adapter truncated
+    // the set, refuse to build — coin selection from a partial set could
+    // produce a transaction that fails to broadcast (missing inputs).
+    const utxoSet = await getL1Utxos(account.value.address);
+    if (utxoSet.truncated) {
+      signError.value =
+        "The UTXO set was truncated upstream; refusing to build from an " +
+        "incomplete set. Please try again shortly.";
+      return;
+    }
+
+    const spendable = utxoSet.utxos.map(toSpendableUtxo);
+    const selection = selectCoins({
+      utxos: spendable,
+      targetSatoshis: amountSatoshis,
+      feeRateSatPerVb: FEE_RATE_SAT_PER_VB,
+    });
+
+    // Change returns to the same key's P2WPKH scriptPubKey. We derive it from
+    // the device-confirmed address (not from a host-side key) so the change
+    // path is guaranteed to match what the device will sign for.
+    const changeScriptPubKey = btcAddress
+      .toOutputScript(account.value.address, networkObj.value)
+      .toString("hex");
+
+    const req: HardwareSignRequest = {
+      network: walletNetwork,
+      derivationPath: account.value.path,
+      inputs: selection.selectedUtxos.map((u) => ({
+        txid: u.txid,
+        vout: u.vout,
+        amountSatoshis: u.amountSatoshis,
+        scriptPubKey: u.scriptPubKey,
+      })),
+      toAddress: sendAddress.value.trim(),
+      amountSatoshis,
+      feeSatoshis: selection.feeSatoshis,
+      changeScriptPubKey,
+    };
+
+    const signed = await wallet.signTransaction(req);
+    built.value = {
+      hex: signed.hex,
+      txid: signed.txid,
+      amountSatoshis,
+      feeSatoshis: selection.feeSatoshis,
+    };
+  } catch (e) {
+    signError.value = e instanceof Error ? e.message : String(e);
+  } finally {
+    signing.value = false;
+  }
+}
+
+async function broadcast() {
+  if (!built.value) return;
+  broadcasting.value = true;
+  signError.value = null;
+  try {
+    receipt.value = await broadcastTransaction(L1_CHAIN_ID, built.value.hex);
+  } catch (e) {
+    if (e instanceof ApiError) {
+      signError.value = `Broadcast failed (${e.code}): ${e.message}`;
+    } else {
+      signError.value = e instanceof Error ? e.message : String(e);
+    }
+  } finally {
+    broadcasting.value = false;
+  }
+}
+
+function resetSign() {
+  built.value = null;
+  receipt.value = null;
+  signError.value = null;
 }
 </script>
 
@@ -164,7 +302,7 @@ async function fetchAddress() {
 
           <button
             class="rounded border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800 disabled:opacity-40"
-            :disabled="status !== 'connected' || busy"
+            :disabled="status !== "connected" || busy"
             @click="fetchAddress"
           >
             {{ busy ? "Waiting for device..." : "Show address" }}
@@ -201,20 +339,138 @@ async function fetchAddress() {
             <li>[x] Device discovery</li>
             <li>[x] Address derivation</li>
             <li>[x] On-device address confirmation</li>
+            <li>[x] Hardware signing (free for everyone)</li>
           </ul>
         </div>
 
         <ProGate
-          title="Unlock hardware signing with PRO"
-          description="Sidecoin PRO adds advanced hardware workflows for platform transactions, split review, and higher-assurance wallet operations."
+          title="Advanced hardware workflows with PRO"
+          description="Sidecoin PRO adds multi-key policies, hardware-based split review, and historical signing analytics. Basic hardware signing is free for everyone."
           :benefits="[
-            'Hardware signing workflows',
-            'Advanced transaction review',
+            'Multi-key signing policies',
+            'Hardware-based split review',
+            'Historical signing analytics',
             'Platform-aware signing screens',
-            'Historical analysis for signed activity',
           ]"
-          cta="Upgrade for hardware signing"
+          cta="Upgrade for advanced hardware tools"
         />
+      </div>
+    </section>
+
+    <!-- Step 4: hardware sign + broadcast -->
+    <section class="mt-5 rounded-2xl border border-gray-800 bg-gray-900 p-5">
+      <h3 class="font-semibold text-white">Sign &amp; send (hardware)</h3>
+      <p class="mt-1 text-xs text-gray-500">
+        Build and sign a transaction on the connected OneKey, then broadcast.
+      </p>
+
+      <div v-if="signError" class="mt-4 rounded-lg border border-red-800 bg-red-950/30 p-3 text-sm text-red-400">
+        {{ signError }}
+      </div>
+
+      <div v-if="!built" class="mt-5 grid gap-4 md:grid-cols-2">
+        <label class="block">
+          <span class="mb-1 block text-sm font-semibold text-gray-300">Recipient Address</span>
+          <input
+            v-model="sendAddress"
+            type="text"
+            autocapitalize="none"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="tb1q..."
+            class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-3 text-white placeholder-gray-600 focus:border-ecash-500 focus:outline-none"
+          />
+        </label>
+        <label class="block">
+          <span class="mb-1 block text-sm font-semibold text-gray-300">Amount (sBTC)</span>
+          <input
+            v-model="sendAmount"
+            type="text"
+            inputmode="decimal"
+            placeholder="0.00000000"
+            class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-3 text-white placeholder-gray-600 focus:border-ecash-500 focus:outline-none"
+          />
+        </label>
+      </div>
+
+      <div v-if="!built" class="mt-5">
+        <button
+          type="button"
+          :disabled="signing || !account || !sendAddress || !sendAmount"
+          class="rounded-lg bg-ecash-600 px-6 py-3 text-sm font-black text-white hover:bg-ecash-500 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="handleSign"
+        >
+          {{ signing ? "Confirm on device…" : "Sign on device" }}
+        </button>
+        <p v-if="!account" class="mt-2 text-xs text-gray-500">
+          Connect and derive an address first.
+        </p>
+      </div>
+
+      <div v-else class="mt-5">
+        <div v-if="!receipt" class="rounded-xl border border-gray-800 bg-gray-950 p-4 text-sm">
+          <p class="text-xs uppercase tracking-widest text-gray-500">Review transaction</p>
+          <h4 class="mt-2 text-lg font-black text-white">Signed on device, ready to broadcast</h4>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <div class="rounded-lg border border-gray-800 bg-gray-900 p-3">
+              <p class="text-xs text-gray-500">Amount</p>
+              <p class="mt-1 font-mono font-black text-ecash-400">{{ satsToBtc(built.amountSatoshis) }}</p>
+            </div>
+            <div class="rounded-lg border border-gray-800 bg-gray-900 p-3">
+              <p class="text-xs text-gray-500">Fee</p>
+              <p class="mt-1 font-mono font-black text-gray-200">{{ satsToBtc(built.feeSatoshis) }}</p>
+            </div>
+          </div>
+          <div v-if="built.txid" class="mt-3 rounded-lg border border-gray-800 bg-gray-900 p-3">
+            <p class="mb-1 text-xs uppercase tracking-widest text-gray-500">Txid</p>
+            <p class="break-all font-mono text-xs text-ecash-400">{{ built.txid }}</p>
+          </div>
+          <div class="mt-3">
+            <label class="mb-1 block text-xs uppercase tracking-widest text-gray-500">
+              Signed transaction hex
+            </label>
+            <textarea
+              readonly
+              rows="4"
+              class="w-full break-all rounded-lg border border-gray-700 bg-gray-950 p-3 font-mono text-xs text-gray-300"
+              :value="built.hex"
+            ></textarea>
+          </div>
+          <div class="mt-4 flex flex-wrap gap-3">
+            <button
+              type="button"
+              :disabled="broadcasting"
+              class="rounded-lg bg-ecash-600 px-6 py-3 text-sm font-black text-white hover:bg-ecash-500 disabled:opacity-50"
+              @click="broadcast"
+            >
+              {{ broadcasting ? "Broadcasting…" : "Broadcast" }}
+            </button>
+            <button
+              type="button"
+              class="rounded-lg border border-gray-700 bg-gray-800 px-6 py-3 text-sm font-semibold text-white hover:bg-gray-700"
+              @click="resetSign"
+            >
+              Back to edit
+            </button>
+          </div>
+        </div>
+
+        <div v-else class="rounded-xl border border-green-800 bg-green-950/30 p-4 text-sm text-green-400">
+          <p class="text-xs font-black uppercase tracking-[0.25em] text-green-300">Broadcast receipt</p>
+          <h4 class="mt-2 text-lg font-black text-white">
+            Broadcast {{ receipt.accepted ? "accepted" : "submitted" }}
+          </h4>
+          <p class="mt-3 break-all">
+            Txid: <span class="font-mono">{{ receipt.txid }}</span>
+          </p>
+          <button
+            type="button"
+            class="mt-4 rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+            @click="resetSign"
+          >
+            Send another
+          </button>
+        </div>
       </div>
     </section>
   </div>
