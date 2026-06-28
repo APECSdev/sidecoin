@@ -1,14 +1,9 @@
 // packages/wallet/src/hardware/trezorFormat.ts
-//
-// HardwareSignRequest -> Trezor-protobuf sign params (shared by OneKey +
-// Trezor; OneKey's hd-transport mirrors Trezor field-for-field).
-// SegWit v0 P2WPKH signs from amount + address_n, so refTxs are NOT required.
-// Enums: SPENDWITNESS=3 (input), PAYTOADDRESS=0 (external out),
-// PAYTOWITNESS=3 (change out).
 
 import type { HardwareSignRequest } from "./types";
 import { parsePath, coinIdFor } from "./network";
 import { DUST_LIMIT_SATS } from "@sidecoin/shared";
+import { Transaction } from "bitcoinjs-lib";
 
 const SEQUENCE_RBF = 0xfffffffd;
 
@@ -28,17 +23,67 @@ export interface TrezorFormatOutput {
 export interface TrezorFormatChangeOutput {
   address_n: number[];
   amount: string;
-  // HARDWARE-UNVERIFIED: fallback "PAYTOADDRESS" if a device rejects this.
   script_type: "PAYTOWITNESS";
 }
-export type TrezorFormatOutputAny =
-  | TrezorFormatOutput
-  | TrezorFormatChangeOutput;
+export type TrezorFormatOutputAny = TrezorFormatOutput | TrezorFormatChangeOutput;
+
+export interface RefTransaction {
+  version: number;
+  lock_time: number;
+  inputs: Array<{
+    prev_hash: string;
+    prev_index: number;
+    script_sig: string;
+    sequence: number;
+  }>;
+  bin_outputs: Array<{
+    amount: string;
+    script_pubkey: string;
+  }>;
+  hash: string;
+}
 
 export interface TrezorSignParams {
   coin: string;
   inputs: TrezorFormatInput[];
   outputs: TrezorFormatOutputAny[];
+  refTxs: RefTransaction[];
+}
+
+/**
+ * Build RefTransaction[] from a map of {txid -> raw hex}. OneKey firmware
+ * requires these even for segwit inputs (unlike Trezor). Each RefTransaction
+ * carries the full prevout tx parsed via bitcoinjs-lib so the device can
+ * verify UTXOs and compute sighashes.
+ *
+ * IMPORTANT: bitcoinjs-lib v7 returns Uint8Array (not Buffer) for script
+ * fields. Uint8Array.prototype.toString("hex") does NOT produce hex — it
+ * produces comma-separated decimals. We must wrap in Buffer.from() before
+ * calling toString("hex").
+ */
+export function buildRefTxs(
+  rawTxs: Record<string, string>,
+): RefTransaction[] {
+  const out: RefTransaction[] = [];
+  for (const [txid, hex] of Object.entries(rawTxs)) {
+    const tx = Transaction.fromHex(hex);
+    out.push({
+      version: tx.version,
+      lock_time: tx.locktime,
+      inputs: tx.ins.map((ins) => ({
+        prev_hash: Buffer.from(ins.hash).reverse().toString("hex"),
+        prev_index: ins.index,
+        script_sig: Buffer.from(ins.script).toString("hex"),
+        sequence: ins.sequence,
+      })),
+      bin_outputs: tx.outs.map((o) => ({
+        amount: o.value.toString(),
+        script_pubkey: Buffer.from(o.script).toString("hex"),
+      })),
+      hash: tx.getId(),
+    });
+  }
+  return out;
 }
 
 export function toTrezorSignParams(req: HardwareSignRequest): TrezorSignParams {
@@ -80,5 +125,7 @@ export function toTrezorSignParams(req: HardwareSignRequest): TrezorSignParams {
     );
   }
 
-  return { coin: coinIdFor(req.network), inputs, outputs };
+  const refTxs = req.rawTxs ? buildRefTxs(req.rawTxs) : [];
+
+  return { coin: coinIdFor(req.network), inputs, outputs, refTxs };
 }

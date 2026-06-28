@@ -318,3 +318,27 @@ export async function broadcastTransaction(
 ): Promise<BroadcastReceipt> {
   return _client.broadcast(chainId, txHex);
 }
+
+// ---------------------------------------------------------------------------
+// Raw transaction fetch (signet block explorer)
+// ---------------------------------------------------------------------------
+// OneKey firmware requires full prevout transactions (refTxs) even for segwit
+// inputs. The Sidecoin adapter exposes no raw-tx endpoint, so we fetch from the
+// signet mempool.space API. This is read-only and signet-specific.
+
+const SIGNET_TX_API = "https://explorer.signet.drivechain.info/api/tx";
+
+/** Fetch raw transaction hex by txid from the signet block explorer. */
+export async function getRawTransaction(txid: string): Promise<string> {
+  const res = await globalThis.fetch(`${SIGNET_TX_API}/${txid}/hex`);
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch raw tx ${txid}: HTTP ${res.status} ${res.statusText}`,
+    );
+  }
+  const hex = (await res.text()).trim();
+  if (!/^[0-9a-fA-F]+$/.test(hex)) {
+    throw new Error(`Raw tx ${txid} returned non-hex data: ${hex.slice(0, 40)}…`);
+  }
+  return hex;
+}

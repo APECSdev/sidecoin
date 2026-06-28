@@ -8,12 +8,6 @@ export interface HardwareAccount {
   publicKey: string;
 }
 
-/**
- * Hardware wallet surface: read (address derivation) + sign.
- * Signing is PSBT-shaped at the boundary: caller supplies an unsigned spend;
- * each adapter signs on-device and returns finalized raw tx hex for
- * broadcastTransaction(). No private key material crosses this boundary.
- */
 export interface HardwareWallet {
   readonly name: string;
   connect(): Promise<void>;
@@ -23,13 +17,10 @@ export interface HardwareWallet {
 }
 
 export interface GetAddressOpts {
-  /** Device coin id. "btc" mainnet; "test" for signet/testnet. */
   coin?: string;
-  /** Render the address on the device screen for visual confirmation. */
   showOnDevice?: boolean;
 }
 
-/** Supported hardware device kinds for the adapter factory. */
 export type HardwareDeviceKind = "onekey" | "ledger" | "trezor";
 
 export interface HardwareInput {
@@ -47,6 +38,7 @@ export interface HardwareSignRequest {
   amountSatoshis: bigint;
   feeSatoshis: bigint;
   changeScriptPubKey: string;
+  rawTxs?: Record<string, string>;
 }
 
 export interface HardwareSignedTx {

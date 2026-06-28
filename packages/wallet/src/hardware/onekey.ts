@@ -120,7 +120,7 @@ export class OneKeyHardwareWallet implements HardwareWallet {
           coin: params.coin,
           inputs: params.inputs,
           outputs: params.outputs,
-          refTxs: [],
+          refTxs: params.refTxs,
         } as any,
       );
       if (!res.success) throw new Error(res.payload.error);
