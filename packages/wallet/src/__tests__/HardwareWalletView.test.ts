@@ -41,8 +41,8 @@ describe("HardwareWalletView", () => {
     await getBtn.trigger("click");
     await flushPromises();
 
-    expect(wallet.getAddress).toHaveBeenCalledWith("m/84'/0'/0'/0/0", {
-      coin: "btc",
+    expect(wallet.getAddress).toHaveBeenCalledWith("m/84'/1'/0'/0/0", {
+      coin: "test",
       showOnDevice: true,
     });
     expect(w.get('[data-test="hw-address"]').text()).toContain("bc1qexample");
