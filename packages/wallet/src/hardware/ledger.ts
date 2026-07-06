@@ -6,32 +6,27 @@
 // transport Ledger Live uses, and the new Bitcoin app (app-bitcoin-new,
 // CLA 0xE1) only responds on the HID interface — NOT the WebUSB bulk
 // transfer interface. WebUSB is kept as a fallback only for browsers
-// without WebHID support (e.¬g. Firefox).
+// without WebHID support (e.g. Firefox).
 //
 // IMPORTANT: Ledger Live desktop must be CLOSED before connecting. It holds
 // exclusive access to the HID interface and will prevent the browser from
 // opening the device.
 //
-// The @ledgerhq/hw-app-btc v11 Btc class auto-selects between BtcNew (new
-// APDU protocol, CLA 0xE1, app-bitcoin-new v2.1.0+) and BtcOld (legacy APDU
-// protocol, CLA 0xE0, app-bitcoin). This adapter probes at first use: if
-// the new-protocol APDUs are rejected with 0x6d00/0x6e00 (CLA/INS not
-// supported), it falls back to BtcOld and uses the legacy
-// createPaymentTransaction signing path (which requires full prevout txs,
-// available via getRawTransaction from the drivechain explorer).
+// REQUIRED DEVICE APP: "Bitcoin Test" (NOT "Bitcoin") for testnet/signet.
+// Install via Ledger Live → Settings → Experimental features → Developer mode.
+// The mainnet Bitcoin app rejects testnet paths with 0x6a82/0x6a80.
 //
-// CRITICAL: On Bitcoin app v2.2.7 (Nano S, OS 2.1.0), getExtendedPubkey
-// with display=false FAILS for testnet/signet paths (coin_type=1') with
-// 0x6a82, but SUCCEEDS for mainnet paths (coin_type=0'). The fix is to
-// send the raw GET_PUBKEY APDU with display=true, then derive the address
-// locally using BIP-32 CKDpub math implemented with @noble/curves and
-// @noble/hashes (ESM imports that work natively in Vite). This bypasses
-// both the firmware's display restriction and a separate firmware bug
-// where getWalletAddress rejects the xpub with 0x6a80.
+// ARCHITECTURE: AppClient (low-level APDU wrapper) is used directly rather
+// than the SDK's BtcNew/Btc wrapper because BtcNew.getWalletPublicKey calls
+// bip32.getXpubComponents → bs58check → create-hash → Node.js stream/util,
+// which Vite externalizes and breaks in the browser. AppClient does not
+// depend on bs58check. All xpub parsing and BIP-32 CKDpub derivation is
+// handled locally using @noble/curves and @noble/hashes.
 //
-// NOTE: The Ledger SDK's internal bip32.js CANNOT be imported in the
-// browser because it uses CommonJS require() internally, which Vite cannot
-// shim. We implement BIP-32 derivation directly.
+// SIGNING: PSBTs are built with bitcoinjs-lib, bip32Derivation is injected
+// on every input and the change output, then signed via AppClient.signPsbt
+// with a default wallet policy (wpkh(@0/**), null HMAC). nonWitnessUtxo is
+// included when available to suppress the "Unverified inputs" device warning.
 
 import type {
   HardwareWallet,
@@ -47,6 +42,7 @@ import { ripemd160 } from "@noble/hashes/ripemd160";
 import { hmac } from "@noble/hashes/hmac";
 import { sha512 } from "@noble/hashes/sha2";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
+import { PsbtV2, psbtIn } from "@ledgerhq/psbtv2";
 
 /** bitcoinjs-lib network object for a Sidecoin network id. Signet shares
  *  testnet's bech32 HRP ("tb") and version bytes, so networks.testnet is
@@ -86,16 +82,12 @@ function compressPubkey(pubkey: Buffer): Buffer {
   return Buffer.concat([Buffer.from([prefix]), x]);
 }
 
-// ── Base58check decode (local implementation, no CJS dependencies) ──
-// bs58check@2.1.2 pulls in create-hash → md5 → readable-stream → Node
-// stream/util, which Vite externalizes and breaks. This pure-JS decoder
-// uses only @noble/hashes/sha256 (already imported, ESM-native).
+// ── Base58check (local implementation, no CJS dependencies) ──
 
 const BASE58_ALPHABET =
   "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 
 function base58checkDecode(str: string): Buffer {
-  // Decode base58 to bytes (big-endian)
   const bytes: number[] = [];
   for (const c of str) {
     const value = BASE58_ALPHABET.indexOf(c);
@@ -113,15 +105,12 @@ function base58checkDecode(str: string): Buffer {
       carry >>= 8;
     }
   }
-  // Leading '1' = leading zero byte
   for (const c of str) {
     if (c !== "1") break;
     bytes.push(0);
   }
-  // Reverse to big-endian
   const decoded = Buffer.from(bytes.reverse());
 
-  // Verify + strip checksum (last 4 bytes)
   const payload = decoded.subarray(0, -4);
   const checksum = decoded.subarray(-4);
   const hashOnce = Buffer.from(sha256(payload));
@@ -132,9 +121,38 @@ function base58checkDecode(str: string): Buffer {
   return payload;
 }
 
+/** Encode a Buffer payload as base58check. */
+function base58checkEncode(payload: Buffer): string {
+  const hashOnce = Buffer.from(sha256(payload));
+  const hashTwice = Buffer.from(sha256(hashOnce));
+  const checksum = hashTwice.subarray(0, 4);
+
+  const data = Buffer.concat([payload, checksum]);
+
+  let num = 0n;
+  for (const byte of data) {
+    num = num * 256n + BigInt(byte);
+  }
+
+  let result = "";
+  while (num > 0n) {
+    const remainder = Number(num % 58n);
+    num = num / 58n;
+    result = BASE58_ALPHABET[remainder] + result;
+  }
+
+  for (const byte of data) {
+    if (byte === 0) {
+      result = "1" + result;
+    } else {
+      break;
+    }
+  }
+
+  return result;
+}
+
 // ── BIP-32 CKDpub (local implementation using @noble/curves + @noble/hashes) ──
-// Replaces the Ledger SDK's internal bip32.js which uses CJS require() that
-// Vite cannot shim in the browser.
 
 /** Decode an xpub string into its components: chaincode (32 bytes),
  *  pubkey (33 bytes), and version (4 bytes). */
@@ -144,8 +162,6 @@ function getXpubComponents(xpub: string): {
   version: number;
 } {
   const buf = base58checkDecode(xpub);
-  // xpub layout: [4 version][1 depth][4 parent fingerprint][4 child number]
-  //              [32 chaincode][33 pubkey]
   return {
     version: buf.readUInt32BE(0),
     chaincode: buf.subarray(13, 13 + 32),
@@ -155,11 +171,7 @@ function getXpubComponents(xpub: string): {
 
 /** Derive a child public key from a parent public key using BIP-32
  *  non-hardened derivation (CKDpub). Returns the child pubkey (33 bytes
- *  compressed) and child chaincode (32 bytes).
- *
- *  Algorithm: I = HMAC-SHA512(chaincode, pubkey || ser32(i))
- *             IL = I[0:32], IR = I[32:64] (child chaincode)
- *             Ki = point(parse256(IL)) + Kpar (elliptic curve point addition) */
+ *  compressed) and child chaincode (32 bytes). */
 function deriveChildPublicKey(
   parentPubkey: Buffer,
   parentChaincode: Buffer,
@@ -182,7 +194,6 @@ function deriveChildPublicKey(
     throw new Error("Cannot derive hardened child from public key");
   }
 
-  // I = HMAC-SHA512(Key = chaincode, Data = serP(Kpar) || ser32(i))
   const data = Buffer.alloc(parentPubkey.length + 4);
   parentPubkey.copy(data, 0);
   data.writeUInt32BE(index, parentPubkey.length);
@@ -192,13 +203,12 @@ function deriveChildPublicKey(
 
   const tweak = BigInt(`0x${IL.toString("hex")}`);
   const curveOrder =
-  0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
+    0xfffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141n;
 
   if (tweak === 0n || tweak >= curveOrder) {
     throw new Error(`Invalid child derivation at index ${index}`);
   }
 
-  // Ki = point(parse256(IL)) + Kpar
   const parentPoint = secp256k1.Point.fromHex(parentPubkey.toString("hex"));
   const tweakPoint = secp256k1.Point.BASE.multiply(tweak);
   const childPoint = parentPoint.add(tweakPoint);
@@ -214,10 +224,9 @@ function deriveChildPublicKey(
 }
 
 /** Check whether an error from the Ledger SDK indicates a protocol
- *  incompatibility, signalling that we should fall back to the legacy
- *  BtcOld protocol. 0x6a82 (FILE_NOT_FOUND) is explicitly EXCLUDED because
- *  it indicates a wrong path or rejected display flag, not a protocol
- *  mismatch. */
+ *  incompatibility, signalling fallback to legacy BtcOld protocol.
+ *  0x6a82 and 0x6a80 are EXCLUDED — they indicate data/path issues,
+ *  not protocol mismatch. */
 function isLegacyFallback(e: unknown): boolean {
   if (e && typeof e === "object" && "statusCode" in e) {
     const statusCode = (e as any).statusCode;
@@ -254,8 +263,7 @@ function buildOutputScriptHex(outputs: { value: bigint; script: Uint8Array }[]):
   return Buffer.concat(parts).toString("hex");
 }
 
-/** Convert a BIP-32 path element array to a display string like "m/84'/1'/0'".
- *  Mirrors the SDK's pathArrayToString for cache keys and debug logging. */
+/** Convert a BIP-32 path element array to a display string like "m/84'/1'/0'". */
 function pathArrayToString(elements: number[]): string {
   const HARDENED = 0x80000000;
   return (
@@ -326,6 +334,21 @@ function deriveAddressKey(
   );
 }
 
+/** BIP-32 testnet public version bytes (tpub). */
+const TESTNET_BIP32_PUBLIC = 0x043587cf;
+
+/** Convert an xpub from mainnet version bytes to testnet version bytes.
+ *  If the xpub is already in testnet format, returns it as-is. */
+function convertXpubToTestnet(xpub: string): string {
+  const buf = base58checkDecode(xpub);
+  const currentVersion = buf.readUInt32BE(0);
+  if (currentVersion !== 0x0488b21e) {
+    return xpub;
+  }
+  buf.writeUInt32BE(TESTNET_BIP32_PUBLIC, 0);
+  return base58checkEncode(buf);
+}
+
 export class LedgerHardwareWallet implements HardwareWallet {
   readonly name = "Ledger";
 
@@ -335,11 +358,6 @@ export class LedgerHardwareWallet implements HardwareWallet {
   private signInFlight = false;
   private useLegacy = false;
 
-  // ── Testnet xpub cache ──
-  // On Bitcoin app v2.2.7, getExtendedPubkey with display=false fails for
-  // testnet paths (0x6a82). We call the raw APDU with display=true which
-  // prompts the user to confirm, then cache the result so subsequent calls
-  // (address derivation, signing) don't require another confirmation.
   private xpubCache: Map<string, string> = new Map();
   private masterFp: Buffer | null = null;
 
@@ -356,20 +374,40 @@ export class LedgerHardwareWallet implements HardwareWallet {
     }
 
     // ── Transport selection ──
-    // WebHID is the PRIMARY transport — it's what Ledger Live uses, and the
-    // new Bitcoin app (app-bitcoin-new, CLA 0xE1) only responds on the HID
-    // interface. WebUSB (bulk transfer) gets 0x6a82 from the new app.
     if (typeof navigator !== "undefined" && "hid" in navigator) {
       const { default: TransportWebHID } = await import(
         "@ledgerhq/hw-transport-webhid"
       );
       try {
         this.transport = await TransportWebHID.create();
-        console.log("[Ledger DIAG] Using WebHID transport");
       } catch (hidErr: any) {
         const msg = hidErr?.message ?? String(hidErr);
-        console.error('[Ledger DIAG] WebHID failed: "%s"', msg);
-        if (/Failed to open|already open|busy|unable|access/i.test(msg)) {
+        if (/already open/i.test(msg)) {
+          try {
+            const devices = await (navigator as any).hid?.getDevices?.();
+            if (devices) {
+              for (const d of devices) {
+                try { await d.close(); } catch {}
+              }
+            }
+          } catch {}
+          try {
+            this.transport = await TransportWebHID.create();
+          } catch (retryErr: any) {
+            throw new Error(
+              "Could not open the Ledger device via WebHID.\n\n" +
+                "The device reports it is already open. This can happen if:\n" +
+                "• Ledger Live is running (quit the app completely)\n" +
+                "• Another browser tab is using the device\n" +
+                "• A previous session didn't release the connection\n\n" +
+                "Please:\n" +
+                "1. CLOSE Ledger Live completely (quit, don't minimize)\n" +
+                "2. Close other browser tabs that may use the device\n" +
+                "3. Disconnect and reconnect your Ledger\n" +
+                "4. Refresh this page and click Connect again",
+            );
+          }
+        } else if (/Failed to open|busy|unable|access/i.test(msg)) {
           throw new Error(
             "Could not open the Ledger device via WebHID.\n\n" +
               "This usually means Ledger Live is running and holding the " +
@@ -384,40 +422,35 @@ export class LedgerHardwareWallet implements HardwareWallet {
         throw hidErr;
       }
     } else {
-      console.log(
-        "[Ledger DIAG] WebHID not supported, using WebUSB " +
-          "(NOTE: WebUSB does not work with the new Bitcoin app)",
-      );
       const { default: TransportWebUSB } = await import(
         "@ledgerhq/hw-transport-webusb"
       );
       this.transport = await TransportWebUSB.create();
     }
 
-    // ── DIAGNOSTIC: log the on-device app name + version ──
+    // ── Identify device app ──
     try {
       const { getAppAndVersion } = await import(
         "@ledgerhq/hw-app-btc/lib/getAppAndVersion.js"
       );
       const info = await getAppAndVersion(this.transport);
       console.log(
-        '[Ledger DIAG] Device app — name: "%s", version: "%s"',
-        info.name,
-        info.version,
+        `[Ledger] Connected to "${info.name}" v${info.version}`,
       );
     } catch (diagErr) {
-      console.error("[Ledger DIAG] Failed to read app version:", diagErr);
+      console.error("[Ledger] Failed to read app version:", diagErr);
     }
 
-    const { default: Btc } = await import("@ledgerhq/hw-app-btc");
-    this.app = new (Btc as any)({ transport: this.transport, currency: "bitcoin" });
+    const { AppClient } = await import(
+      "@ledgerhq/hw-app-btc/lib/newops/appClient"
+    );
+    this.app = new AppClient(this.transport);
     return this.app;
   }
 
-  /** Switch from BtcNew (new protocol) to BtcOld (legacy protocol) after
+  /** Switch from new protocol to BtcOld (legacy protocol) after
    *  detecting that the device has the old Bitcoin app. */
   private async switchToLegacy(): Promise<void> {
-    console.log("[Ledger DIAG] Switching to BtcOld (legacy protocol)");
     this.useLegacy = true;
     const { default: BtcOld } = await import("@ledgerhq/hw-app-btc/lib/BtcOld");
     this.app = new (BtcOld as any)(this.transport);
@@ -438,120 +471,94 @@ export class LedgerHardwareWallet implements HardwareWallet {
     try {
       const app = await this.ensureApp();
       const verify = opts.showOnDevice ?? false;
-      console.log(
-        '[Ledger DIAG] getAddress — path: "%s", verify: %s, useLegacy: %s',
-        path,
-        verify,
-        this.useLegacy,
-      );
 
-      // ── Primary path: BtcNew.getWalletPublicKey (works for mainnet) ──
+      // ── Primary path: AppClient.getExtendedPubkey + local derivation ──
       try {
-        console.log("[Ledger DIAG] Trying getWalletPublicKey (format: bech32)...");
-        const res = await app.getWalletPublicKey(path, {
-          format: "bech32",
-          verify,
-        });
-        console.log(
-          "[Ledger DIAG] SUCCESS — address: %s, pubkey: %s",
-          res.bitcoinAddress,
-          res.publicKey,
-        );
+        const pathElements = parsePathNumbers(path);
+        const accountPath = pathElements.slice(0, 3);
+        const accountPathStr = pathArrayToString(accountPath);
+
+        let accountXpub = this.xpubCache.get(accountPathStr);
+        if (!accountXpub) {
+          accountXpub = await app.getExtendedPubkey(false, accountPath);
+          this.xpubCache.set(accountPathStr, accountXpub);
+        }
+
+        const changeAndIndex = pathElements.slice(-2);
+        const change = changeAndIndex[0] ?? 0;
+        const addressIndex = changeAndIndex[1] ?? 0;
+
+        const finalKey = deriveAddressKey(accountXpub, change, addressIndex);
+        const pubkeyBuf = compressPubkey(Buffer.from(finalKey.pubkey));
+        const publicKeyHex = pubkeyBuf.toString("hex");
+
+        const network = btcNetworkFor((opts as any).network ?? "signet");
+        const p2wpkh = payments.p2wpkh({ pubkey: pubkeyBuf, network });
+        const address = p2wpkh.address!;
+
+        if (verify) {
+          const { WalletPolicy, createKey } = await import(
+            "@ledgerhq/hw-app-btc/lib/newops/policy"
+          );
+          if (!this.masterFp) {
+            this.masterFp = await app.getMasterFingerprint();
+          }
+          const networkXpub = convertXpubToTestnet(accountXpub);
+          const keyStr = createKey(this.masterFp, accountPath, networkXpub);
+          const policy = new WalletPolicy("wpkh(@0/**)", keyStr);
+          await app.getWalletAddress(
+            policy, null, change, addressIndex, true,
+          );
+        }
+
         return {
           path,
-          address: res.bitcoinAddress,
-          publicKey: res.publicKey,
+          address,
+          publicKey: publicKeyHex,
         };
       } catch (e: any) {
-        console.error(
-          '[Ledger DIAG] FAILED — message: "%s", statusCode: %s (0x%s)',
-          e?.message,
-          e?.statusCode,
-          e?.statusCode?.toString(16),
-        );
-
-        // ── Direct raw APDU fallback (testnet/signet on app v2.2.7) ──
-        // 0x6a82 means the path is valid but display=false was rejected
-        // (firmware quirk on testnet). We bypass the SDK and send the raw
-        // GET_PUBKEY APDU with display=true, then derive locally.
-        if (!this.useLegacy && e?.statusCode === 0x6a82) {
-          console.log(
-            "[Ledger DIAG] 0x6a82 — trying raw APDU with display=true...",
-          );
+        // ── Raw APDU fallback ──
+        if (!this.useLegacy) {
           try {
             const account = await this.getAddressDirect(path, verify, opts);
             if (account) return account;
-          } catch (directErr: any) {
-            console.error(
-              '[Ledger DIAG] Raw APDU fallback FAILED — message: "%s", statusCode: 0x%s',
-              directErr?.message,
-              directErr?.statusCode?.toString(16),
-            );
+          } catch {
+            // swallow — try legacy next
           }
         }
 
-        // ── Fallback: try legacy protocol (BtcOld) ──
-        // Only trigger on actual protocol mismatch (0x6d00, 0x6e00).
+        // ── Legacy protocol fallback ──
         if (!this.useLegacy && isLegacyFallback(e)) {
-          console.log("[Ledger DIAG] Error qualifies for legacy fallback. Switching...");
           await this.switchToLegacy();
 
-          console.log("[Ledger DIAG] Trying BtcOld getWalletPublicKey (format: legacy)...");
           try {
             const resLegacy = await this.app.getWalletPublicKey(path, {
               format: "legacy",
               verify: false,
             });
-            console.log(
-              "[Ledger DIAG] legacy format SUCCESS — address: %s, pubkey: %s",
-              resLegacy.bitcoinAddress,
-              resLegacy.publicKey,
-            );
 
-            console.log("[Ledger DIAG] Trying BtcOld getWalletPublicKey (format: bech32)...");
             try {
               const resBech32 = await this.app.getWalletPublicKey(path, {
                 format: "bech32",
                 verify,
               });
-              console.log(
-                "[Ledger DIAG] bech32 format SUCCESS — address: %s",
-                resBech32.bitcoinAddress,
-              );
               return {
                 path,
                 address: resBech32.bitcoinAddress,
                 publicKey: resBech32.publicKey,
               };
-            } catch (e2: any) {
-              console.error(
-                '[Ledger DIAG] bech32 on BtcOld FAILED — message: "%s", statusCode: 0x%s',
-                e2?.message,
-                e2?.statusCode?.toString(16),
-              );
-              console.log(
-                "[Ledger DIAG] Deriving bech32 address locally from legacy pubkey...",
-              );
+            } catch {
               const pubkeyBuf = Buffer.from(resLegacy.publicKey, "hex");
               const network = btcNetworkFor((opts as any).network ?? "signet");
               const p2wpkh = payments.p2wpkh({ pubkey: pubkeyBuf, network });
-              const derivedAddress = p2wpkh.address!;
-              console.log(
-                "[Ledger DIAG] Locally derived bech32 address: %s",
-                derivedAddress,
-              );
               return {
                 path,
-                address: derivedAddress,
+                address: p2wpkh.address!,
                 publicKey: resLegacy.publicKey,
               };
             }
           } catch (e3: any) {
-            console.error(
-              '[Ledger DIAG] legacy format on BtcOld ALSO FAILED — message: "%s", statusCode: 0x%s',
-              e3?.message,
-              e3?.statusCode?.toString(16),
-            );
+            console.error("[Ledger] Legacy signing failed:", e3?.message ?? String(e3));
             throw e3;
           }
         }
@@ -564,54 +571,30 @@ export class LedgerHardwareWallet implements HardwareWallet {
   }
 
   /**
-   * Raw APDU fallback for testnet/signet on Bitcoin app v2.2.7.
-   *
-   * Sends the GET_PUBKEY APDU directly via the transport interface with
-   * display=true, bypassing the SDK's broken internal imports. Then
-   * derives the child pubkey and address locally using BIP-32 CKDpub
-   * implemented with @noble/curves + @noble/hashes (native ESM, no Vite
-   * CJS interop issues).
-   */
+   * Raw APDU fallback for address derivation. Sends GET_PUBKEY with
+   * display=true via the transport directly, then derives locally. */
   private async getAddressDirect(
     path: string,
     verify: boolean,
     opts: GetAddressOpts,
   ): Promise<HardwareAccount | null> {
     const pathElements = parsePathNumbers(path);
-    // Account path is the first 3 elements for standard paths (m/84'/1'/0')
     const accountPath = pathElements.slice(0, 3);
     const accountPathStr = pathArrayToString(accountPath);
-    console.log(
-      '[Ledger DIAG] getAddressDirect — accountPath: "%s", full path: "%s"',
-      accountPathStr,
-      path,
-    );
 
-    // ── Get account xpub via raw APDU (display=true, cached) ──
     let accountXpub = this.xpubCache.get(accountPathStr);
     if (!accountXpub) {
-      console.log(
-        "[Ledger DIAG] Requesting account xpub via raw APDU (confirm on device)...",
-      );
-      // CLA=0xE1, INS=0x00 (GET_PUBKEY), P1=0, P2=0 (PROTOCOL_VERSION)
       const data = Buffer.concat([
         Buffer.from([1]), // display=true
         pathElementsToBuffer(accountPath),
       ]);
       const response = await this.transport.send(
-        0xE1, 0x00, 0x00, 0x00, data, [0x9000, 0xe000]
+        0xE1, 0x00, 0x00, 0x01, data, [0x9000, 0xe000]
       );
       accountXpub = response.slice(0, -2).toString("ascii");
       this.xpubCache.set(accountPathStr, accountXpub);
-      console.log(
-        "[Ledger DIAG] Account xpub cached: %s...",
-        accountXpub.substring(0, 24),
-      );
-    } else {
-      console.log("[Ledger DIAG] Account xpub found in cache");
     }
 
-    // ── Derive child pubkey locally using BIP-32 CKDpub ──
     const changeAndIndex = pathElements.slice(-2);
     const change = changeAndIndex[0] ?? 0;
     const addressIndex = changeAndIndex[1] ?? 0;
@@ -620,16 +603,9 @@ export class LedgerHardwareWallet implements HardwareWallet {
     const pubkeyBuf = compressPubkey(Buffer.from(finalKey.pubkey));
     const publicKeyHex = pubkeyBuf.toString("hex");
 
-    // ── Derive bech32 address locally using bitcoinjs-lib ──
     const network = btcNetworkFor((opts as any).network ?? "signet");
     const p2wpkh = payments.p2wpkh({ pubkey: pubkeyBuf, network });
     const address = p2wpkh.address!;
-
-    console.log(
-      "[Ledger DIAG] Locally derived address: %s, pubkey: %s",
-      address,
-      publicKeyHex,
-    );
 
     return { path, address, publicKey: publicKeyHex };
   }
@@ -658,58 +634,36 @@ export class LedgerHardwareWallet implements HardwareWallet {
   }
 
   /**
-   * Sign via signPsbtBuffer (new protocol / BtcNew).
+   * Sign a transaction via PSBT (AppClient.signPsbt).
    *
-   * On testnet/signet, signPsbtBuffer internally calls getExtendedPubkey(false,
-   * ...) which fails. In that case, we fall back to signPsbtDirect which uses
-   * the cached xpub.
-   */
+   * Builds a PSBT with bitcoinjs-lib, injects bip32Derivation on every
+   * input and the change output, includes nonWitnessUtxo when available
+   * (suppresses "Unverified inputs" device warning), then delegates to
+   * signPsbtDirect which uses AppClient.signPsbt with the wallet policy. */
   private async signPsbt(req: HardwareSignRequest): Promise<HardwareSignedTx> {
     const app = await this.ensureApp();
-
-    let pubkeyBuf: Buffer;
-    try {
-      const pubRes = await app.getWalletPublicKey(req.derivationPath, {
-        format: "bech32",
-        verify: false,
-      });
-      // SDK returns uncompressed pubkey (65 bytes); compress it for PSBT
-      pubkeyBuf = compressPubkey(Buffer.from(pubRes.publicKey, "hex"));
-      console.log(
-        "[Ledger DIAG] signPsbt — pubkey from getWalletPublicKey: %s",
-        pubkeyBuf.toString("hex"),
-      );
-    } catch (pubErr: any) {
-      console.error(
-        '[Ledger DIAG] signPsbt — getWalletPublicKey FAILED (0x%s), deriving from cache...',
-        pubErr?.statusCode?.toString(16),
-      );
-      pubkeyBuf = await this.derivePubkeyFromCache(req.derivationPath);
-      console.log(
-        "[Ledger DIAG] signPsbt — derived pubkey from cache: %s",
-        pubkeyBuf.toString("hex"),
-      );
-    }
+    const pubkeyBuf = await this.derivePubkeyFromCache(req.derivationPath);
 
     const pubkeyHash = hash160(pubkeyBuf);
     const spkHex = "0014" + Buffer.from(pubkeyHash).toString("hex");
     const network = btcNetworkFor(req.network);
 
+    // ── Build PSBT ──
     const psbt = new Psbt({ network });
     for (const u of req.inputs) {
-      if (u.amountSatoshis > BigInt(Number.MAX_SAFE_INTEGER)) {
-        throw new Error(
-          `UTXO amount ${u.amountSatoshis} exceeds safe integer range for PSBT construction.`,
-        );
-      }
-      psbt.addInput({
+      const rawTxHex = req.rawTxs?.[u.txid];
+      const inputOpts: any = {
         hash: u.txid,
         index: u.vout,
         witnessUtxo: {
-          script: new Uint8Array(Buffer.from(u.scriptPubKey, "hex")),
+          script: Buffer.from(u.scriptPubKey, "hex"),
           value: u.amountSatoshis,
         },
-      });
+      };
+      if (rawTxHex) {
+        inputOpts.nonWitnessUtxo = Buffer.from(rawTxHex, "hex");
+      }
+      psbt.addInput(inputOpts);
     }
 
     psbt.addOutput({ address: req.toAddress, value: req.amountSatoshis });
@@ -719,7 +673,7 @@ export class LedgerHardwareWallet implements HardwareWallet {
     const change = totalInput - req.amountSatoshis - req.feeSatoshis;
     if (change > 546n) {
       psbt.addOutput({
-        script: new Uint8Array(Buffer.from(req.changeScriptPubKey, "hex")),
+        script: Buffer.from(req.changeScriptPubKey, "hex"),
         value: change,
       });
     } else if (change < 0n) {
@@ -731,8 +685,8 @@ export class LedgerHardwareWallet implements HardwareWallet {
     const psbtBuffer = Buffer.from(psbt.toBuffer());
 
     const pathNumbers = parsePathNumbers(req.derivationPath);
-    const known = new Map<string, { pubkey: Buffer; path: number[] }>();
-    const entry = { pubkey: pubkeyBuf, path: pathNumbers };
+    const known = new Map<string, { pubkey: Uint8Array; path: number[] }>();
+    const entry = { pubkey: new Uint8Array(pubkeyBuf), path: pathNumbers };
     known.set(spkHex, entry);
     known.set(Buffer.from(pubkeyHash).toString("hex"), entry);
 
@@ -741,38 +695,35 @@ export class LedgerHardwareWallet implements HardwareWallet {
       .slice(0, 4)
       .join("/");
 
-    try {
-      const result = await app.signPsbtBuffer(psbtBuffer, {
-        finalizePsbt: true,
-        accountPath,
-        addressFormat: "bech32",
-        knownAddressDerivations: known,
-      });
+    // ── Try signPsbtBuffer if available (BtcNew), otherwise signPsbtDirect ──
+    if (typeof app.signPsbtBuffer === 'function') {
+      try {
+        const result = await app.signPsbtBuffer(psbtBuffer, {
+          finalizePsbt: true,
+          accountPath,
+          addressFormat: "bech32",
+          knownAddressDerivations: known,
+        });
 
-      const txHex: string | undefined = result.tx;
-      if (!txHex) {
-        throw new Error("Ledger returned no signed transaction.");
+        const txHex: string | undefined = result.tx;
+        if (!txHex) {
+          throw new Error("Ledger returned no signed transaction.");
+        }
+        return { hex: txHex, txid: ledgerTxid(txHex) };
+      } catch {
+        // fall through to signPsbtDirect
       }
-      const txid = ledgerTxid(txHex);
-      return { hex: txHex, txid };
-    } catch (signErr: any) {
-      console.error(
-        '[Ledger DIAG] signPsbtBuffer FAILED (0x%s) — trying signPsbtDirect...',
-        signErr?.statusCode?.toString(16),
-      );
-      if (signErr?.statusCode === 0x6a82 || signErr?.statusCode === 0x6e00) {
-        return await this.signPsbtDirect(req, psbtBuffer);
-      }
-      throw signErr;
     }
+
+    return await this.signPsbtDirect(req, psbtBuffer);
   }
 
   /**
-   * Sign via direct AppClient.signPsbt call (testnet/signet fallback).
+   * Sign via direct AppClient.signPsbt with wallet policy.
    *
-   * VERIFIED API: AppClient.signPsbt(psbt, walletPolicy, walletHMAC, progressCallback)
-   * The PSBT parameter is the first argument, followed by the wallet policy.
-   */
+   * Uses AppClient.signPsbt (appClient.js) with null HMAC (default wallet).
+   * The device validates the wallet policy, requests PSBT data and wallet
+   * policy data via client commands (0xe000), then yields signatures. */
   private async signPsbtDirect(
     req: HardwareSignRequest,
     psbtBuffer: Buffer,
@@ -784,6 +735,12 @@ export class LedgerHardwareWallet implements HardwareWallet {
       "@ledgerhq/hw-app-btc/lib/newops/policy"
     );
     const { hardenedPathOf } = await import("@ledgerhq/hw-app-btc/lib/bip32");
+    const { finalize } = await import(
+      "@ledgerhq/hw-app-btc/lib/newops/psbtFinalizer"
+    );
+    const { extract } = await import(
+      "@ledgerhq/hw-app-btc/lib/newops/psbtExtractor"
+    );
 
     const appClient = new AppClient(this.transport);
     const pathElements = parsePathNumbers(req.derivationPath);
@@ -792,61 +749,103 @@ export class LedgerHardwareWallet implements HardwareWallet {
 
     let accountXpub = this.xpubCache.get(accountPathStr);
     if (!accountXpub) {
-      console.log(
-        "[Ledger DIAG] signPsbtDirect — requesting xpub via raw APDU...",
-      );
-      const data = Buffer.concat([
-        Buffer.from([1]), // display=true
-        pathElementsToBuffer(accountPath),
-      ]);
-      const response = await this.transport.send(
-        0xE1, 0x00, 0x00, 0x00, data, [0x9000, 0xe000]
-      );
-      accountXpub = response.slice(0, -2).toString("ascii");
+      try {
+        accountXpub = await appClient.getExtendedPubkey(false, accountPath);
+      } catch {
+        const data = Buffer.concat([
+          Buffer.from([1]),
+          pathElementsToBuffer(accountPath),
+        ]);
+        const response = await this.transport.send(
+          0xE1, 0x00, 0x00, 0x01, data, [0x9000, 0xe000]
+        );
+        accountXpub = response.slice(0, -2).toString("ascii");
+      }
       this.xpubCache.set(accountPathStr, accountXpub);
     }
 
     if (!this.masterFp) {
       this.masterFp = await appClient.getMasterFingerprint();
     }
+    const masterFp = this.masterFp;
 
-    const keyStr = createKey(this.masterFp, accountPath, accountXpub);
-    // VERIFIED template: "wpkh(@0/**)" from the SDK's descrTemplFrom("bech32")
+    const networkXpub = convertXpubToTestnet(accountXpub);
+    const keyStr = createKey(masterFp, accountPath, networkXpub);
+
     const policy = new WalletPolicy("wpkh(@0/**)", keyStr);
 
-    console.log("[Ledger DIAG] signPsbtDirect — calling AppClient.signPsbt...");
+    // ── Inject bip32Derivation on inputs ──
+    const inputPubkey = await this.derivePubkeyFromCache(req.derivationPath);
+    const network = btcNetworkFor(req.network);
+    const psbtV0 = Psbt.fromBuffer(psbtBuffer, { network });
 
-    // VERIFIED signature: signPsbt(psbt, walletPolicy, walletHMAC, progressCallback)
-    const result = await appClient.signPsbt(
-      psbtBuffer,
-      policy,
-      Buffer.alloc(32, 0),
-      undefined,
-    );
-
-    let txHex: string | undefined;
-    if (typeof result === "string") {
-      txHex = result;
-    } else if (result?.tx) {
-      txHex = result.tx;
-    } else if (result?.psbt) {
-      const signedPsbt = Psbt.fromBuffer(Buffer.from(result.psbt));
-      txHex = signedPsbt.extractTransaction().toHex();
+    for (let i = 0; i < psbtV0.data.inputs.length; i++) {
+      psbtV0.updateInput(i, {
+        bip32Derivation: [
+          {
+            masterFingerprint: masterFp,
+            path: req.derivationPath,
+            pubkey: inputPubkey,
+          },
+        ],
+      });
     }
+
+    // ── Convert to PsbtV2 and inject change output bip32Derivation ──
+    const psbtV2 = PsbtV2.fromV0(Buffer.from(psbtV0.toBuffer()));
+
+    for (let i = 0; i < psbtV2.getGlobalOutputCount(); i++) {
+      let outScript: Buffer;
+      try {
+        outScript = psbtV2.getOutputScript(i);
+      } catch {
+        continue;
+      }
+      if (Buffer.isBuffer(outScript) && outScript.toString("hex") === req.changeScriptPubKey) {
+        psbtV2.setOutputBip32Derivation(i, inputPubkey, masterFp, pathElements);
+      }
+    }
+
+    // ── Sign ──
+    const sigs = await appClient.signPsbt(psbtV2, policy, null, () => {});
+
+    sigs.forEach((v: Buffer, k: number) => {
+      const pubkeys = psbtV2.getInputKeyDatas(k, psbtIn.BIP32_DERIVATION);
+      if (pubkeys.length != 1) {
+        const tapPubkeys = psbtV2.getInputKeyDatas(
+          k,
+          psbtIn.TAP_BIP32_DERIVATION,
+        );
+        if (tapPubkeys.length == 0) {
+          throw Error(`Missing pubkey derivation for input ${k}`);
+        }
+        psbtV2.setInputTapKeySig(k, v);
+      } else {
+        psbtV2.setInputPartialSig(k, pubkeys[0], v);
+      }
+    });
+
+    finalize(psbtV2);
+    const extracted = extract(psbtV2);
+    const txHex = Buffer.isBuffer(extracted)
+      ? extracted.toString("hex")
+      : Buffer.from(extracted).toString("hex");
 
     if (!txHex) {
       throw new Error("Ledger returned no signed transaction.");
     }
 
-    const txid = ledgerTxid(txHex);
-    console.log("[Ledger DIAG] signPsbtDirect SUCCESS — txid: %s", txid);
-    return { hex: txHex, txid };
+    return { hex: txHex, txid: ledgerTxid(txHex) };
   }
 
   /**
    * Sign via createPaymentTransaction (legacy protocol / BtcOld).
-   */
+   * Requires full raw previous transactions in req.rawTxs. */
   private async signLegacy(req: HardwareSignRequest): Promise<HardwareSignedTx> {
+    const { splitTransaction } = await import(
+      "@ledgerhq/hw-app-btc/lib/splitTransaction"
+    );
+
     const app = this.app;
     const network = btcNetworkFor(req.network);
     const pathNoPrefix = req.derivationPath.replace(/^m\//, "");
@@ -860,7 +859,7 @@ export class LedgerHardwareWallet implements HardwareWallet {
           `Missing raw transaction for input ${u.txid}. Required for legacy Ledger signing.`,
         );
       }
-      const tx = app.splitTransaction(rawTx, true);
+      const tx = splitTransaction(rawTx, true);
       inputs.push([tx, u.vout]);
       associatedKeysets.push(pathNoPrefix);
     }
@@ -894,12 +893,12 @@ export class LedgerHardwareWallet implements HardwareWallet {
       additionals: ["bech32"],
     });
 
-    const txid = ledgerTxid(signedHex);
-    return { hex: signedHex, txid };
+    return { hex: signedHex, txid: ledgerTxid(signedHex) };
   }
 
   /** Derive a compressed public key from the cached account xpub at the
-   *  given full path. Used when getWalletPublicKey fails (testnet/signet). */
+   *  given full path. Uses AppClient.getExtendedPubkey (primary) or raw
+   *  APDU (fallback) to fetch the account xpub. */
   private async derivePubkeyFromCache(path: string): Promise<Buffer> {
     const pathElements = parsePathNumbers(path);
     const accountPath = pathElements.slice(0, 3);
@@ -907,17 +906,19 @@ export class LedgerHardwareWallet implements HardwareWallet {
 
     let accountXpub = this.xpubCache.get(accountPathStr);
     if (!accountXpub) {
-      console.log(
-        "[Ledger DIAG] derivePubkeyFromCache — requesting xpub via raw APDU...",
-      );
-      const data = Buffer.concat([
-        Buffer.from([1]), // display=true
-        pathElementsToBuffer(accountPath),
-      ]);
-      const response = await this.transport.send(
-        0xE1, 0x00, 0x00, 0x00, data, [0x9000, 0xe000]
-      );
-      accountXpub = response.slice(0, -2).toString("ascii");
+      const app = await this.ensureApp();
+      try {
+        accountXpub = await app.getExtendedPubkey(false, accountPath);
+      } catch {
+        const data = Buffer.concat([
+          Buffer.from([1]),
+          pathElementsToBuffer(accountPath),
+        ]);
+        const response = await this.transport.send(
+          0xE1, 0x00, 0x00, 0x01, data, [0x9000, 0xe000]
+        );
+        accountXpub = response.slice(0, -2).toString("ascii");
+      }
       this.xpubCache.set(accountPathStr, accountXpub);
     }
 

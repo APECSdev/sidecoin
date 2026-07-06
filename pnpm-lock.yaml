@@ -561,6 +561,9 @@ importers:
       '@ledgerhq/hw-transport-webusb':
         specifier: 6.35.0
         version: 6.35.0
+      '@ledgerhq/psbtv2':
+        specifier: 0.5.0
+        version: 0.5.0
       '@noble/curves':
         specifier: 2.2.0
         version: 2.2.0
