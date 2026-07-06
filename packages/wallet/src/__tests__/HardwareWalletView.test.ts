@@ -15,6 +15,7 @@ function fakeWallet(overrides: Partial<HardwareWallet> = {}): HardwareWallet {
       publicKey: "02abcd",
     }),
     disconnect: vi.fn().mockResolvedValue(undefined),
+    signTransaction: vi.fn().mockResolvedValue({ hex: "", txid: "" }),
     ...overrides,
   };
 }

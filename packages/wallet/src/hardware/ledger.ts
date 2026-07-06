@@ -481,14 +481,14 @@ export class LedgerHardwareWallet implements HardwareWallet {
         let accountXpub = this.xpubCache.get(accountPathStr);
         if (!accountXpub) {
           accountXpub = await app.getExtendedPubkey(false, accountPath);
-          this.xpubCache.set(accountPathStr, accountXpub);
+          this.xpubCache.set(accountPathStr, accountXpub!);
         }
 
         const changeAndIndex = pathElements.slice(-2);
         const change = changeAndIndex[0] ?? 0;
         const addressIndex = changeAndIndex[1] ?? 0;
 
-        const finalKey = deriveAddressKey(accountXpub, change, addressIndex);
+        const finalKey = deriveAddressKey(accountXpub!, change, addressIndex);
         const pubkeyBuf = compressPubkey(Buffer.from(finalKey.pubkey));
         const publicKeyHex = pubkeyBuf.toString("hex");
 
@@ -503,8 +503,8 @@ export class LedgerHardwareWallet implements HardwareWallet {
           if (!this.masterFp) {
             this.masterFp = await app.getMasterFingerprint();
           }
-          const networkXpub = convertXpubToTestnet(accountXpub);
-          const keyStr = createKey(this.masterFp, accountPath, networkXpub);
+          const networkXpub = convertXpubToTestnet(accountXpub!);
+          const keyStr = createKey(this.masterFp!, accountPath, networkXpub);
           const policy = new WalletPolicy("wpkh(@0/**)", keyStr);
           await app.getWalletAddress(
             policy, null, change, addressIndex, true,
@@ -575,7 +575,7 @@ export class LedgerHardwareWallet implements HardwareWallet {
    * display=true via the transport directly, then derives locally. */
   private async getAddressDirect(
     path: string,
-    verify: boolean,
+    _verify: boolean,
     opts: GetAddressOpts,
   ): Promise<HardwareAccount | null> {
     const pathElements = parsePathNumbers(path);
@@ -592,14 +592,14 @@ export class LedgerHardwareWallet implements HardwareWallet {
         0xE1, 0x00, 0x00, 0x01, data, [0x9000, 0xe000]
       );
       accountXpub = response.slice(0, -2).toString("ascii");
-      this.xpubCache.set(accountPathStr, accountXpub);
+      this.xpubCache.set(accountPathStr, accountXpub!);
     }
 
     const changeAndIndex = pathElements.slice(-2);
     const change = changeAndIndex[0] ?? 0;
     const addressIndex = changeAndIndex[1] ?? 0;
 
-    const finalKey = deriveAddressKey(accountXpub, change, addressIndex);
+    const finalKey = deriveAddressKey(accountXpub!, change, addressIndex);
     const pubkeyBuf = compressPubkey(Buffer.from(finalKey.pubkey));
     const publicKeyHex = pubkeyBuf.toString("hex");
 
@@ -761,15 +761,15 @@ export class LedgerHardwareWallet implements HardwareWallet {
         );
         accountXpub = response.slice(0, -2).toString("ascii");
       }
-      this.xpubCache.set(accountPathStr, accountXpub);
+      this.xpubCache.set(accountPathStr, accountXpub!);
     }
 
     if (!this.masterFp) {
       this.masterFp = await appClient.getMasterFingerprint();
     }
-    const masterFp = this.masterFp;
+    const masterFp = this.masterFp!;
 
-    const networkXpub = convertXpubToTestnet(accountXpub);
+    const networkXpub = convertXpubToTestnet(accountXpub!);
     const keyStr = createKey(masterFp, accountPath, networkXpub);
 
     const policy = new WalletPolicy("wpkh(@0/**)", keyStr);
@@ -919,14 +919,14 @@ export class LedgerHardwareWallet implements HardwareWallet {
         );
         accountXpub = response.slice(0, -2).toString("ascii");
       }
-      this.xpubCache.set(accountPathStr, accountXpub);
+      this.xpubCache.set(accountPathStr, accountXpub!);
     }
 
     const changeAndIndex = pathElements.slice(-2);
     const change = changeAndIndex[0] ?? 0;
     const addressIndex = changeAndIndex[1] ?? 0;
 
-    const finalKey = deriveAddressKey(accountXpub, change, addressIndex);
+    const finalKey = deriveAddressKey(accountXpub!, change, addressIndex);
     return compressPubkey(Buffer.from(finalKey.pubkey));
   }
 

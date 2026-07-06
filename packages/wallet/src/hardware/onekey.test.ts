@@ -55,7 +55,7 @@ describe("OneKeyHardwareWallet", () => {
       expect(mockSDK.init).toHaveBeenCalledWith(
         expect.objectContaining({ env: "webusb" }),
       );
-      expect(navigator.usb.requestDevice).toHaveBeenCalledWith({
+      expect((navigator as any).usb.requestDevice).toHaveBeenCalledWith({
         filters: [{ vendorId: 0x1209 }],
       });
       expect(mockSDK.searchDevices).toHaveBeenCalled();

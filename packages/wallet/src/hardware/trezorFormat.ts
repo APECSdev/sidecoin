@@ -65,7 +65,7 @@ export function buildRefTxs(
   rawTxs: Record<string, string>,
 ): RefTransaction[] {
   const out: RefTransaction[] = [];
-  for (const [txid, hex] of Object.entries(rawTxs)) {
+  for (const [, hex] of Object.entries(rawTxs)) {
     const tx = Transaction.fromHex(hex);
     out.push({
       version: tx.version,

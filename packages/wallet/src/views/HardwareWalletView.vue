@@ -19,7 +19,7 @@ const deviceLabels: Record<HardwareDeviceKind, string> = { onekey: "OneKey", led
 const deviceAvailable: Record<HardwareDeviceKind, boolean> = { onekey: true, ledger: true, trezor: false };
 const deviceLabel = computed(() => deviceLabels[deviceKind.value]);
 const stored = loadWallet();
-const isMainnet = stored?.network === "mainnet";
+const isMainnet = (stored?.network as string | undefined) === "mainnet";
 const coinType = isMainnet ? 0 : 1;
 const walletNetwork: NetworkId = (stored?.network as NetworkId) ?? "signet";
 const status = ref<"idle" | "connecting" | "connected" | "error">("idle");

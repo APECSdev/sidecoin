@@ -65,7 +65,7 @@ const {
   const WalletPolicyCtor = vi.fn(function WalletPolicyImpl(
     this: any,
     template: string,
-    key: string,
+    _key: string,
   ) {
     this.descriptorTemplate = template;
     this.getWalletId = vi.fn().mockReturnValue(Buffer.alloc(32));
@@ -263,7 +263,7 @@ beforeEach(() => {
   MockWalletPolicy.mockImplementation(function (
     this: any,
     template: string,
-    key: string,
+    _key: string,
   ) {
     this.descriptorTemplate = template;
     this.getWalletId = vi.fn().mockReturnValue(Buffer.alloc(32));
