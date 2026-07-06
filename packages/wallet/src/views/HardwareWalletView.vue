@@ -16,7 +16,7 @@ const deviceKind = ref<HardwareDeviceKind>("onekey");
 const showDeviceSelector = !props.wallet;
 const deviceKinds: HardwareDeviceKind[] = ["onekey", "ledger", "trezor"];
 const deviceLabels: Record<HardwareDeviceKind, string> = { onekey: "OneKey", ledger: "Ledger", trezor: "Trezor" };
-const deviceAvailable: Record<HardwareDeviceKind, boolean> = { onekey: true, ledger: true, trezor: false };
+const deviceAvailable: Record<HardwareDeviceKind, boolean> = { onekey: true, ledger: true, trezor: true };
 const deviceLabel = computed(() => deviceLabels[deviceKind.value]);
 const stored = loadWallet();
 const isMainnet = (stored?.network as string | undefined) === "mainnet";
