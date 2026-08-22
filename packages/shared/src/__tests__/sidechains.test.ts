@@ -13,6 +13,7 @@ import {
   SIDECHAIN_PHOTON,
   SIDECHAIN_TRUTHCOIN,
   SIDECHAIN_COINSHIFT,
+  SIDECHAIN_SNOWSIDE,
   SIDECHAIN_RISCY,
   SIDECHAIN_ELEMENTS_PLUS,
   getSidechainBySlot,
@@ -27,8 +28,8 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("Sidechain Registry", () => {
-  it("has 9 known sidechains (7 active drivechains + proposed / coming-soon chains)", () => {
-    expect(LAUNCH_SIDECHAINS).toHaveLength(9);
+  it("has 10 known sidechains (7 active drivechains + Snowside + proposed / coming-soon chains)", () => {
+    expect(LAUNCH_SIDECHAINS).toHaveLength(10);
   });
 
   it("slots are unique and match the authoritative BIP-300 assignments", () => {
@@ -37,8 +38,10 @@ describe("Sidechain Registry", () => {
       .filter((slot): slot is number => slot != null);
     const uniqueSlots = new Set(slots);
     expect(uniqueSlots.size).toBe(slots.length);
-    // Authoritative assigned slots (dev.txt ports table), sorted ascending:
-    expect([...slots].sort((a, b) => a - b)).toEqual([2, 3, 4, 9, 13, 98, 99, 255]);
+    // Authoritative assigned slots (dev.txt ports table) + the requested
+    // Snowside slot 88, sorted ascending. Update slot 88 once officially
+    // assigned.
+    expect([...slots].sort((a, b) => a - b)).toEqual([2, 3, 4, 9, 13, 88, 98, 99, 255]);
   });
 
   it("slots are NOT sequential (sparse BIP-300 assignment)", () => {
@@ -70,8 +73,8 @@ describe("Sidechain Registry", () => {
     });
   });
 
-  it("getSidechainCount returns 9", () => {
-    expect(getSidechainCount()).toBe(9);
+  it("getSidechainCount returns 10", () => {
+    expect(getSidechainCount()).toBe(10);
   });
 });
 
@@ -113,6 +116,12 @@ describe("Individual Sidechains", () => {
   it("CoinShift is slot 255", () => {
     expect(SIDECHAIN_COINSHIFT.slot).toBe(255);
     expect(SIDECHAIN_COINSHIFT.id).toBe("coinshift");
+  });
+
+  it("Snowside is slot 88 (requested) and proposed", () => {
+    expect(SIDECHAIN_SNOWSIDE.slot).toBe(88);
+    expect(SIDECHAIN_SNOWSIDE.id).toBe("snowside");
+    expect(SIDECHAIN_SNOWSIDE.status).toBe("proposed");
   });
 
   it("RISCy is slot 3 and proposed", () => {

@@ -166,3 +166,81 @@ describe("Platforms view", () => {
     expect(wrapper.text()).toContain("Slot TBD");
   });
 });
+
+// ---------------------------------------------------------------------------
+// Snowside + Thunder address generation
+// ---------------------------------------------------------------------------
+//
+// Loads a wallet into localStorage and mocks the derivation fns so the
+// per-slot receive-address block renders for Thunder (9) and Snowside (88),
+// and the two chains display DISTINCT addresses (drivechain base58 vs EVM 0x).
+
+const TEST_MNEMONIC =
+  "abandon abandon abandon abandon abandon abandon " +
+  "abandon abandon abandon abandon abandon about";
+
+const THUNDER_ADDR = "k81Deknpsx5Zi6WxUkeMQYrohvt";
+const SNOWSIDE_ADDR = "0x9858EfFD232B4033E47d90003D41EC34EcaEda94";
+
+describe("Platforms view — address generation (Thunder + Snowside)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockGetSidechains.mockResolvedValue(MOCK_SIDECHAINS);
+
+    // Stub a signet wallet in localStorage (matches keystore.ts shape).
+    const store: Record<string, string> = {
+      "sidecoin.wallet.v1": JSON.stringify({
+        version: 1,
+        network: "signet",
+        mnemonic: TEST_MNEMONIC,
+        createdAt: 0,
+      }),
+    };
+    vi.stubGlobal("localStorage", {
+      getItem: (key: string) => store[key] ?? null,
+      setItem: (key: string, val: string) => { store[key] = String(val); },
+      removeItem: (key: string) => { delete store[key]; },
+      clear: () => { for (const k of Object.keys(store)) delete store[k]; },
+      key: (i: number) => Object.keys(store)[i] ?? null,
+      get length() { return Object.keys(store).length; },
+    });
+
+    // Mock the derivation fns so the test doesn't depend on HD math here
+    // (the canonical vectors are covered in @sidecoin/shared).
+    vi.mock("@sidecoin/shared", async (importOriginal) => {
+      const actual = await importOriginal<typeof import("@sidecoin/shared")>();
+      return {
+        ...actual,
+        deriveDrivechainAddress: vi.fn(() => THUNDER_ADDR),
+        deriveEvmAddress: vi.fn(() => SNOWSIDE_ADDR),
+      };
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+    vi.doUnmock("@sidecoin/shared");
+  });
+
+  it("renders Snowside as a proposed platform at slot 88", async () => {
+    const wrapper = await mountPlatforms();
+    expect(wrapper.text()).toContain("Snowside");
+    expect(wrapper.text()).toContain("Slot 88");
+  });
+
+  it("shows the EVM receive address for Snowside", async () => {
+    const wrapper = await mountPlatforms();
+    expect(wrapper.text()).toContain(SNOWSIDE_ADDR);
+    // The Thunder drivechain address must also be present.
+    expect(wrapper.text()).toContain(THUNDER_ADDR);
+  });
+
+  it("shows DISTINCT addresses for Thunder (drivechain) and Snowside (EVM)", async () => {
+    const wrapper = await mountPlatforms();
+    const html = wrapper.html();
+    expect(html).toContain(THUNDER_ADDR);
+    expect(html).toContain(SNOWSIDE_ADDR);
+    expect(THUNDER_ADDR).not.toBe(SNOWSIDE_ADDR);
+  });
+});

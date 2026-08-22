@@ -14,6 +14,7 @@
 //    4     bitassets    6004
 //    9     thunder      6009
 //    13    truthcoin    6013
+//    88    snowside     (requested — BIP-300 slot not yet assigned)
 //    98    zside        6098
 //    99    photon       6099
 //    255   coinshift    6255
@@ -116,6 +117,32 @@ export const SIDECHAIN_COINSHIFT: SidechainDescriptor = {
 };
 
 //
+// Snowside — an Avalanche L1 EVM sidechain with native BTC gas via BMM.
+//
+// Snowside (https://snowside.network) is a dedicated Avalanche Layer-1 for
+// the eCash hard fork: an EVM execution environment whose native gas token
+// is BTC, secured by Blind Merged Mining (BIP-301). Its receive address is
+// a standard Ethereum-style 0x address (BIP-44 coin type 60), derived via
+// deriveEvmAddress(). BMM payouts / fee distribution go to that same EVM
+// address — there is no separate payout derivation path.
+//
+// BIP-300 slot 88 has been REQUESTED but is NOT YET OFFICIALLY ASSIGNED.
+// The slot is reserved here so address generation can target it, but the
+// status stays "proposed" and no deposits/withdrawals flow until the slot
+// assignment is confirmed. Update the slot + status when assigned.
+export const SIDECHAIN_SNOWSIDE: SidechainDescriptor = {
+  slot: 88,  // REQUESTED — not yet officially assigned. Confirm pre-fork.
+  id: "snowside",
+  displayName: "Snowside",
+  shortName: "Snowside",
+  description: "Avalanche L1 EVM sidechain with native BTC gas via Blind Merged Mining. Full EVM compatibility (Solidity, Hardhat, Foundry) secured by Bitcoin hashrate.",
+  status: "proposed",
+  keyHash: "",  // CONFIRM PRE-FORK: populate from sidechain proposal TX once slot is assigned
+  supportsBmm: true,
+  infoUrl: "https://snowside.network",
+};
+
+//
 // RISCy — a PROPOSED drivechain at slot 3.
 //
 // Listed in the live indexer registry as status "proposed", enabled:false,
@@ -179,6 +206,7 @@ export const LAUNCH_SIDECHAINS: readonly SidechainDescriptor[] = [
   SIDECHAIN_PHOTON,
   SIDECHAIN_TRUTHCOIN,
   SIDECHAIN_COINSHIFT,
+  SIDECHAIN_SNOWSIDE,
   SIDECHAIN_RISCY,
   SIDECHAIN_ELEMENTS_PLUS,
 ] as const;

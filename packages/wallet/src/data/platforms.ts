@@ -278,6 +278,40 @@ export const PLATFORMS: PlatformScaffold[] = [
     ],
   },
   {
+    id: "snowside",
+    slot: 88,
+    displayName: "Snowside",
+    shortName: "Snowside",
+    status: "proposed",
+    tagline: "Avalanche L1 EVM with native BTC gas via BMM.",
+    primaryUseCase: "EVM",
+    description:
+      "Snowside is a dedicated Avalanche Layer-1 for the eCash hard fork: an EVM execution environment whose native gas token is BTC, secured by Blind Merged Mining. Full Solidity/Hardhat/Foundry compatibility. BIP-300 slot 88 has been requested but is not yet officially assigned.",
+    featureTabs: [
+      {
+        id: "address",
+        label: "Address",
+        title: "EVM receive address",
+        body: "Standard EVM address generation (BIP-44 coin type 60) produces a 0x address from the wallet mnemonic. Used as the mining/payout target for BMM settlement.",
+        bullets: ["0x address generation", "Mining/payout target", "EIP-55 checksum", "MetaMask/Rabby compatible"],
+      },
+      {
+        id: "bmm",
+        label: "BMM",
+        title: "Blind Merged Mining",
+        body: "Bitcoin miners secure Snowside by including compact block-header commitments in coinbase transactions via BIP-301, without running the sidechain itself.",
+        bullets: ["BIP-301 security", "Coinbase commitments", "BTC fee to miners", "No full node required"],
+      },
+      {
+        id: "evm",
+        label: "EVM",
+        title: "EVM compatibility",
+        body: "Full EVM execution environment — Remix, Hardhat, Foundry, viem, and ethers.js work without modification. Native gas token is BTC.",
+        bullets: ["Solidity/Vyper contracts", "Standard EVM tooling", "BTC gas token", "18-decimal ECX"],
+      },
+    ],
+  },
+  {
     id: "elementsplus",
     slot: null,
     displayName: "Elements Plus",

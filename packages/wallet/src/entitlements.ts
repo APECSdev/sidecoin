@@ -19,7 +19,7 @@ export interface EntitlementState {
   checkedAt: string | null;
 }
 
-export const BASIC_PLATFORM_IDS = ["thunder", "bitnames"];
+export const BASIC_PLATFORM_IDS = ["thunder", "bitnames", "snowside"];
 
 export const PRO_PLATFORM_IDS = [
   "zside",
@@ -30,6 +30,10 @@ export const PRO_PLATFORM_IDS = [
   "riscy",
   "elementsplus",
 ];
+// NOTE: "snowside" is intentionally NOT in PRO_PLATFORM_IDS — address
+// generation is available to everyone (Basic) so it can serve as a mining
+// target. Promote to PRO here only if/when premium Snowside features are
+// gated separately.
 
 export const COIN_CONTROL_FEATURE_ID = "wallet:coin-control";
 
@@ -45,6 +49,7 @@ export const BASIC_FEATURES = [
   "hardware:signing",
   "platform:thunder",
   "platform:bitnames",
+  "platform:snowside",
 ];
 
 export const PRO_FEATURES = [

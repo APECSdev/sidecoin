@@ -12,6 +12,7 @@ import { describe, expect, it } from "vitest";
 import {
   deriveReceiveAddress,
   deriveDrivechainAddress,
+  deriveEvmAddress,
 } from "../wallet/derivation";
 
 // The standard all-"abandon" BIP-39 test mnemonic.
@@ -156,6 +157,76 @@ describe("deriveDrivechainAddress — input validation", () => {
   it("rejects a negative index", () => {
     expect(() => deriveDrivechainAddress(TEST_MNEMONIC, -1)).toThrow(
       /integer >= 1/i,
+    );
+  });
+});
+
+describe("deriveEvmAddress — Snowside / standard EVM BIP-44 vectors", () => {
+  // Locked vectors for the all-"abandon" mnemonic at m/44'/60'/0'/0/{index}.
+  // Computed with the SLIP-0010-proven @scure/bip32 engine + noble
+  // secp256k1 + Keccak-256 (pre-NIST padding from @noble/hashes/sha3), then
+  // EIP-55 checksummed. Index 0 matches the well-known published Ethereum
+  // BIP-44 vector for this mnemonic — the canonical "every EVM wallet"
+ // address. Snowside (Avalanche L1, native BTC gas) uses coin type 60.
+  it("derives index 0 (m/44'/60'/0'/0/0) — first issued address", () => {
+    expect(deriveEvmAddress(TEST_MNEMONIC, 0)).toBe(
+      "0x9858EfFD232B4033E47d90003D41EC34EcaEda94",
+    );
+  });
+
+  it("derives index 1 (m/44'/60'/0'/0/1)", () => {
+    expect(deriveEvmAddress(TEST_MNEMONIC, 1)).toBe(
+      "0x6Fac4D18c912343BF86fa7049364Dd4E424Ab9C0",
+    );
+  });
+
+  it("derives index 2 (m/44'/60'/0'/0/2)", () => {
+    expect(deriveEvmAddress(TEST_MNEMONIC, 2)).toBe(
+      "0xb6716976A3ebe8D39aCEB04372f22Ff8e6802D7A",
+    );
+  });
+
+  it("defaults to index 0 when no index is supplied", () => {
+    expect(deriveEvmAddress(TEST_MNEMONIC)).toBe(
+      deriveEvmAddress(TEST_MNEMONIC, 0),
+    );
+  });
+
+  it("derives distinct addresses across indices", () => {
+    const set = new Set([
+      deriveEvmAddress(TEST_MNEMONIC, 0),
+      deriveEvmAddress(TEST_MNEMONIC, 1),
+      deriveEvmAddress(TEST_MNEMONIC, 2),
+    ]);
+    expect(set.size).toBe(3);
+  });
+
+  it("produces a 42-char 0x-prefixed EIP-55 address", () => {
+    const addr = deriveEvmAddress(TEST_MNEMONIC, 0);
+    // "0x" + 20 bytes (40 hex chars) = 42 characters total.
+    expect(addr).toMatch(/^0x[0-9a-fA-F]{40}$/);
+    expect(addr.length).toBe(42);
+  });
+
+  it("applies the EIP-55 mixed-case checksum (not all-lowercase)", () => {
+    const addr = deriveEvmAddress(TEST_MNEMONIC, 0);
+    // A correctly checksummed EVM address contains at least one uppercase
+    // hex letter (this mnemonic's index-0 vector has several).
+    expect(addr).not.toBe(addr.toLowerCase());
+    expect(addr).not.toBe(addr.toUpperCase());
+  });
+});
+
+describe("deriveEvmAddress — input validation", () => {
+  it("rejects an invalid mnemonic", () => {
+    expect(() =>
+      deriveEvmAddress("not a real mnemonic phrase at all"),
+    ).toThrow(/invalid BIP-39 mnemonic/i);
+  });
+
+  it("rejects a negative index", () => {
+    expect(() => deriveEvmAddress(TEST_MNEMONIC, -1)).toThrow(
+      /non-negative integer/i,
     );
   });
 });

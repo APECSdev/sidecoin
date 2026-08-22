@@ -445,6 +445,9 @@ importers:
 
   packages/shared:
     dependencies:
+      '@noble/curves':
+        specifier: 2.2.0
+        version: 2.2.0
       '@noble/hashes':
         specifier: 1.8.0
         version: 1.8.0

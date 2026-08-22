@@ -27,6 +27,7 @@ describe("explorer chain registry", () => {
     expect(getExplorerChain("truthcoin")?.status).toBe("coming soon");
     expect(getExplorerChain("coinshift")?.status).toBe("coming soon");
     expect(getExplorerChain("riscy")?.status).toBe("coming soon");
+    expect(getExplorerChain("snowside")?.status).toBe("coming soon");
     expect(getExplorerChain("elementsplus")?.status).toBe("coming soon");
   });
 
@@ -54,6 +55,7 @@ describe("explorer chain registry", () => {
       truthcoin: "coming soon",
       coinshift: "coming soon",
       riscy: "coming soon",
+      snowside: "coming soon",
       elementsplus: "coming soon",
     });
   });

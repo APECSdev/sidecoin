@@ -4,7 +4,7 @@
 import { computed, ref, onMounted } from "vue";
 import { getSidechains } from "../api";
 import type { SidechainSummary } from "../api";
-import { deriveDrivechainAddress } from "@sidecoin/shared";
+import { deriveDrivechainAddress, deriveEvmAddress } from "@sidecoin/shared";
 import { loadWallet } from "../keystore";
 import { PLATFORMS, getPlatformById } from "../data/platforms";
 import { canAccessPlatform, isProPlatform } from "../entitlements";
@@ -18,7 +18,14 @@ interface WalletSidechainSummary {
   status: string;
 }
 
-const VERIFIED_ADDRESS_SLOTS = new Set<number>([9, 4]);
+// Slots for which we can derive a verified receive address from the
+// stored mnemonic. Each entry names the derivation scheme to use.
+//   9  → Thunder  (SLIP-0010 ed25519 + blake3 + base58)
+//   4  → BitAssets (same drivechain scheme — slot-independent)
+//   88 → Snowside (standard EVM BIP-44, coin type 60)
+const ADDRESS_DERIVATION_SLOTS = new Set<number>([9, 4, 88]);
+const EVM_ADDRESS_SLOTS = new Set<number>([88]);
+
 const PLATFORM_DISPLAY_PRIORITY: Record<string, number> = {
   bitnames: 0,
   thunder: 1,
@@ -28,7 +35,10 @@ const sidechains = ref<WalletSidechainSummary[]>([]);
 const loading = ref(true);
 const error = ref<string | null>(null);
 
-const drivechainAddress = ref("");
+// Per-slot derived receive address (one per sidechain with a derivation
+// scheme). Keyed by slot so Thunder (9) and Snowside (88) display distinct
+// addresses instead of sharing a single L2 address string.
+const derivedAddresses = ref<Record<number, string>>({});
 const addressError = ref("");
 const copiedSlot = ref<number | null>(null);
 
@@ -47,9 +57,9 @@ onMounted(async () => {
   const wallet = loadWallet();
   if (wallet) {
     try {
-      drivechainAddress.value = deriveDrivechainAddress(wallet.mnemonic, 1);
+      derivedAddresses.value = deriveAddresses(wallet.mnemonic);
     } catch (e) {
-      console.error("[SidechainsView] Failed to derive L2 address:", e);
+      console.error("[SidechainsView] Failed to derive sidechain addresses:", e);
       addressError.value =
         "Unable to derive a sidechain address from the stored key.";
     }
@@ -64,6 +74,30 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+/**
+ * Derive a verified receive address for every slot that has a derivation
+ * scheme wired up (Thunder/BitAssets drivechain + Snowside EVM).
+ *
+ * Each scheme uses its own index convention:
+ *   Thunder / BitAssets: index 1 (get_new_address starts at 1)
+ *   Snowside (EVM):       index 0 (standard EVM address issuance)
+ */
+function deriveAddresses(mnemonic: string): Record<number, string> {
+  const out: Record<number, string> = {};
+  for (const slot of ADDRESS_DERIVATION_SLOTS) {
+    try {
+      if (EVM_ADDRESS_SLOTS.has(slot)) {
+        out[slot] = deriveEvmAddress(mnemonic, 0);
+      } else {
+        out[slot] = deriveDrivechainAddress(mnemonic, 1);
+      }
+    } catch (e) {
+      console.error(`[SidechainsView] Failed to derive address for slot ${slot}:`, e);
+    }
+  }
+  return out;
+}
 
 function mergePlatformSidechains(apiSidechains: SidechainSummary[]): WalletSidechainSummary[] {
   const byId = new Map<string, WalletSidechainSummary>();
@@ -88,7 +122,16 @@ function mergePlatformSidechains(apiSidechains: SidechainSummary[]): WalletSidec
 }
 
 function isVerified(slot: number | null): boolean {
-  return slot != null && VERIFIED_ADDRESS_SLOTS.has(slot) && drivechainAddress.value !== "";
+  return slot != null && ADDRESS_DERIVATION_SLOTS.has(slot) && derivedAddresses.value[slot] != null && derivedAddresses.value[slot] !== "";
+}
+
+/**
+ * Look up the derived receive address for a slot (or empty string).
+ * Used in the template so a null slot never reaches the index lookup.
+ */
+function addressFor(slot: number | null): string {
+  if (slot == null) return "";
+  return derivedAddresses.value[slot] ?? "";
 }
 
 function platformHref(id: string): string {
@@ -114,9 +157,11 @@ function slotLabel(slot: number | null): string {
 }
 
 async function copyAddress(slot: number | null) {
-  if (slot == null || !drivechainAddress.value) return;
+  if (slot == null) return;
+  const addr = derivedAddresses.value[slot];
+  if (!addr) return;
   try {
-    await navigator.clipboard.writeText(drivechainAddress.value);
+    await navigator.clipboard.writeText(addr);
     copiedSlot.value = slot;
     setTimeout(() => {
       copiedSlot.value = null;
@@ -208,7 +253,7 @@ async function copyAddress(slot: number | null) {
         >
           <p class="mb-1 text-xs text-gray-500">Your Receive Address</p>
           <p class="break-all font-mono text-xs text-ecash-400">
-            {{ drivechainAddress }}
+            {{ addressFor(sc.slot) }}
           </p>
           <button
             class="mt-2 rounded bg-gray-800 px-3 py-1 text-xs text-gray-300 hover:bg-gray-700"

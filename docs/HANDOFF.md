@@ -53,94 +53,78 @@ the **web wallet** (`@sidecoin/wallet`), initially just to produce **mining
 targets** (receive addresses). This section captures the verified starting
 facts so the next agent does not have to re-derive them.
 
-### What exists today
+### STATUS: DONE ✅
 
-- **L1 receive addresses** are already wired in the wallet via
-  `deriveReceiveAddress(mnemonic, network, index=0)` from
-  `@sidecoin/shared` (BIP-84 P2WPKH). Consumed by:
-  - `packages/wallet/src/views/ReceiveView.vue` (line ~42)
-  - `packages/wallet/src/views/DashboardView.vue` (line ~156)
-- **L2 drivechain receive addresses** are wired via
-  `deriveDrivechainAddress(mnemonic, index=1)` from `@sidecoin/shared`
-  (SLIP-0010 ed25519 + blake3 XOF 20 bytes + base58, path
-  `m/1'/0'/0'/{index}'`, all hardened, slot-independent). Consumed by:
-  - `packages/wallet/src/views/SidechainsView.vue` (line ~50)
-- `SidechainsView.vue` only **shows** the derived L2 address for
-  `VERIFIED_ADDRESS_SLOTS = new Set([9, 4])` (Thunder=9, BitAssets=4), and it
-  derives a **single** address at index 1 for whichever sidechains match that
-  set. There is **no per-chain derivation dispatch** yet — the same
-  `deriveDrivechainAddress` string is shown for both slots.
+Both Thunder and Snowside address generation are now wired into the web
+wallet's Platforms view (`SidechainsView.vue`). Commit:
+`feat(wallet): Thunder + Snowside address generation`.
 
-### What is NOT in the repo yet (Snowside)
+### What was implemented
 
-- There are **zero** references to "snowside" / "Snowside" anywhere in the
-  monorepo today (verified with `grep -rni "snowside"`). It is not in the
-  sidechain registry, not in `data/platforms.ts`, and not in the derivation
-  module.
-- The current `deriveDrivechainAddress` is documented as slot-independent and
-  identical for Thunder (slot 9) and BitAssets (slot 4). It is **NOT** known
-  whether Snowside uses the same scheme. The next agent MUST confirm
-  Snowside's derivation scheme against its reference node implementation
-  before reusing `deriveDrivechainAddress` for it.
+1. **`deriveEvmAddress`** added to `packages/shared/src/wallet/derivation.ts` —
+   standard EVM BIP-44 (`m/44'/60'/0'/0/{index}`, secp256k1, keccak-256,
+   EIP-55 checksum, index from 0). Used for Snowside. Verified against the
+   canonical all-"abandon" mnemonic Ethereum vector at indices 0/1/2.
+2. **`@noble/curves` 2.2.0** added to `@sidecoin/shared` deps (for secp256k1
+   public-key decompression). `@noble/hashes` 1.8.0 already shipped
+   `keccak_256` via its `sha3` submodule (pre-NIST padding = Ethereum's).
+3. **Snowside registered** in `packages/shared/src/sidechains/registry.ts` as
+   `SIDECHAIN_SNOWSIDE`, slot **88** (requested — not yet officially
+   assigned), `status: "proposed"`, `supportsBmm: true`, `infoUrl:
+   "https://snowside.network"`. Added to `LAUNCH_SIDECHAINS` (now 10 entries).
+4. **Snowside platform scaffold** added to
+   `packages/wallet/src/data/platforms.ts` (id `snowside`, slot 88, status
+   `proposed`, feature tabs: Address / BMM / EVM).
+5. **`SidechainsView.vue`** refactored from a single shared L2 address to
+   **per-slot** derivation: `ADDRESS_DERIVATION_SLOTS = {9, 4, 88}` with
+   `EVM_ADDRESS_SLOTS = {88}` routing Snowside to `deriveEvmAddress` and
+   Thunder/BitAssets to `deriveDrivechainAddress`. Thunder uses index 1
+   (matches `get_new_address`); Snowside uses index 0 (standard EVM). Each
+   card now shows its own distinct address.
+6. **Entitlements**: `snowside` added to `BASIC_PLATFORM_IDS` +
+   `BASIC_FEATURES` so address generation is available to everyone (it's the
+   mining target). Intentionally NOT promoted to PRO.
+7. **Tests**: shared +10 (EVM vectors + Snowside registry assertions),
+   wallet +3 (Snowside renders at slot 88, EVM address shown, Thunder ≠
+   Snowside addresses), explorer chains test updated for Snowside. Full
+   monorepo green: 238 shared / 339 wallet / 43 explorer / 118 web.
 
-### Where the derivation code lives (the files you will touch or read)
+### Snowside scheme confirmation (from operator)
 
-- `packages/shared/src/wallet/derivation.ts`
-  - `deriveReceiveAddress` (line 70) — L1 P2WPKH.
-  - `deriveDrivechainAddress` (line 132) — L2 ed25519/blake3/base58.
-  - Header comment (lines 1–29) documents both schemes byte-for-byte.
-- `packages/shared/src/wallet/index.ts` — re-exports derivation.
-- `packages/shared/src/__tests__/derivation.test.ts` — canonical vectors for
-  both functions (BIP-84 spec vectors + Thunder/BitAssets index-1/2/3
-  vectors confirmed against `thunder-rust`).
-- `packages/shared/src/sidechains/registry.ts` — the slot registry (no
-  Snowside entry today).
-- `packages/wallet/src/views/SidechainsView.vue` — the current L2 address UI
-  surface (gated by `VERIFIED_ADDRESS_SLOTS`).
-- `packages/wallet/src/data/platforms.ts` — static platform scaffolds
-  (thunder, zside, bitnames, bitassets, photon, truthcoin, coinshift … no
-  snowside).
+- Standard EVM BIP-44, coin type 60 (same as Ethereum) ✅
+- Address index starts at 0 ✅
+- BIP-300 slot 88 requested (not yet official) ✅
+- Payouts go to the standard EVM address (no separate payout path) ✅
+- Snowside registered in the sidechain registry ✅
 
-### Suggested approach (confirm with the operator before implementing)
+### Reference repos used
 
-1. **Confirm Snowside's derivation scheme** against its reference node impl
-   (the way `deriveDrivechainAddress` was confirmed against `thunder-rust`).
-   Questions to answer:
-   - Does Snowside reuse the SLIP-0010 ed25519 + blake3 + base58 scheme, or
-     does it have its own?
-   - What is the derivation path?
-   - What index does address issuance start at (Thunder starts at 1)?
-   - What is Snowside's BIP-300 slot number? (It is not in the registry.)
-2. **Registry**: add Snowside to
-   `packages/shared/src/sidechains/registry.ts` with its authoritative slot
-   and `status`. Add it to `packages/wallet/src/data/platforms.ts` if the
-   platforms UI should surface it.
-3. **Derivation**: if Snowside's scheme matches Thunder's, the existing
-   `deriveDrivechainAddress` already covers it (slot-independent). If it
-   differs, add a Snowside-specific derivation function in
-   `packages/shared/src/wallet/derivation.ts` with canonical test vectors in
-   `packages/shared/src/__tests__/derivation.test.ts`.
-4. **Wallet UI**: extend `SidechainsView.vue` (or a dedicated mining-target
-   view) to derive + display per-chain mining receive addresses for Thunder
-   and Snowside. Today the gate is `VERIFIED_ADDRESS_SLOTS = {9, 4}`; update
-   it to include Snowside's slot once verified.
-5. **Mining-context note**: the operator said the initial use is **mining
-   targets**. Confirm whether a mining target address differs from a normal
-   receive address on either chain (e.g. a dedicated payout derivation path)
-   before wiring it up.
-6. **Gates**: `pnpm --filter @sidecoin/shared test` and
-   `pnpm --filter @sidecoin/wallet test` + both `type-check` must be green.
+- Thunder: `https://github.com/LayerTwo-Labs/thunder-rust` —
+  `types/authorization.rs` `get_address` (blake3_xof(verifying_key)[..20]) +
+  `lib/wallet.rs` `get_signing_key` (SLIP-0010 ed25519, `m/1'/0'/0'/{index}'`).
+  Already byte-faithfully implemented as `deriveDrivechainAddress`.
+- Snowside: `https://github.com/abitsuite/snowside` — Avalanche L1 EVM,
+  native BTC gas via BMM. The repo does NOT derive EVM addresses from a
+  mnemonic anywhere (its federation `wallet.ts` only derives L1 deposit
+  addresses; its EVM `account` comes from a raw `EWOQ_PRIVATE_KEY`). The
+  standard EVM BIP-44 scheme is the correct one and matches what
+  MetaMask/Rabby/viem produce from the same mnemonic.
 
-### Open questions to resolve with the operator before coding
+### Historical context (pre-implementation, retained for reference)
 
-- Is Snowside's derivation scheme the same as Thunder's
-  (`deriveDrivechainAddress`), or different?
-- What is Snowside's authoritative BIP-300 slot number?
-- Does Snowside address issuance start at index 1 (like Thunder) or 0?
-- Is the "mining target" address the same as the standard receive address,
-  or a distinct derivation?
-- Should Snowside appear in the platforms UI (`data/platforms.ts`) and the
-  sidechains registry now, or only after derivation is verified?
+The derivation code lives in `packages/shared/src/wallet/derivation.ts`:
+- `deriveReceiveAddress` (L1 BIP-84 P2WPKH) — consumed by `ReceiveView.vue`
+  + `DashboardView.vue`.
+- `deriveDrivechainAddress` (L2 ed25519/blake3/base58, slot-independent,
+  index from 1) — consumed by `SidechainsView.vue` for Thunder (9) +
+  BitAssets (4).
+- `deriveEvmAddress` (EVM BIP-44, coin type 60, index from 0) — NEW,
+  consumed by `SidechainsView.vue` for Snowside (88).
+
+The wallet UI surface is `packages/wallet/src/views/SidechainsView.vue`,
+gated by `ADDRESS_DERIVATION_SLOTS = {9, 4, 88}` with `EVM_ADDRESS_SLOTS =
+{88}` routing to the EVM derivation. Canonical test vectors are in
+`packages/shared/src/__tests__/derivation.test.ts`.
 
 ## In-flight
 

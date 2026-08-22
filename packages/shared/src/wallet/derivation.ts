@@ -1,12 +1,15 @@
 // packages/shared/src/wallet/derivation.ts
 //
-// HD key derivation → receive addresses. Two distinct schemes live here:
+// HD key derivation → receive addresses. Three distinct schemes live here:
 //
 //   L1 (Bitcoin-derived chains: mainnet, testnet, signet, regtest):
 //     BIP-84 native SegWit (P2WPKH) — deriveReceiveAddress()
 //
 //   L2 (Thunder / BitAssets drivechains):
 //     SLIP-0010 ed25519 + blake3 + base58 — deriveDrivechainAddress()
+//
+//   EVM (Snowside — Avalanche L1 with native BTC gas via BMM):
+//     BIP-44 secp256k1 + keccak-256 + EIP-55 — deriveEvmAddress()
 //
 // ---------------------------------------------------------------------------
 // L1 — BIP-84 native SegWit (P2WPKH, "bc1q…" / "tb1q…").
@@ -29,6 +32,19 @@
 // the receive address does NOT depend on THIS_SIDECHAIN. The s{n}_…_{csum}
 // deposit wrapper (Address::format_for_deposit) is a separate concern and
 // is intentionally NOT produced here.
+//
+// EVM — Snowside (Avalanche L1) receive address (standard EVM BIP-44):
+//   seed:    bip39 seed, EMPTY passphrase
+//   key:     secp256k1, path m/44'/60'/0'/0/{index}  (coin type 60 = Ethereum)
+//   pubkey:  65-byte UNCOMPRESSED secp256k1 key (0x04 || X || Y)
+//   hash:    keccak_256(pubkey[1:])  (drop the 0x04 prefix before hashing)
+//   address: "0x" + lowercase hex(hash[12:32])  (last 20 bytes)
+//   checksum: EIP-55 mixed-case checksum applied over the lowercase hex
+//   index:   starts at 0 (standard EVM address issuance)
+//
+// Snowside payouts (BMM settlement / fee distribution) go to the same
+// standard EVM address — there is no dedicated payout derivation path.
+// Snowside has requested BIP-300 slot 88 (not yet assigned as of writing).
 
 import { bech32, base58 } from "@scure/base";
 import { HDKey } from "@scure/bip32";
@@ -37,6 +53,8 @@ import { mnemonicToSeedSync } from "@scure/bip39";
 import { sha256 } from "@noble/hashes/sha256";
 import { ripemd160 } from "@noble/hashes/ripemd160";
 import { blake3 } from "@noble/hashes/blake3";
+import { keccak_256 } from "@noble/hashes/sha3";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 
 import type { NetworkId } from "../types/network";
 import { getNetworkOrThrow } from "../chain";
@@ -171,4 +189,94 @@ export function deriveDrivechainAddress(
 
   // base58, Bitcoin alphabet, no checksum, no version byte.
   return base58.encode(digest);
+}
+
+/**
+ * Apply the EIP-55 mixed-case checksum to a 40-char lowercase hex address.
+ *
+ * EIP-55: hash the lowercase hex STRING (UTF-8 bytes, NOT the decoded
+ * address bytes), then uppercase each hex letter whose corresponding
+ * nibble in that hash is >= 8. Digits (0-9) are never uppercased.
+ */
+function toChecksumAddress(addrHex: string): string {
+  const lower = addrHex.toLowerCase();
+  const hash = Buffer.from(keccak_256(Buffer.from(lower, "utf8"))).toString("hex");
+  let out = "0x";
+
+  for (let i = 0; i < lower.length; i++) {
+    const c = lower[i];
+    if (c >= "0" && c <= "9") {
+      out += c;
+    } else {
+      out += parseInt(hash[i], 16) >= 8 ? c.toUpperCase() : c;
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Derive a standard EVM (Ethereum-style) receive address via BIP-44.
+ *
+ * Used for Snowside (Avalanche L1, native BTC gas). This is the canonical
+ * scheme every EVM wallet (MetaMask, Rabby, viem/ethers) uses on coin
+ * type 60:
+ *
+ *   seed    = bip39 seed (empty passphrase)
+ *   key     = secp256k1, path m/44'/60'/0'/0/{index}
+ *   pub     = UNCOMPRESSED secp256k1 public key (65 bytes: 0x04 || X || Y)
+ *   hash    = keccak_256(pub[1:])   (drop the 0x04 prefix)
+ *   address = "0x" + hex(hash[12:32])  (last 20 bytes = 20-byte EVM address)
+ *   checksum = EIP-55 mixed-case over the lowercase hex
+ *
+ * Address issuance starts at index 0 (standard EVM convention). Payouts
+ * on Snowside (BMM settlement / fee distribution) go to this same address —
+ * there is no separate payout derivation.
+ *
+ * @param mnemonic - BIP-39 mnemonic (will be normalized + validated)
+ * @param index    - Address index within m/44'/60'/0'/0/* (default 0)
+ * @returns The EIP-55 checksummed EVM address, e.g. "0x9858EfFD…"
+ * @throws If the mnemonic is invalid, index < 0, or derivation fails
+ */
+export function deriveEvmAddress(
+  mnemonic: string,
+  index: number = 0,
+): string {
+  const normalized = normalizeMnemonic(mnemonic);
+
+  if (!validateMnemonic(normalized)) {
+    throw new Error("Cannot derive an address from an invalid BIP-39 mnemonic.");
+  }
+
+  if (!Number.isInteger(index) || index < 0) {
+    throw new Error(`Address index must be a non-negative integer, got ${index}.`);
+  }
+
+  // BIP-39 seed (empty passphrase — matches wallet default).
+  const seed = mnemonicToSeedSync(normalized);
+
+  // BIP-44, coin type 60 (Ethereum's SLIP-0044 entry — same for Snowside).
+  const root = HDKey.fromMasterSeed(seed);
+  const path = `m/44'/60'/0'/0/${index}`;
+  const child = root.derive(path);
+
+  if (!child.privateKey) {
+    throw new Error("Key derivation failed: HDKey produced no private key.");
+  }
+
+  // Uncompressed secp256k1 public key: 0x04 || X(32) || Y(32) = 65 bytes.
+  // noble's getPublicKey(priv, isCompressed=false) returns this directly.
+  const uncPubkey = secp256k1.getPublicKey(child.privateKey, false);
+
+  if (uncPubkey.length !== 65 || uncPubkey[0] !== 0x04) {
+    throw new Error(
+      "Key derivation failed: expected a 65-byte uncompressed secp256k1 public key.",
+    );
+  }
+
+  // Ethereum address = keccak_256(pubkey[1:])[12:32] — drop the 0x04 prefix.
+  const hash = keccak_256(uncPubkey.subarray(1));
+  const addrHex = Buffer.from(hash.subarray(12)).toString("hex"); // 40 lowercase chars
+
+  return toChecksumAddress(addrHex);
 }
