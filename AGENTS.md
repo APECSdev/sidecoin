@@ -70,8 +70,8 @@ must be green before commit.
 
 | Package | Tests |
 | --- | --- |
-| `@sidecoin/shared` | 228 passed, 1 skipped (12 files) |
-| `@sidecoin/wallet` | 336 passed (26 files) |
+| `@sidecoin/shared` | 238 passed, 1 skipped (12 files) |
+| `@sidecoin/wallet` | 339 passed (26 files) |
 | `@sidecoin/web` | 118 passed (3 files) |
 | `@sidecoin/explorer` | 43 passed (7 files) |
 | `@sidecoin/smarthub` | 5 passed (1 file) |
@@ -102,7 +102,7 @@ must be green before commit.
    `./types` (see `packages/shared/package.json` `exports`). The browser
    wallet imports derivation helpers from the package root
    (`import { deriveReceiveAddress } from "@sidecoin/shared"`).
-2. **Derivation is split into two schemes** in
+2. **Derivation is split into three schemes** in
    `packages/shared/src/wallet/derivation.ts`:
    - `deriveReceiveAddress(mnemonic, network, index=0)` — BIP-84 P2WPKH
      (`bc1q…`/`tb1q…`), path `m/84'/{coinType}'/0'/0/{index}`. Used for L1
@@ -111,13 +111,23 @@ must be green before commit.
      blake3 XOF (20 bytes) + base58 (no checksum, no version byte), path
      `m/1'/0'/0'/{index}'` (all hardened). Slot-independent: identical for
      Thunder (slot 9) and BitAssets (slot 4). Index starts at 1 (index 0 is
-     never issued on-chain). Consumed by `SidechainsView.vue`, which today
-     shows the derived address only for `VERIFIED_ADDRESS_SLOTS = {9, 4}`.
+     never issued on-chain). Consumed by `SidechainsView.vue`.
+   - `deriveEvmAddress(mnemonic, index=0)` — standard EVM BIP-44, secp256k1
+     + keccak-256 + EIP-55 checksum, path `m/44'/60'/0'/0/{index}` (coin
+     type 60). Used for Snowside (Avalanche L1 EVM, slot 88). Index starts
+     at 0 (standard EVM convention). Payouts go to the same address — there
+     is no separate payout derivation. Consumed by `SidechainsView.vue`.
+   `SidechainsView.vue` dispatches per-slot: `ADDRESS_DERIVATION_SLOTS =
+   {9, 4, 88}` with `EVM_ADDRESS_SLOTS = {88}` routing to
+   `deriveEvmAddress` and the rest to `deriveDrivechainAddress`. Each
+   platform card shows its own distinct receive address.
 3. **Sidechain slots are authoritative** in
    `packages/shared/src/sidechains/registry.ts`. Active: 2 (bitnames),
    4 (bitassets), 9 (thunder), 13 (truthcoin), 98 (zside), 99 (photon),
-   255 (coinshift). Proposed: 3 (riscy). Coming soon: elementsplus (no slot).
-   Slots are sparse — never assume `slot === array index`.
+   255 (coinshift). Proposed: 3 (riscy), 88 (snowside — requested, not yet
+   officially assigned). Coming soon: elementsplus (no slot).
+   `LAUNCH_SIDECHAINS` has 10 entries. Slots are sparse — never assume
+   `slot === array index`.
 4. **The wallet keystore is signet-only and plaintext.**
    `packages/wallet/src/keystore.ts` stores the mnemonic in `localStorage`
    under `sidecoin.wallet.v1`. This is acceptable only for throwaway signet
