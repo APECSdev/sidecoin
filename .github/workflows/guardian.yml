@@ -418,13 +418,19 @@ jobs:
           verbose: true
           token: ${{ secrets.CODECOV_TOKEN }}
 
-  # ── API adapter + client (standalone, labeled job) ───────
+  # ── API client (standalone, labeled job) ─────────────────
   #
   # Pure TS — runs once on ubuntu (no Rust/matrix needed).
   # Appears as its own "api" entry in the Actions sidebar so
   # a failure here is immediately distinguishable from the
   # desktop/web/wallet legs. Each named step (Test/Type-check)
   # pinpoints exactly which check broke.
+  #
+  # NOTE: the API adapter (formerly @sidecoin/api, the Cloudflare
+  # Worker) has been extracted to its own repository:
+  # https://github.com/APECSdev/sidecoin-api — it is no longer
+  # built or deployed from this monorepo. This job now covers only
+  # the @sidecoin/api-client package that remains here.
   # ─────────────────────────────────────────────────────────
 
   api:
@@ -449,12 +455,6 @@ jobs:
 
       - name: Type-check API client
         run: pnpm --filter @sidecoin/api-client typecheck
-
-      - name: Test API adapter
-        run: pnpm --filter @sidecoin/api test
-
-      - name: Type-check API adapter
-        run: pnpm --filter @sidecoin/api typecheck
 
   # ── Cloudflare Pages — Landing Site ──────────────────────
   #
@@ -597,46 +597,6 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy packages/smarthub/dist --project-name=sidecoin-hub --commit-dirty=true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-
-  # ── Cloudflare Workers — API Adapter (GATED) ─────────────
-  #
-  # Worker deploy (wrangler deploy), NOT Pages. Gated behind a
-  # GitHub Environment ("production-api") with required reviewers:
-  # this job pauses for manual approval before the adapter ships.
-  # Deploys only on push to master, after the api job passes.
-  # ─────────────────────────────────────────────────────────
-
-  deploy-api:
-    needs: api
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    runs-on: ubuntu-latest
-    environment:
-      name: production-api
-      url: https://sidecoin.app/v1
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Enable Corepack
-        run: corepack enable
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v5
-        with:
-          node-version: "22"
-          cache: "pnpm"
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build Shared
-        run: pnpm --filter @sidecoin/shared build
-
-      - name: Deploy Worker
-        run: npx wrangler deploy
-        working-directory: packages/api
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

@@ -76,8 +76,9 @@ This is a [pnpm](https://pnpm.io) workspace monorepo.
 
 ```
 packages/
-  api/ Cloudflare Workers backend (GraphQL)
   api-client/   Typed API client shared by frontends
+  # NOTE: the API adapter (Cloudflare Worker) now lives in its own
+  # repo: https://github.com/APECSdev/sidecoin-api
   desktop/      Tauri + Rust + Vue desktop wallet
   mobile/       React Native mobile wallet
   shared/       Chain config, sidechain logic, shared utils
