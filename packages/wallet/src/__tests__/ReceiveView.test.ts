@@ -207,4 +207,107 @@ describe("ReceiveView.vue", () => {
 
     consoleSpy.mockRestore();
   });
+
+  // -------------------------------------------------------------------------
+  // Network selector + address index cycling (session-only, not persisted)
+  // -------------------------------------------------------------------------
+
+  it("should render the Signet + Alphanet network selector when a wallet exists", async () => {
+    vi.mocked(loadWallet).mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: VALID_12,
+      createdAt: 0,
+    });
+
+    const wrapper = mountReceive();
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Receive to network");
+    expect(wrapper.text()).toContain("session-only");
+    expect(wrapper.text()).toContain("Signet");
+    expect(wrapper.text()).toContain("Alphanet");
+  });
+
+  it("should default the selector to the wallet's persisted network (signet)", async () => {
+    vi.mocked(loadWallet).mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: VALID_12,
+      createdAt: 0,
+    });
+
+    mountReceive();
+    await flushPromises();
+
+    expect(deriveReceiveAddress).toHaveBeenCalledWith(VALID_12, "signet", 0);
+  });
+
+  it("should re-derive with alphanet + coin type 0 when Alphanet is selected", async () => {
+    vi.mocked(loadWallet).mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: VALID_12,
+      createdAt: 0,
+    });
+
+    const wrapper = mountReceive();
+    await flushPromises();
+
+    const alphanet = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Alphanet");
+    expect(alphanet).toBeDefined();
+    await alphanet!.trigger("click");
+
+    expect(deriveReceiveAddress).toHaveBeenCalledWith(VALID_12, "alphanet", 0);
+    expect(wrapper.text()).toContain("Alphanet");
+    expect(wrapper.text()).toContain("m/84'/0'/0'/0/0");
+  });
+
+  it("should cycle the address index when Generate New Address is clicked", async () => {
+    vi.mocked(loadWallet).mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: VALID_12,
+      createdAt: 0,
+    });
+
+    const wrapper = mountReceive();
+    await flushPromises();
+
+    const gen = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Generate New Address");
+    expect(gen).toBeDefined();
+    await gen!.trigger("click");
+
+    expect(deriveReceiveAddress).toHaveBeenCalledWith(VALID_12, "signet", 1);
+    expect(wrapper.text()).toContain("m/84'/1'/0'/0/1");
+    expect(wrapper.text()).toContain("Address index");
+  });
+
+  it("should reset the index to 0 when switching networks", async () => {
+    vi.mocked(loadWallet).mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: VALID_12,
+      createdAt: 0,
+    });
+
+    const wrapper = mountReceive();
+    await flushPromises();
+
+    const gen = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Generate New Address");
+    await gen!.trigger("click");
+    expect(deriveReceiveAddress).toHaveBeenLastCalledWith(VALID_12, "signet", 1);
+
+    const alphanet = wrapper
+      .findAll("button")
+      .find((b) => b.text() === "Alphanet");
+    await alphanet!.trigger("click");
+    expect(deriveReceiveAddress).toHaveBeenLastCalledWith(VALID_12, "alphanet", 0);
+  });
 });

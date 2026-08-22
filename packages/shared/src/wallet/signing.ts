@@ -41,10 +41,12 @@ function hash160(data: Uint8Array): Uint8Array {
 
 /**
  * SLIP-0044 coin type. eCash inherits Bitcoin's registry slots at the
- * fork point: 0 for the production chain, 1 for all test networks.
+ * fork point: 0 for mainnet and mainnet forks (alphanet — a fork of the
+ * mainnet UTXO set, so it shares mainnet's addresses), 1 for all test
+ * networks (testnet, signet, regtest, l2l-signet).
  */
 function coinTypeFor(network: NetworkId): number {
-  return network === "mainnet" ? 0 : 1;
+  return network === "mainnet" || network === "alphanet" ? 0 : 1;
 }
 
 /**

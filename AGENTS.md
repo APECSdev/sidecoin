@@ -70,8 +70,8 @@ must be green before commit.
 
 | Package | Tests |
 | --- | --- |
-| `@sidecoin/shared` | 238 passed, 1 skipped (12 files) |
-| `@sidecoin/wallet` | 339 passed (26 files) |
+| `@sidecoin/shared` | 244 passed, 1 skipped (12 files) |
+| `@sidecoin/wallet` | 346 passed (26 files) |
 | `@sidecoin/web` | 118 passed (3 files) |
 | `@sidecoin/explorer` | 43 passed (7 files) |
 | `@sidecoin/smarthub` | 5 passed (1 file) |
@@ -106,7 +106,9 @@ must be green before commit.
    `packages/shared/src/wallet/derivation.ts`:
    - `deriveReceiveAddress(mnemonic, network, index=0)` — BIP-84 P2WPKH
      (`bc1q…`/`tb1q…`), path `m/84'/{coinType}'/0'/0/{index}`. Used for L1
-     (signet today). Consumed by `ReceiveView.vue` and `DashboardView.vue`.
+     (signet today). `coinTypeFor` returns 0 for mainnet + alphanet (a
+     mainnet fork — shared UTXO set, same addresses) and 1 for all test
+     networks. Consumed by `ReceiveView.vue` and `DashboardView.vue`.
    - `deriveDrivechainAddress(mnemonic, index=1)` — SLIP-0010 ed25519 +
      blake3 XOF (20 bytes) + base58 (no checksum, no version byte), path
      `m/1'/0'/0'/{index}'` (all hardened). Slot-independent: identical for
@@ -132,6 +134,18 @@ must be green before commit.
    `packages/wallet/src/keystore.ts` stores the mnemonic in `localStorage`
    under `sidecoin.wallet.v1`. This is acceptable only for throwaway signet
    funds; encryption-at-rest must land before any mainnet support.
+   `StoredWallet.network` is typed as the literal `"signet"` (not the full
+   `NetworkId` union) — the wallet always targets signet today.
+5. **`NetworkId` has 6 members** (`packages/shared/src/types/network.ts`):
+   `mainnet`, `testnet`, `signet`, `regtest`, `l2l-signet`, `alphanet`.
+   `alphanet` is the ECX alpha practice network (a fork of mainnet with a
+   PoW difficulty reset — authoritative config at
+   `https://drivechain.dev/config`). It is a mainnet fork: `coinTypeFor`
+   returns 0 and `bech32.hrp` is `"bc"`, so the same mnemonic produces the
+   same addresses as mainnet. It is NOT production (`isProduction: false`).
+   The Receive page (`ReceiveView.vue`) exposes a session-only
+   Signet/Alphanet selector that re-derives the L1 address on switch — it
+   is NOT persisted to the keystore. `DEFAULT_NETWORK_ID` is still `"signet"`.
 5. **`@sidecoin/api-client` talks to the external Worker.** Its
    `DEFAULT_BASE_URL` is `https://sidecoin.app/v1`. It never imports from
    `sidecoin-api`; it consumes the public HTTPS surface.

@@ -126,6 +126,72 @@ gated by `ADDRESS_DERIVATION_SLOTS = {9, 4, 88}` with `EVM_ADDRESS_SLOTS =
 {88}` routing to the EVM derivation. Canonical test vectors are in
 `packages/shared/src/__tests__/derivation.test.ts`.
 
+## Next work item — Alphanet network + Receive page address selection
+
+### STATUS: DONE ✅
+
+Added the **Alphanet** practice network and a **network + address selector**
+to the Receive page. Commit: `feat(wallet): Alphanet network + Receive page
+address selector`.
+
+### What was implemented
+
+1. **`alphanet` added to `NetworkId`**
+   (`packages/shared/src/types/network.ts`) — now 6 members: `mainnet`,
+   `testnet`, `signet`, `regtest`, `l2l-signet`, `alphanet`. Alphanet is the
+   ECX alpha practice network (a fork of mainnet with a PoW difficulty
+   reset). Authoritative config: `https://drivechain.dev/config` (id
+   `alphanet`, family `ecash`).
+2. **`ECASH_ALPHANET` config** added to `packages/shared/src/chain/config.ts`.
+   Because alphanet forks the mainnet UTXO set, it inherits mainnet's address
+   format verbatim: coin type 0, bech32 HRP `"bc"`, P2PKH/P2SH version bytes
+   `0x00`/`0x05`. Network params from drivechain.dev: magic `"eca5a104"`,
+   fork height `963648`, P2P port `8533`, seed `seed.alpha.ecash.ninja`.
+   `isProduction: false`; `sidechainsAtLaunch: 0`.
+3. **Registered in `NETWORKS` + `NETWORK_IDS`**
+   (`packages/shared/src/chain/networks.ts`). `DEFAULT_NETWORK_ID` is still
+   `"signet"`.
+4. **`coinTypeFor` updated** in `derivation.ts` + `signing.ts` (shared) and
+   `hardware/network.ts` (wallet): returns 0 for `mainnet` + `alphanet`
+   (mainnet fork), 1 for test networks.
+5. **`coinIdFor`** (wallet hardware) returns `"btc"` for alphanet.
+   **`btcNetworkFor`** (ledger) maps alphanet → `networks.bitcoin`.
+6. **Receive page network selector** (`ReceiveView.vue`): a session-only
+   Signet/Alphanet segmented control that re-derives the L1 address on
+   switch. Switching networks resets the address index to 0. The selection is
+   NOT persisted to the keystore — the wallet still targets signet by
+   default.
+7. **"Generate New Address" enabled** (`ReceiveView.vue`): the previously
+   disabled button now cycles the address index (0 → 1 → 2 …), deriving a
+   fresh address within the selected network. Session-only.
+8. **Derivation path display is dynamic**: `m/84'/{coinType}'/0'/0/{index}`
+   updates to reflect the selected network (coin type) and index. An
+   "Address index" row was added to the address details.
+9. **Tests**: shared +6 (alphanet config assertions, network registry
+   counts 5→6, getTestNetworks 4→5, isValidNetworkId alphanet); wallet
+   +5 (ReceiveView network selector renders, defaults to signet, alphanet
+   re-derives with coin type 0, Generate New Address cycles index, switching
+   networks resets index) + 2 (hardware/network alphanet coinType/coinId).
+   Full monorepo green.
+
+### Key decisions
+
+- **Alphanet is a mainnet fork** — same addresses as mainnet (coin type 0,
+  `bc` HRP). Confirmed by the drivechain.dev config (`"chain": "main"`) and
+  the "fork of mainnet" description. The same mnemonic produces the same
+  addresses on both chains.
+- **Receive selector is session-only** — the operator confirmed it does NOT
+  need to persist; it only needs to display in the UI. The keystore still
+  hardcodes `network: "signet"`.
+- **Only Signet + Alphanet are offered** on the Receive page (per the
+  operator's request to switch between those two). The other 4 networks
+  remain in `NETWORK_IDS` for completeness but are not surfaced in the UI.
+- **rpcPort 8332** for alphanet is inherited from mainnet (not published in
+  the drivechain.dev config) — update if the node software publishes a
+  distinct port.
+- **Platforms page sidechain switching** is out of scope for this session
+  (operator's instruction #3) — it will be a follow-up.
+
 ## In-flight
 
 (Nothing else in-flight. Add items here when work starts.)

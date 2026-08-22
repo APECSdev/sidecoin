@@ -11,6 +11,7 @@ import {
   ECASH_SIGNET,
   ECASH_REGTEST,
   ECASH_L2L_SIGNET,
+  ECASH_ALPHANET,
 } from "../chain/config";
 
 import {
@@ -101,6 +102,31 @@ describe("Chain Config", () => {
     expect(ECASH_L2L_SIGNET.fork.sidechainsAtLaunch).toBe(7);
   });
 
+  it("alphanet is NOT marked as production", () => {
+    expect(ECASH_ALPHANET.network.isProduction).toBe(false);
+  });
+
+  it("alphanet uses the mainnet 'bc' bech32 HRP (mainnet fork)", () => {
+    expect(ECASH_ALPHANET.bech32.hrp).toBe("bc");
+  });
+
+  it("alphanet inherits mainnet P2PKH/P2SH version bytes", () => {
+    expect(ECASH_ALPHANET.addressVersions.p2pkh).toBe(0x00);
+    expect(ECASH_ALPHANET.addressVersions.p2sh).toBe(0x05);
+  });
+
+  it("alphanet network magic matches the drivechain.dev config", () => {
+    expect(ECASH_ALPHANET.networkParams.magic).toBe("eca5a104");
+  });
+
+  it("alphanet fork height is 963648 (from drivechain.dev config)", () => {
+    expect(ECASH_ALPHANET.fork.activationBlockHeight).toBe(963_648);
+  });
+
+  it("alphanet has 0 sidechains at launch", () => {
+    expect(ECASH_ALPHANET.fork.sidechainsAtLaunch).toBe(0);
+  });
+
   it("regtest has BIP-300/301 active from block 0", () => {
     expect(ECASH_REGTEST.fork.activationBlockHeight).toBe(0);
   });
@@ -119,17 +145,18 @@ describe("Chain Config", () => {
 // ---------------------------------------------------------------------------
 
 describe("Network Registry", () => {
-  it("NETWORKS contains all 5 network IDs", () => {
-    expect(Object.keys(NETWORKS)).toHaveLength(5);
+  it("NETWORKS contains all 6 network IDs", () => {
+    expect(Object.keys(NETWORKS)).toHaveLength(6);
     expect(NETWORKS.mainnet).toBeDefined();
     expect(NETWORKS.testnet).toBeDefined();
     expect(NETWORKS.signet).toBeDefined();
     expect(NETWORKS.regtest).toBeDefined();
     expect(NETWORKS["l2l-signet"]).toBeDefined();
+    expect(NETWORKS.alphanet).toBeDefined();
   });
 
-  it("NETWORK_IDS lists all 5 IDs in order", () => {
-    expect(NETWORK_IDS).toEqual(["mainnet", "testnet", "signet", "regtest", "l2l-signet"]);
+  it("NETWORK_IDS lists all 6 IDs in order", () => {
+    expect(NETWORK_IDS).toEqual(["mainnet", "testnet", "signet", "regtest", "l2l-signet", "alphanet"]);
   });
 
   it("DEFAULT_NETWORK_ID is signet during pre-fork development", () => {
@@ -163,6 +190,7 @@ describe("Network Registry", () => {
     expect(isValidNetworkId("mainnet")).toBe(true);
     expect(isValidNetworkId("signet")).toBe(true);
     expect(isValidNetworkId("l2l-signet")).toBe(true);
+    expect(isValidNetworkId("alphanet")).toBe(true);
     expect(isValidNetworkId("invalid")).toBe(false);
     expect(isValidNetworkId("")).toBe(false);
   });
@@ -173,14 +201,15 @@ describe("Network Registry", () => {
     expect(prod[0].network.id).toBe("mainnet");
   });
 
-  it("getTestNetworks returns testnet, signet, regtest, l2l-signet", () => {
+  it("getTestNetworks returns testnet, signet, regtest, l2l-signet, alphanet", () => {
     const test = getTestNetworks();
-    expect(test).toHaveLength(4);
+    expect(test).toHaveLength(5);
     const ids = test.map((n) => n.network.id);
     expect(ids).toContain("testnet");
     expect(ids).toContain("signet");
     expect(ids).toContain("regtest");
     expect(ids).toContain("l2l-signet");
+    expect(ids).toContain("alphanet");
   });
 });
 

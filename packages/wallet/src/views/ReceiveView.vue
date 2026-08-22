@@ -1,18 +1,35 @@
 <!-- packages/wallet/src/views/ReceiveView.vue -->
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from "vue";
+import { computed, ref, watch, onMounted } from "vue";
 import QrcodeVue from "qrcode.vue";
 import { deriveReceiveAddress } from "@sidecoin/shared";
+import type { NetworkId } from "@sidecoin/shared";
 import { loadWallet } from "../keystore";
 
 type ReceiveTab = "address" | "payment-code" | "history";
 
+// The two networks a user can receive to from this page. Signet is the
+// live signet ("signet live" on ecash.com); Alphanet is the ECX alpha
+// practice network (a mainnet fork — see https://drivechain.dev/config).
+// The choice is session-only: it is NOT persisted to the keystore.
+const RECEIVE_NETWORKS: { id: NetworkId; label: string }[] = [
+  { id: "signet", label: "Signet" },
+  { id: "alphanet", label: "Alphanet" },
+];
+
 // Address issuance is derived from the wallet key. On mount we load the
 // stored mnemonic and derive the BIP-84 (P2WPKH) receive address at
-// index 0. If no wallet exists yet, the pending state is shown instead.
+// index 0 for the wallet's persisted network. If no wallet exists yet, the
+// pending state is shown instead.
+//
+// The network selector + address index are session-only refs — switching
+// re-derives a fresh address without touching the keystore.
+const mnemonic = ref("");
+const hasWallet = ref(false);
+const selectedNetwork = ref<NetworkId>("signet");
+const addressIndex = ref(0);
 const address = ref("");
-const walletNetwork = ref("");
 const copied = ref(false);
 const copiedPaymentCode = ref(false);
 const error = ref("");
@@ -25,25 +42,60 @@ const receiveTabs: { id: ReceiveTab; label: string }[] = [
 ];
 
 const networkLabel = computed(() => {
-  if (!walletNetwork.value) return "Pending";
-  return walletNetwork.value === "signet" ? "Signet" : walletNetwork.value;
+  const found = RECEIVE_NETWORKS.find((n) => n.id === selectedNetwork.value);
+  return found ? found.label : selectedNetwork.value;
 });
+
+// BIP-44 coin type: 0 for mainnet + mainnet forks (alphanet), 1 for test
+// networks. Mirrors the coinTypeFor logic in @sidecoin/shared/wallet/derivation.
+const coinType = computed(() =>
+  selectedNetwork.value === "mainnet" || selectedNetwork.value === "alphanet" ? 0 : 1,
+);
+
+const derivationPath = computed(
+  () => `m/84'/${coinType.value}'/0'/0/${addressIndex.value}`,
+);
 
 const paymentCodePreview = computed(() => {
   if (!address.value) return "";
   return `sidecoin:receive:${address.value}`;
 });
 
+// Re-derive the receive address for the currently selected network + index.
+// Called on mount and whenever the network or index changes (session-only).
+function updateAddress() {
+  if (!hasWallet.value || !mnemonic.value) {
+    address.value = "";
+    return;
+  }
+  try {
+    error.value = "";
+    address.value = deriveReceiveAddress(
+      mnemonic.value,
+      selectedNetwork.value,
+      addressIndex.value,
+    );
+  } catch (e) {
+    console.error("[ReceiveView] Failed to derive address:", e);
+    address.value = "";
+    error.value = "Unable to derive a receive address from the stored key.";
+  }
+}
+
+// Cycle to the next receive address index (session-only, not persisted).
+function generateNewAddress() {
+  addressIndex.value += 1;
+}
+
+watch([selectedNetwork, addressIndex], updateAddress);
+
 onMounted(() => {
   const wallet = loadWallet();
   if (!wallet) return; // no key yet — pending state renders
-  try {
-    walletNetwork.value = wallet.network;
-    address.value = deriveReceiveAddress(wallet.mnemonic, wallet.network, 0);
-  } catch (e) {
-    console.error("[ReceiveView] Failed to derive address:", e);
-    error.value = "Unable to derive a receive address from the stored key.";
-  }
+  hasWallet.value = true;
+  mnemonic.value = wallet.mnemonic;
+  selectedNetwork.value = wallet.network;
+  updateAddress();
 });
 
 async function copyAddress() {
@@ -89,9 +141,6 @@ async function copyPaymentCode() {
         </div>
 
         <div class="flex flex-wrap gap-2">
-          <span class="rounded-full bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-300">
-            {{ networkLabel }}
-          </span>
           <span class="rounded-full bg-ecash-900 px-3 py-1 text-xs font-semibold text-ecash-400">
             Native SegWit
           </span>
@@ -130,7 +179,33 @@ async function copyPaymentCode() {
         </div>
       </div>
 
-      <div v-if="selectedTab === 'address'" class="mt-6 grid gap-6 xl:grid-cols-[0.8fr_1fr]">
+      <div v-if="selectedTab === 'address'" class="mt-6">
+        <!-- Network selector — session-only, not persisted to the keystore. -->
+        <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p class="text-xs uppercase tracking-widest text-gray-500">
+              Receive to network
+            </p>
+            <p class="mt-1 text-xs text-gray-500">
+              Select which network to receive to. This is a session-only
+              choice and is not saved to your wallet.
+            </p>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="net in RECEIVE_NETWORKS"
+              :key="net.id"
+              type="button"
+              class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
+              :class="selectedNetwork === net.id ? 'bg-ecash-600 text-white' : 'bg-gray-950 text-gray-400 hover:bg-gray-800 hover:text-white'"
+              @click="selectedNetwork = net.id; addressIndex = 0"
+            >
+              {{ net.label }}
+            </button>
+          </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-[0.8fr_1fr]">
         <div class="rounded-xl border border-gray-800 bg-gray-950 p-6">
           <p class="text-xs uppercase tracking-widest text-gray-500">
             Scan this QR code
@@ -161,8 +236,8 @@ async function copyPaymentCode() {
                 {{ copied ? "Copied ✓" : "Copy Address" }}
               </button>
               <button
-                disabled
-                class="rounded-lg border border-gray-800 px-4 py-2 text-sm font-semibold text-gray-600"
+                class="rounded-lg border border-gray-800 px-4 py-2 text-sm font-semibold text-gray-300 hover:bg-gray-800 hover:text-white"
+                @click="generateNewAddress"
               >
                 Generate New Address
               </button>
@@ -183,14 +258,19 @@ async function copyPaymentCode() {
                 <dt class="text-xs text-gray-500">Address type</dt>
                 <dd class="mt-1 font-semibold text-gray-200">Native SegWit</dd>
               </div>
+              <div class="rounded-lg border border-gray-800 bg-gray-900 p-3">
+                <dt class="text-xs text-gray-500">Address index</dt>
+                <dd class="mt-1 font-mono text-xs text-gray-300">{{ addressIndex }}</dd>
+              </div>
               <div class="rounded-lg border border-gray-800 bg-gray-900 p-3 sm:col-span-2">
                 <dt class="text-xs text-gray-500">Derivation</dt>
                 <dd class="mt-1 font-mono text-xs text-gray-300">
-                  m/84'/1'/0'/0/0
+                  {{ derivationPath }}
                 </dd>
               </div>
             </dl>
           </div>
+        </div>
         </div>
       </div>
 

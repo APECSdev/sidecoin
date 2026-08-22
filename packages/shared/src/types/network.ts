@@ -13,8 +13,19 @@
  * - regtest: Local regression testing (single-node, instant blocks)
  * - l2l-signet: Layer-2-Labs signet environment for drivechain integration
  *               (the network the wallet clients target against the live indexer)
+ * - alphanet: The ECX alpha practice network — a fork of mainnet with a PoW
+ *             difficulty reset, used to rehearse the upcoming mainnet launch.
+ *             Authoritative config: https://drivechain.dev/config
+ *             Shares mainnet's address format (coin type 0, "bc" HRP) because
+ *             it forks the mainnet UTXO set; it is NOT a production network.
  */
-export type NetworkId = "mainnet" | "testnet" | "signet" | "regtest" | "l2l-signet";
+export type NetworkId =
+  | "mainnet"
+  | "testnet"
+  | "signet"
+  | "regtest"
+  | "l2l-signet"
+  | "alphanet";
 
 /**
  * Human-readable network metadata used for display in the UI

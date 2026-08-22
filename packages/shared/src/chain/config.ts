@@ -300,3 +300,81 @@ export const ECASH_L2L_SIGNET: ChainConfig = {
     sidechainsAtLaunch: 7,
   },
 };
+
+// ---------------------------------------------------------------------------
+// eCash Alphanet
+//
+// The ECX alpha "practice" network — a fork of mainnet with a PoW difficulty
+// reset, used to rehearse the upcoming mainnet launch. Authoritative config:
+// https://drivechain.dev/config (id "alphanet", family "ecash").
+//
+// Because alphanet forks the mainnet UTXO set, it inherits mainnet's address
+// format verbatim: coin type 0, bech32 HRP "bc", P2PKH/P2SH version bytes
+// 0x00/0x05. The same mnemonic produces the same addresses on both chains.
+//
+// Network parameters (magic, fork height, P2P port) come directly from the
+// drivechain.dev config. This is NOT a production network (isProduction:false).
+// ---------------------------------------------------------------------------
+
+export const ECASH_ALPHANET: ChainConfig = {
+  network: {
+    id: "alphanet",
+    displayName: "eCash Alphanet",
+    shortName: "alpha",
+    isProduction: false,
+  },
+
+  //
+  // Address version bytes — inherited from mainnet (alphanet is a mainnet
+  // fork with a shared UTXO set, so the address formats must match exactly).
+  //
+  addressVersions: {
+    p2pkh: 0x00,   // '1...' addresses (same as mainnet)
+    p2sh: 0x05,    // '3...' addresses (same as mainnet)
+    xpub: 0x0488b21e,  // xpub... (same as mainnet)
+    xprv: 0x0488ade4,  // xprv... (same as mainnet)
+  },
+
+  //
+  // Bech32 human-readable part — "bc", same as mainnet. Alphanet addresses
+  // are byte-identical to mainnet addresses; only the chain differs.
+  //
+  bech32: {
+    hrp: "bc",
+  },
+
+  //
+  // P2P network parameters — from the official drivechain.dev config.
+  // network_magic "eca5a104", fork_height 963648, p2p seed port 8533.
+  // rpcPort is not published in the drivechain.dev config; 8332 is the
+  // mainnet default inherited by this mainnet fork.
+  //
+  networkParams: {
+    magic: "eca5a104",    // From https://drivechain.dev/config (alphanet)
+    defaultPort: 8533,     // From seed.alpha.ecash.ninja:8533
+    rpcPort: 8332,         // Inherited from mainnet (not published in config)
+    dnsSeeds: [
+      "seed.alpha.ecash.ninja",
+    ],
+  },
+
+  consensus: {
+    powAlgorithm: "sha256d",
+    targetBlockTimeSeconds: 600,                // 10 minutes
+    difficultyAdjustmentInterval: 2016,         // ~2 weeks
+    initialSubsidySatoshis: BigInt("312500000"), // 3.125 BTC (post-4th-halving)
+    halvingInterval: 210_000,
+    maxBlockWeight: 4_000_000,                  // SegWit weight units
+    coinbaseMaturity: 100,
+  },
+
+  fork: {
+    // From drivechain.dev config: alphanet forks mainnet at height 963648
+    // with a PoW difficulty reset (the "practice" fork point).
+    activationBlockHeight: 963_648,
+    activationTimestampUtc: "2026-08-21T15:00:00Z",
+    bip300Active: true,
+    bip301Active: true,
+    sidechainsAtLaunch: 0,   // No sidechains listed in the alphanet config yet
+  },
+};
