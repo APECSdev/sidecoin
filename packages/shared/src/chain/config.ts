@@ -80,8 +80,8 @@ export const ECASH_MAINNET: ChainConfig = {
   },
 
   fork: {
-    activationBlockHeight: 964_000,
-    activationTimestampUtc: "2026-08-21T15:00:00Z",
+    activationBlockHeight: 973_728,
+    activationTimestampUtc: "2026-10-31T15:00:00Z",
     bip300Active: true,
     bip301Active: true,
     sidechainsAtLaunch: 7,
@@ -129,8 +129,8 @@ export const ECASH_TESTNET: ChainConfig = {
   },
 
   fork: {
-    activationBlockHeight: 964_000,
-    activationTimestampUtc: "2026-08-21T15:00:00Z",
+    activationBlockHeight: 973_728,
+    activationTimestampUtc: "2026-10-31T15:00:00Z",
     bip300Active: true,
     bip301Active: true,
     sidechainsAtLaunch: 7,
@@ -181,8 +181,8 @@ export const ECASH_SIGNET: ChainConfig = {
   },
 
   fork: {
-    activationBlockHeight: 964_000,
-    activationTimestampUtc: "2026-08-21T15:00:00Z",
+    activationBlockHeight: 973_728,
+    activationTimestampUtc: "2026-10-31T15:00:00Z",
     bip300Active: true,
     bip301Active: true,
     sidechainsAtLaunch: 7,
@@ -293,8 +293,8 @@ export const ECASH_L2L_SIGNET: ChainConfig = {
   },
 
   fork: {
-    activationBlockHeight: 964_000,
-    activationTimestampUtc: "2026-08-21T15:00:00Z",
+    activationBlockHeight: 973_728,
+    activationTimestampUtc: "2026-10-31T15:00:00Z",
     bip300Active: true,
     bip301Active: true,
     sidechainsAtLaunch: 7,
@@ -372,7 +372,7 @@ export const ECASH_ALPHANET: ChainConfig = {
     // From drivechain.dev config: alphanet forks mainnet at height 963648
     // with a PoW difficulty reset (the "practice" fork point).
     activationBlockHeight: 963_648,
-    activationTimestampUtc: "2026-08-21T15:00:00Z",
+    activationTimestampUtc: "2026-10-31T15:00:00Z",
     bip300Active: true,
     bip301Active: true,
     sidechainsAtLaunch: 0,   // No sidechains listed in the alphanet config yet

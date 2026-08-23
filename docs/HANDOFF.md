@@ -192,6 +192,63 @@ address selector`.
 - **Platforms page sidechain switching** is out of scope for this session
   (operator's instruction #3) — it will be a follow-up.
 
+## Next work item — Fork date pushback + Snowside description trim + Platforms polish
+
+### STATUS: DONE ✅
+
+Updated the fork activation date across the entire repo and trimmed the
+Snowside platform description. Commits: `fix(wallet): Platforms page shows
+addresses on API failure + Snowside ordering + Go PRO!`,
+`fix: update fork date to 2026-10-31 / block ~973,728 + trim Snowside text`.
+
+### What was implemented
+
+1. **Fork date pushed back to October 31, 2026** (block ~973,728, 15:00 UTC).
+   Authoritative source: [ecash.com](https://ecash.com) — the live page title
+   says "Mainnet Block ~973,728" and the bundled JS
+   (`/assets/index-*.js`) hard-codes `2026-10-31T15:00:00Z`. The previous
+   target was Aug 21, 2026 / block ~964,000. Updated everywhere it appeared:
+   - `packages/shared/src/chain/config.ts` — every `ChainConfig.fork`
+     (mainnet, testnet, signet, l2l-signet). Regtest (block 0) and alphanet
+     (963,648 from drivechain.dev) are unchanged.
+   - `packages/shared/src/types/network.ts` doc comments.
+   - `packages/shared/src/chain/utils.ts` subsidy comment.
+   - `packages/web` — `ForkCountdown.vue`, `UrgencyBanner.astro`,
+     `LiveStatsBar.astro`, `pages/index.astro`.
+   - `packages/wallet` + `packages/desktop` — dashboard/settings display
+     strings + Rust node log line.
+   - `README.md`.
+   - Tests: `chain-config.test.ts` (fork height 973_728, countdown
+     relative dates moved to Oct 30 / Nov 1, subsidy test label),
+     `pro-page.test.ts` (FORK_DATE assertions → Oct 31 / month 9 / day 31,
+     countdown "from" → 2026-10-11, "after" → 2026-11-01),
+     `mobile/App.test.tsx` (timestamp literal + block-height regex /973/).
+2. **Platforms page polish** (from the preceding commit):
+   - `SidechainsView.vue` now falls back to the static `PLATFORMS` registry
+     when the live `getSidechains()` API call fails, so locally-derived
+     Thunder/Snowside addresses (no network needed) stay visible. The error
+     is a non-fatal banner, not a full-page error.
+   - Snowside ordered right after Thunder (before zSide) via
+     `PLATFORM_DISPLAY_PRIORITY.snowside = 2`.
+   - Header CTA text `"View PRO benefits"` → `"Go PRO!"`.
+3. **Snowside description trimmed** in `packages/wallet/src/data/platforms.ts`:
+   removed the trailing "BIP-300 slot 88 has been requested but is not yet
+   officially assigned." sentence (per operator — text was too long). The
+   "Proposed" status badge is retained.
+4. **AGENTS.md** — added convention #7 (fork date + grep recipe) and #8
+   (primary external sources, including the
+   [ecash-com/fast-facts](https://github.com/ecash-com/fast-facts)
+   integration guide). Fixed a duplicated item-number (two #5s).
+
+### Note on the fast-facts README
+
+The `ecash-com/fast-facts` README (last updated 2026-08-11) still lists the
+OLD fork target (block ~963,648, August 22, 2026). It lags behind the live
+ecash.com site, which now shows block ~973,728 / October 31, 2026. The live
+site is authoritative for the fork date; fast-facts remains useful for
+stable facts (network magic/ports, replay protection, node software,
+address-format parity with Bitcoin).
+
 ## In-flight
 
 (Nothing else in-flight. Add items here when work starts.)

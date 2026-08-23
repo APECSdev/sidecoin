@@ -56,7 +56,7 @@ pub fn run() {
         .invoke_handler(invoke_handler)
         .setup(|_app| {
             tracing::info!("Sidecoin Desktop starting — https://ecash.com");
-            tracing::info!("eCash hard fork target: 2026-08-21 15:00Z (block ~964,000)");
+            tracing::info!("eCash hard fork target: 2026-10-31 15:00Z (block ~973,728)");
             Ok(())
         })
         .run(tauri::generate_context!())

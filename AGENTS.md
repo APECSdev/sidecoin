@@ -146,6 +146,36 @@ must be green before commit.
    The Receive page (`ReceiveView.vue`) exposes a session-only
    Signet/Alphanet selector that re-derives the L1 address on switch — it
    is NOT persisted to the keystore. `DEFAULT_NETWORK_ID` is still `"signet"`.
+7. **Fork activation is block ~973,728 on 2026-10-31 15:00 UTC** (pushed back
+   from the earlier Aug 21 / block ~964,000 target). Authoritative source:
+   [ecash.com](https://ecash.com) (live page title + bundled JS
+   `2026-10-31T15:00:00Z`). This value lives in every `ChainConfig.fork`
+   (`packages/shared/src/chain/config.ts`) plus the countdown components in
+   `packages/web`, `packages/wallet`, `packages/desktop`, and the Rust node
+   log in `packages/desktop/src-tauri/src/lib.rs`. Regtest is the exception
+   (fork at block 0); alphanet forks at height 963,648 (from drivechain.dev).
+   When the fork date changes again, grep for `2026-10-31` and `973_728` /
+   `973,728` and update every hit.
+8. **Primary external sources for eCash/ECX facts** (consult before changing
+   consensus params, address formats, or fork values):
+   - [ecash.com](https://ecash.com) — official site, FAQ, live fork
+     countdown (authoritative for the current fork block + date).
+   - [github.com/ecash-com/fast-facts](https://github.com/ecash-com/fast-facts)
+     — integration guide + per-topic docs (node setup, keys/addresses,
+     replay protection, sidechains, mining, dry-runs). NOTE: its README can
+     lag behind ecash.com; always cross-check the fork block/date against
+     the live site. Useful for stable facts: network magic/ports, replay
+     protection (`nLockTime = 499999999`), node software (Bitcoin Core v31.1
+     fork at `github.com/ecash-com/bitcoin`), address/key format parity with
+     Bitcoin.
+   - [drivechain.dev/config](https://drivechain.dev/config) — JSON network
+     + sidechain registry (backends, explorers, services, ports, magic).
+     Source for `alphanet`.
+   - [drivechain.info/dev.txt](https://drivechain.info/dev.txt) — canonical
+     fast-info file, updated frequently.
+   - [BIP-300](https://github.com/bitcoin/bips/blob/master/bip-0300.mediawiki),
+     [BIP-301](https://github.com/bitcoin/bips/blob/master/bip-0301.mediawiki)
+     — drivechain + BMM specs.
 5. **`@sidecoin/api-client` talks to the external Worker.** Its
    `DEFAULT_BASE_URL` is `https://sidecoin.app/v1`. It never imports from
    `sidecoin-api`; it consumes the public HTTPS surface.

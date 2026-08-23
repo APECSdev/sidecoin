@@ -7,7 +7,7 @@
 /**
  * Identifies which network environment the wallet is targeting.
  *
- * - mainnet: The live eCash hard-fork chain (post block ~964,000)
+ * - mainnet: The live eCash hard-fork chain (post block ~973,728)
  * - testnet: Public test network for pre-fork integration testing
  * - signet: The signet instance referenced on ecash.com ("signet live")
  * - regtest: Local regression testing (single-node, instant blocks)
@@ -132,7 +132,7 @@ export interface ConsensusParams {
 
   /**
    * Initial subsidy per block in satoshis.
-   * At block ~964,000 Bitcoin's subsidy is 3.125 BTC (post 4th halving).
+   * At block ~973,728 Bitcoin's subsidy is 3.125 BTC (post 4th halving).
    * eCash inherits this subsidy schedule from the fork point.
    */
   readonly initialSubsidySatoshis: bigint;
@@ -160,13 +160,13 @@ export interface ConsensusParams {
 export interface ForkParams {
   /**
    * Approximate block height at which the hard fork activates.
-   * From ecash.com: target block ~964,000.
+   * From ecash.com: target block ~973,728.
    */
   readonly activationBlockHeight: number;
 
   /**
    * UTC timestamp for the planned fork activation.
-   * From ecash.com: 2026-08-21T15:00:00Z
+   * From ecash.com: 2026-10-31T15:00:00Z
    */
   readonly activationTimestampUtc: string;
 

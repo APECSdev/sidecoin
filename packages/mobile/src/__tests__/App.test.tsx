@@ -182,7 +182,7 @@ describe("App", () => {
 
   it("should display the fork activation timestamp", () => {
     render(<App />);
-    expect(screen.getByText("2026-08-21T15:00:00Z")).toBeTruthy();
+    expect(screen.getByText("2026-10-31T15:00:00Z")).toBeTruthy();
   });
 
   it("should display 'Chain' section", () => {
@@ -263,7 +263,7 @@ describe("App", () => {
 
   it("should display the block height estimate", () => {
     render(<App />);
-    // Block ~964,000 formatted with toLocaleString
-    expect(screen.getByText(/964/)).toBeTruthy();
+    // Block ~973,728 formatted with toLocaleString
+    expect(screen.getByText(/973/)).toBeTruthy();
   });
 });

@@ -465,7 +465,7 @@ function platformHref(platformId: string): string {
       <!-- Fork countdown banner -->
       <div class="rounded-lg border border-ecash-800 bg-ecash-950 p-4">
         <p class="text-sm font-semibold text-ecash-400">
-          eCash Hard Fork — 2026-08-21 15:00Z — Block ~964,000
+          eCash Hard Fork — 2026-10-31 15:00Z — Block ~973,728
         </p>
         <p class="mt-1 text-xs text-ecash-600">
           BIP-300 / BIP-301 Drivechains · 7 platforms at launch

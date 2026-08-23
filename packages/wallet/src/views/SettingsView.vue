@@ -270,8 +270,8 @@ function closeDemoModeExplainer() {
         <p>Product: Drivechains Financial Hub</p>
         <p>Platform: Web</p>
         <p>Adapter: {{ usingDefault ? "Default" : "Custom" }}</p>
-        <p>Fork Target: 2026-08-21 15:00Z</p>
-        <p>Fork Block: ~964,000</p>
+        <p>Fork Target: 2026-10-31 15:00Z</p>
+        <p>Fork Block: ~973,728</p>
         <p>Platforms: Thunder · zSide · BitNames · BitAssets · Photon · Truthcoin · CoinShift</p>
         <p>BIPs: 300, 301</p>
       </div>

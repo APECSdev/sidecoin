@@ -56,8 +56,8 @@ function handleSave() {
       <p class="mb-2 text-sm font-semibold text-gray-400">Debug Info</p>
       <div class="space-y-1 font-mono text-xs text-gray-500">
         <p>Version: 26.5.11</p>
-        <p>Fork Target: 2026-08-21 15:00Z</p>
-        <p>Fork Block: ~964,000</p>
+        <p>Fork Target: 2026-10-31 15:00Z</p>
+        <p>Fork Block: ~973,728</p>
         <p>Sidechains: Thunder · zSide · BitNames · BitAssets · Photon · Truthcoin · CoinShift</p>
         <p>BIPs: 300, 301</p>
       </div>

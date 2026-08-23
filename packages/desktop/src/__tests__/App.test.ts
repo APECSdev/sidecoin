@@ -68,12 +68,12 @@ describe("App.vue", () => {
 
   it("should render the fork countdown date", async () => {
     const wrapper = await mountApp();
-    expect(wrapper.text()).toContain("2026-08-21 15:00Z");
+    expect(wrapper.text()).toContain("2026-10-31 15:00Z");
   });
 
   it("should render the fork block estimate", async () => {
     const wrapper = await mountApp();
-    expect(wrapper.text()).toContain("block ~964,000");
+    expect(wrapper.text()).toContain("block ~973,728");
   });
 
   it("should render 'eCash Hard Fork' text", async () => {

@@ -286,7 +286,7 @@ export const PLATFORMS: PlatformScaffold[] = [
     tagline: "Avalanche L1 EVM with native BTC gas via BMM.",
     primaryUseCase: "EVM",
     description:
-      "Snowside is a dedicated Avalanche Layer-1 for the eCash hard fork: an EVM execution environment whose native gas token is BTC, secured by Blind Merged Mining. Full Solidity/Hardhat/Foundry compatibility. BIP-300 slot 88 has been requested but is not yet officially assigned.",
+      "Snowside is a dedicated Avalanche Layer-1 for the eCash hard fork: an EVM execution environment whose native gas token is BTC, secured by Blind Merged Mining. Full Solidity/Hardhat/Foundry compatibility.",
     featureTabs: [
       {
         id: "address",

@@ -144,8 +144,8 @@ describe("DashboardView.vue", () => {
     const wrapper = mount(DashboardView);
     await flushPromises();
     expect(wrapper.text()).toContain("eCash Hard Fork");
-    expect(wrapper.text()).toContain("2026-08-21 15:00Z");
-    expect(wrapper.text()).toContain("Block ~964,000");
+    expect(wrapper.text()).toContain("2026-10-31 15:00Z");
+    expect(wrapper.text()).toContain("Block ~973,728");
   });
 
   it("should render BIP-300/301 drivechain info in fork banner", async () => {

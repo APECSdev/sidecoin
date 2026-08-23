@@ -3,7 +3,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from "vue";
 
-const FORK_DATE = new Date("2026-08-21T15:00:00Z").getTime();
+const FORK_DATE = new Date("2026-10-31T15:00:00Z").getTime();
 
 const days = ref(0);
 const hours = ref(0);
@@ -78,7 +78,7 @@ function pad(n: number): string {
         </div>
       </div>
       <p class="mt-4 font-mono text-sm text-gray-500">
-        2026-08-21 15:00 UTC · Block ~964,000
+        2026-10-31 15:00 UTC · Block ~973,728
       </p>
     </div>
 

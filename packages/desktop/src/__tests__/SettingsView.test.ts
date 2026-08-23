@@ -115,12 +115,12 @@ describe("SettingsView.vue", () => {
 
   it("should display fork target in debug info", () => {
     const wrapper = mount(SettingsView);
-    expect(wrapper.text()).toContain("Fork Target: 2026-08-21 15:00Z");
+    expect(wrapper.text()).toContain("Fork Target: 2026-10-31 15:00Z");
   });
 
   it("should display fork block in debug info", () => {
     const wrapper = mount(SettingsView);
-    expect(wrapper.text()).toContain("Fork Block: ~964,000");
+    expect(wrapper.text()).toContain("Fork Block: ~973,728");
   });
 
   it("should list all sidechain names in debug info", () => {

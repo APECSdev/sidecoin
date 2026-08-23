@@ -18,7 +18,7 @@ Web, Mobile, and Desktop wallets supporting eCash and its community of drivechai
 ## What is Sidecoin?
 
 Sidecoin is a multi-platform wallet built for the upcoming **eCash hard fork**
-(block ~964,000, **August 21 2026, 15:00 UTC**). It supports **BIP-300**
+(block ~973,728, **October 31 2026, 15:00 UTC**). It supports **BIP-300**
 Hashrate Escrows and **BIP-301** Blind Merged Mining — enabling trustless
 sidechains secured by Bitcoin's full SHA-256d hashrate.
 
@@ -63,8 +63,8 @@ position.
 
 |  |  |
 |---|---|
-| Block Height | ~964,000 |
-| Timestamp | 2026-08-21 15:00 UTC |
+| Block Height | ~973,728 |
+| Timestamp | 2026-10-31 15:00 UTC |
 | BIP-300 | Active |
 | BIP-301 | Active |
 | Sidechains | 7 active at launch (+1 proposed) |

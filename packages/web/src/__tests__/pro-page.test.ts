@@ -13,7 +13,7 @@ import { PLANS, FEATURED_CURRENCIES } from "../lib/nowpayments";
 // Fork Date Constant — must match ForkCountdown.vue and UrgencyBanner.astro
 // ---------------------------------------------------------------------------
 
-const FORK_DATE = new Date("2026-08-21T15:00:00Z");
+const FORK_DATE = new Date("2026-10-31T15:00:00Z");
 
 // ---------------------------------------------------------------------------
 // Pricing Integrity
@@ -168,10 +168,10 @@ describe("Pro Page — Temporary Monthly Minimum", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pro Page — Fork Date & Countdown", () => {
-  it("should target August 21, 2026 at 15:00 UTC", () => {
+  it("should target October 31, 2026 at 15:00 UTC", () => {
     expect(FORK_DATE.getUTCFullYear()).toBe(2026);
-    expect(FORK_DATE.getUTCMonth()).toBe(7);
-    expect(FORK_DATE.getUTCDate()).toBe(21);
+    expect(FORK_DATE.getUTCMonth()).toBe(9);  // October (0-indexed)
+    expect(FORK_DATE.getUTCDate()).toBe(31);
     expect(FORK_DATE.getUTCHours()).toBe(15);
     expect(FORK_DATE.getUTCMinutes()).toBe(0);
     expect(FORK_DATE.getUTCSeconds()).toBe(0);
@@ -183,14 +183,14 @@ describe("Pro Page — Fork Date & Countdown", () => {
   });
 
   it("should compute correct countdown from a known date", () => {
-    const from = new Date("2026-08-01T15:00:00Z");
+    const from = new Date("2026-10-11T15:00:00Z");
     const diff = FORK_DATE.getTime() - from.getTime();
     const days = Math.floor(diff / (1000 * 60 * 60 * 24));
     expect(days).toBe(20);
   });
 
   it("should show 0 for all fields when fork date has passed", () => {
-    const after = new Date("2026-08-22T00:00:00Z");
+    const after = new Date("2026-11-01T00:00:00Z");
     const diff = FORK_DATE.getTime() - after.getTime();
     expect(diff).toBeLessThan(0);
 

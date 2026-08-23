@@ -46,11 +46,11 @@ import {
 
 describe("Chain Config", () => {
   it("mainnet has correct fork activation block", () => {
-    expect(ECASH_MAINNET.fork.activationBlockHeight).toBe(964_000);
+    expect(ECASH_MAINNET.fork.activationBlockHeight).toBe(973_728);
   });
 
   it("mainnet has correct fork activation timestamp", () => {
-    expect(ECASH_MAINNET.fork.activationTimestampUtc).toBe("2026-08-21T15:00:00Z");
+    expect(ECASH_MAINNET.fork.activationTimestampUtc).toBe("2026-10-31T15:00:00Z");
   });
 
   it("mainnet has BIP-300 and BIP-301 active", () => {
@@ -279,8 +279,8 @@ describe("Satoshi Conversion", () => {
 
 describe("Fork Countdown", () => {
   it("returns positive values before the fork", () => {
-    // 2026-08-20T15:00:00Z = exactly 1 day before activation
-    const oneDayBefore = new Date("2026-08-20T15:00:00Z").getTime();
+    // 2026-10-30T15:00:00Z = exactly 1 day before activation
+    const oneDayBefore = new Date("2026-10-30T15:00:00Z").getTime();
     const countdown = getForkCountdown(ECASH_MAINNET, oneDayBefore);
 
     expect(countdown.isPast).toBe(false);
@@ -292,7 +292,7 @@ describe("Fork Countdown", () => {
   });
 
   it("returns isPast=true after the fork", () => {
-    const afterFork = new Date("2026-09-01T00:00:00Z").getTime();
+    const afterFork = new Date("2026-11-01T00:00:00Z").getTime();
     const countdown = getForkCountdown(ECASH_MAINNET, afterFork);
 
     expect(countdown.isPast).toBe(true);
@@ -300,7 +300,7 @@ describe("Fork Countdown", () => {
   });
 
   it("returns zeros at exact activation time", () => {
-    const exact = new Date("2026-08-21T15:00:00Z").getTime();
+    const exact = new Date("2026-10-31T15:00:00Z").getTime();
     const countdown = getForkCountdown(ECASH_MAINNET, exact);
 
     expect(countdown.isPast).toBe(true); // totalMilliseconds === 0, which is <= 0
@@ -340,9 +340,9 @@ describe("Block Subsidy", () => {
     expect(getBlockSubsidy(ECASH_MAINNET, 840_000)).toBe(BigInt("312500000"));
   });
 
-  it("mainnet block 964,000 (fork point) has 3.125 BTC subsidy", () => {
+  it("mainnet block 973,728 (fork point) has 3.125 BTC subsidy", () => {
     // Fork point is between 4th halving (840k) and 5th halving (1,050k)
-    expect(getBlockSubsidy(ECASH_MAINNET, 964_000)).toBe(BigInt("312500000"));
+    expect(getBlockSubsidy(ECASH_MAINNET, 973_728)).toBe(BigInt("312500000"));
   });
 
   it("mainnet block 1,050,000 has 1.5625 BTC subsidy (5th halving)", () => {

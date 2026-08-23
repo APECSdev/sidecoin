@@ -75,7 +75,7 @@ describeWebDriver("Sidecoin Desktop — App Shell", () => {
   it("should display the fork countdown in the sidebar", async () => {
     const forkDate = await $("nav .font-mono");
     await forkDate.waitForExist({ timeout: 5_000 });
-    await expect(forkDate).toHaveText("2026-08-21 15:00Z");
+    await expect(forkDate).toHaveText("2026-10-31 15:00Z");
   });
 
   // ────────────────────────────────────────────────────────

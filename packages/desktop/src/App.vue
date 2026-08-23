@@ -67,8 +67,8 @@ import { RouterView } from "vue-router";
       <div class="absolute bottom-4 left-4 right-4">
         <div class="rounded bg-gray-900 p-3 text-xs text-gray-500">
           <p>eCash Hard Fork</p>
-          <p class="mt-1 font-mono text-ecash-400">2026-08-21 15:00Z</p>
-          <p class="text-gray-600">block ~964,000</p>
+          <p class="mt-1 font-mono text-ecash-400">2026-10-31 15:00Z</p>
+          <p class="text-gray-600">block ~973,728</p>
         </div>
       </div>
     </nav>

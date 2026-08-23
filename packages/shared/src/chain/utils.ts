@@ -117,7 +117,7 @@ export function getForkCountdown(
 export function getBlockSubsidy(config: ChainConfig, blockHeight: number): bigint {
   //
   // For mainnet/testnet/signet, we need to account for the fact that
-  // the fork starts at block ~964,000, which is already past several
+  // the fork starts at block ~973,728, which is already past several
   // halvings. The initial subsidy in the config represents the subsidy
   // at the fork point, not at block 0.
   //

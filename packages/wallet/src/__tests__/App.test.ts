@@ -75,7 +75,7 @@ describe("App.vue", () => {
 
   it("should render the fork countdown date", async () => {
     const wrapper = await mountApp();
-    expect(wrapper.text()).toContain("2026-08-21 15:00Z");
+    expect(wrapper.text()).toContain("2026-10-31 15:00Z");
   });
 
   it("should use the default theme class by default", async () => {
