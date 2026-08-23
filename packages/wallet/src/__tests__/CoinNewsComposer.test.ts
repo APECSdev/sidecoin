@@ -220,7 +220,7 @@ describe("CoinNewsComposer.vue", () => {
     });
     expect(buildOpReturnScript).toHaveBeenCalledWith(PAYLOAD);
     expect(deriveSigningKey).toHaveBeenCalledWith(VALID_MNEMONIC, "signet", 0);
-    expect(getL1Utxos).toHaveBeenCalledWith(KEY.address);
+    expect(getL1Utxos).toHaveBeenCalledWith(KEY.address, {}, "signet");
     expect(selectCoinsForOpReturn).toHaveBeenCalledWith({
       utxos: expect.arrayContaining([
         expect.objectContaining({
@@ -288,7 +288,7 @@ describe("CoinNewsComposer.vue", () => {
     await broadcast!.trigger("click");
     await flushPromises();
 
-    expect(broadcastTransaction).toHaveBeenCalledWith("signet", SIGNED.hex);
+    expect(broadcastTransaction).toHaveBeenCalledWith("signet", SIGNED.hex, "signet");
     expect(wrapper.text()).toContain("Broadcast receipt");
     expect(wrapper.text()).toContain("Accepted");
     expect(wrapper.text()).toContain(SIGNED.txid);

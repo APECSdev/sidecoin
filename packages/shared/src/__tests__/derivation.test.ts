@@ -13,6 +13,7 @@ import {
   deriveReceiveAddress,
   deriveDrivechainAddress,
   deriveEvmAddress,
+  scriptPubKeyFromAddress,
 } from "../wallet/derivation";
 
 // The standard all-"abandon" BIP-39 test mnemonic.
@@ -227,6 +228,45 @@ describe("deriveEvmAddress — input validation", () => {
   it("rejects a negative index", () => {
     expect(() => deriveEvmAddress(TEST_MNEMONIC, -1)).toThrow(
       /non-negative integer/i,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// scriptPubKeyFromAddress — P2WPKH scriptPubKey recovery from a bech32 addr
+// ---------------------------------------------------------------------------
+
+describe("scriptPubKeyFromAddress", () => {
+  it("recovers the P2WPKH scriptPubKey (0014<hash160>) from a mainnet address", () => {
+    // BIP-84 spec vector 0 address (abandon…about, mainnet, index 0).
+    const addr = deriveReceiveAddress(TEST_MNEMONIC, "mainnet", 0);
+    const spk = scriptPubKeyFromAddress(addr);
+    // OP_0 (00) + push 20 bytes (14) + 20-byte hash160 = 44 hex chars.
+    expect(spk).toMatch(/^0014[0-9a-f]{40}$/);
+    expect(spk.length).toBe(44);
+  });
+
+  it("recovers the scriptPubKey from a signet (tb1q) address", () => {
+    const addr = deriveReceiveAddress(TEST_MNEMONIC, "signet", 0);
+    expect(addr.startsWith("tb1q")).toBe(true);
+    const spk = scriptPubKeyFromAddress(addr);
+    expect(spk).toMatch(/^0014[0-9a-f]{40}$/);
+  });
+
+  it("matches the hash160 embedded in the address for an alphanet (bc1q) addr", () => {
+    const addr = deriveReceiveAddress(TEST_MNEMONIC, "alphanet", 0);
+    expect(addr.startsWith("bc1q")).toBe(true);
+    // The address bech32 payload (after the 0 witness version) decodes to the
+    // same 20 bytes that appear at the tail of the scriptPubKey.
+    const spk = scriptPubKeyFromAddress(addr);
+    expect(spk).toMatch(/^0014[0-9a-f]{40}$/);
+  });
+
+  it("throws on a non-bech32 address", () => {
+    expect(() => scriptPubKeyFromAddress("not an address")).toThrow(/bech32/i);
+    // A legacy base58 address is not bech32 — should throw too.
+    expect(() => scriptPubKeyFromAddress("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2")).toThrow(
+      /bech32/i,
     );
   });
 });

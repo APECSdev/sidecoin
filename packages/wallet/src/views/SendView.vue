@@ -154,7 +154,9 @@ async function handleSend() {
     const key = deriveSigningKey(wallet.mnemonic, wallet.network, 0);
 
     // Spendable set for this one address (the only coins we hold a key for).
-    const utxoSet = await getL1Utxos(key.address);
+    // Reads from the public Esplora endpoint for the wallet's current
+    // network (signet or alphanet).
+    const utxoSet = await getL1Utxos(key.address, {}, wallet.network);
     if (utxoSet.truncated) {
       error.value =
         "The UTXO set was truncated upstream; refusing to build from an " +
@@ -189,13 +191,16 @@ async function handleSend() {
   }
 }
 
-/** Relay the already-signed tx to the signet node via the adapter. */
+/** Relay the already-signed tx to the L1 node via the public Esplora
+ * endpoint for the wallet's current network (signet or alphanet). */
 async function broadcast() {
   if (!built.value) return;
   broadcasting.value = true;
   error.value = null;
   try {
-    receipt.value = await broadcastTransaction(L1_CHAIN_ID, built.value.hex);
+    const wallet = loadWallet();
+    const network = wallet?.network ?? "signet";
+    receipt.value = await broadcastTransaction(L1_CHAIN_ID, built.value.hex, network);
   } catch (e) {
     if (e instanceof ApiError) {
       error.value = `Broadcast failed (${e.code}): ${e.message}`;

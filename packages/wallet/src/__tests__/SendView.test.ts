@@ -355,7 +355,7 @@ describe("SendView.vue", () => {
     await fillAndSend(wrapper);
 
     expect(deriveSigningKey).toHaveBeenCalledWith(VALID_MNEMONIC, "signet", 0);
-    expect(getL1Utxos).toHaveBeenCalledWith(KEY.address);
+    expect(getL1Utxos).toHaveBeenCalledWith(KEY.address, {}, "signet");
     expect(selectCoins).toHaveBeenCalled();
     expect(buildAndSignP2wpkhTransaction).toHaveBeenCalled();
     expect(wrapper.text()).toContain("Signed locally, ready to broadcast");
@@ -427,7 +427,7 @@ describe("SendView.vue", () => {
     await broadcastButton(wrapper)!.trigger("click");
     await flushPromises();
 
-    expect(broadcastTransaction).toHaveBeenCalledWith("signet", SIGNED.hex);
+    expect(broadcastTransaction).toHaveBeenCalledWith("signet", SIGNED.hex, "signet");
     expect(wrapper.text()).toContain("Broadcast receipt");
     expect(wrapper.text().toLowerCase()).toContain("accepted");
     expect(wrapper.text()).toContain(SIGNED.txid);

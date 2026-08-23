@@ -141,4 +141,44 @@ describe("App.vue", () => {
     const wrapper = await mountApp();
     expect(wrapper.find("main").text()).toContain("Dashboard");
   });
+
+  // -------------------------------------------------------------------------
+  // Sidebar network badge (Signet / Alphanet)
+  // -------------------------------------------------------------------------
+
+  it("renders the sidebar network badge defaulting to Signet when no wallet", async () => {
+    const wrapper = await mountApp();
+    const badge = wrapper.find('[data-test="sidebar-network-badge"]');
+    expect(badge.exists()).toBe(true);
+    expect(badge.text()).toContain("Signet");
+  });
+
+  it("shows Alphanet in the sidebar badge when the wallet persists alphanet", async () => {
+    localStorage.setItem(
+      "sidecoin.wallet.v1",
+      JSON.stringify({
+        version: 1,
+        network: "alphanet",
+        mnemonic:
+          "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+        createdAt: 0,
+      }),
+    );
+    const wrapper = await mountApp();
+    const badge = wrapper.find('[data-test="sidebar-network-badge"]');
+    expect(badge.text()).toContain("Alphanet");
+  });
+
+  it("renders the mobile network badge in the top bar", async () => {
+    const wrapper = await mountApp();
+    const badge = wrapper.find('[data-test="mobile-network-badge"]');
+    expect(badge.exists()).toBe(true);
+    expect(badge.text()).toContain("Signet");
+  });
+
+  it("links to /settings from the sidebar network badge", async () => {
+    const wrapper = await mountApp();
+    const link = wrapper.find('[data-test="sidebar-network-badge"] a');
+    expect(link.attributes("href")).toBe("#/settings");
+  });
 });

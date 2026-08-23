@@ -4,7 +4,7 @@
 import { ref, onMounted } from "vue";
 import { getApiBaseUrl, setApiBaseUrl } from "../api";
 import { DEFAULT_BASE_URL } from "@sidecoin/api-client";
-import { loadWallet } from "../keystore";
+import { loadWallet, setWalletNetwork, type WalletNetwork } from "../keystore";
 import { deriveNostrIdentityKey } from "@sidecoin/shared";
 import { isDemoModeEnabled, setDemoMode } from "../demo";
 import {
@@ -21,6 +21,20 @@ const usingDefault = ref(true);
 const demoMode = ref(false);
 const selectedTheme = ref<WalletTheme>("default");
 const showDemoModeExplainer = ref(false);
+
+// ─── Network selector (Signet / Alphanet) ──────────────────
+// Persists the wallet's L1 network to the keystore. Both are non-production
+// (signet = the live L2L signet; alphanet = the ECX alpha practice
+// network, a mainnet fork from drivechain.dev/config). Switching
+// dispatches WALLET_NETWORK_EVENT so the Dashboard, Receive, and Sidebar
+// re-derive / re-fetch for the new network immediately.
+const NETWORK_OPTIONS: { id: WalletNetwork; label: string; description: string }[] = [
+  { id: "signet", label: "Signet", description: "Live L2L signet — the default test network." },
+  { id: "alphanet", label: "Alphanet", description: "ECX alpha practice network (mainnet fork)." },
+];
+const selectedNetwork = ref<WalletNetwork>("signet");
+const networkSaved = ref(false);
+const networkError = ref<string | null>(null);
 
 // ─── Founder Identity Key (NIP-06 Nostr key) ────────────────
 // Derived locally from the wallet mnemonic at m/44'/1237'/0'/0/0. This is the
@@ -45,6 +59,7 @@ onMounted(() => {
       identityError.value = "No wallet found. Create or import a wallet first.";
       return;
     }
+    selectedNetwork.value = wallet.network;
     identityKey.value = deriveNostrIdentityKey(wallet.mnemonic, 0).publicKeyHex;
   } catch (err) {
     console.error("[SettingsView] identity key derivation failed:", err);
@@ -94,11 +109,83 @@ function handleThemeChange(theme: WalletTheme) {
 function closeDemoModeExplainer() {
   showDemoModeExplainer.value = false;
 }
+
+function handleNetworkChange(network: WalletNetwork) {
+  if (network === selectedNetwork.value) return;
+  networkError.value = null;
+  try {
+    setWalletNetwork(network);
+    selectedNetwork.value = network;
+    networkSaved.value = true;
+    setTimeout(() => {
+      networkSaved.value = false;
+    }, 2000);
+  } catch (e) {
+    networkError.value =
+      e instanceof Error ? e.message : "Could not change the network.";
+  }
+}
 </script>
 
 <template>
   <div>
     <h2 class="mb-6 text-2xl font-bold">Settings</h2>
+
+    <!-- Network selector — Signet / Alphanet. Persisted to the keystore and
+         surfaced in the Sidebar so the active network is always obvious. -->
+    <section
+      class="mb-6 max-w-3xl rounded border border-gray-800 bg-gray-900 p-4"
+      data-test="network-selector-card"
+    >
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <p class="text-sm font-semibold text-gray-300">L1 Network</p>
+          <p class="mt-1 text-xs leading-5 text-gray-500">
+            Choose which network your wallet uses for balances, sends, and
+            receives. This is saved to your wallet and shown in the sidebar.
+            Both networks read balances from public Esplora endpoints
+            (drivechain.dev/config).
+          </p>
+        </div>
+        <span
+          v-if="networkSaved"
+          class="rounded-full bg-ecash-500 px-2.5 py-1 text-xs font-black uppercase tracking-wide text-gray-950"
+        >
+          Saved ✓
+        </span>
+      </div>
+
+      <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        <button
+          v-for="opt in NETWORK_OPTIONS"
+          :key="opt.id"
+          type="button"
+          class="rounded-xl border p-4 text-left transition-colors"
+          :class="selectedNetwork === opt.id ? 'border-ecash-500 bg-ecash-950/60' : 'border-gray-800 bg-gray-950 hover:border-gray-700'"
+          :aria-pressed="selectedNetwork === opt.id"
+          data-test="network-option"
+          :data-test-id="opt.id"
+          @click="handleNetworkChange(opt.id)"
+        >
+          <div class="flex items-center justify-between gap-3">
+            <p class="font-black text-white">{{ opt.label }}</p>
+            <span
+              v-if="selectedNetwork === opt.id"
+              class="rounded-full bg-ecash-500 px-2 py-0.5 text-xs font-black uppercase tracking-wide text-gray-950"
+            >
+              Active
+            </span>
+          </div>
+          <p class="mt-2 text-xs leading-5 text-gray-500">
+            {{ opt.description }}
+          </p>
+        </button>
+      </div>
+
+      <p v-if="networkError" class="mt-3 text-xs text-red-400">
+        {{ networkError }}
+      </p>
+    </section>
 
     <!-- Connection status -->
     <div v-if="usingDefault" class="mb-6 rounded border border-yellow-800 bg-yellow-950/30 p-3 text-sm text-yellow-400">

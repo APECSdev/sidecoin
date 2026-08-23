@@ -5,7 +5,8 @@ import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import { getSidechains, getDeposits, getL1Balance, getMarketPrice, satsToBtc } from "../api";
 import type { SidechainSummary, ChainBalance, MarketPrice } from "../api";
 import { deriveReceiveAddress } from "@sidecoin/shared";
-import { loadWallet } from "../keystore";
+import { loadWallet, WALLET_NETWORK_EVENT } from "../keystore";
+import type { WalletNetwork } from "../keystore";
 import {
   DEMO_DASHBOARD_ROWS,
   DEMO_L1_ADDRESS,
@@ -39,6 +40,14 @@ const l1Address = ref("");
 const l1Balance = ref<ChainBalance | null>(null);
 const l1Loading = ref(true);
 const l1Error = ref<string | null>(null);
+
+// The wallet's persisted L1 network (signet or alphanet). Reactive so a
+// Settings toggle re-derives the address + re-fetches the balance live.
+const walletNetwork = ref<WalletNetwork>("signet");
+
+const networkLabel = computed(() =>
+  walletNetwork.value === "alphanet" ? "Alphanet" : "Signet",
+);
 
 const marketPrice = ref<MarketPrice | null>(null);
 const marketLoading = ref(true);
@@ -155,9 +164,12 @@ async function loadL1Balance() {
   try {
     const address = deriveReceiveAddress(wallet.mnemonic, wallet.network, 0);
     l1Address.value = address;
-    // Indexed balance for ANY chain incl. signet. An unseen address is not
-    // an error: it comes back totalSats 0n with seen=false.
-    l1Balance.value = await getL1Balance(address);
+    walletNetwork.value = wallet.network;
+    // Indexed balance for the wallet's current L1 network (signet or
+    // alphanet). Reads from the public Esplora endpoint so balances work
+    // even while the sidecoin.app/v1 adapter is offline. An unseen address
+    // is not an error: it comes back totalSats 0n with seen=false.
+    l1Balance.value = await getL1Balance(address, wallet.network);
   } catch (e) {
     // Keep the real error for developers; show users a friendly message.
     console.error("[DashboardView] Failed to load L1 balance:", e);
@@ -190,8 +202,19 @@ function handleDemoModeChanged() {
   loadL1Balance();
 }
 
+// React to a persisted network change from Settings: re-derive the L1
+// address + re-fetch the balance for the new network.
+function handleWalletNetworkChanged() {
+  const wallet = loadWallet();
+  if (wallet) {
+    walletNetwork.value = wallet.network;
+  }
+  loadL1Balance();
+}
+
 onMounted(() => {
   window.addEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
+  window.addEventListener(WALLET_NETWORK_EVENT, handleWalletNetworkChanged);
   load();
   loadL1Balance();
   loadMarketPrice();
@@ -199,6 +222,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
+  window.removeEventListener(WALLET_NETWORK_EVENT, handleWalletNetworkChanged);
 });
 
 function formatSats(sats: bigint): string {
@@ -277,7 +301,7 @@ function platformHref(platformId: string): string {
           <div class="flex flex-wrap items-center gap-3">
             <p class="text-sm text-gray-400">L1 Wallet Balance</p>
             <span class="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-semibold text-gray-400">
-              Signet
+              {{ networkLabel }}
             </span>
           </div>
 
@@ -319,9 +343,15 @@ function platformHref(platformId: string): string {
         <div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
           <div class="flex flex-wrap items-center justify-between gap-3">
             <p class="text-sm text-gray-400">ECX Market Price</p>
-            <span class="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-semibold text-gray-400">
-              SupaQt
-            </span>
+            <a
+              href="https://ecashfarm.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="rounded-full bg-gray-800 px-2.5 py-1 text-xs font-semibold text-gray-400 hover:bg-gray-700 hover:text-ecash-400"
+              data-test="market-price-source"
+            >
+              eCash Farm ↗
+            </a>
           </div>
 
           <div v-if="marketLoading" class="mt-2 text-gray-400">

@@ -125,6 +125,33 @@ export function deriveReceiveAddress(
 }
 
 /**
+ * Derive the P2WPKH scriptPubKey (hex) for a bech32 SegWit receive address.
+ * Decodes the address to recover the witness version + program, then builds
+ * the standard script: `OP_<version> <push len> <program>`. For a v0
+ * P2WPKH address this is `0014<20-byte hash160>`.
+ *
+ * Useful when a UTXO source (e.g. the public Esplora /utxo endpoint) returns
+ * txid/vout/value but not the script, and coin selection / signing need the
+ * scriptPubKey to match inputs to keys. Throws on a non-bech32 or malformed
+ * address.
+ */
+export function scriptPubKeyFromAddress(address: string): string {
+  let decoded;
+  try {
+    decoded = bech32.decode(address as `${string}1${string}`);
+  } catch (e) {
+    throw new Error(`Not a bech32 SegWit address: ${address}`);
+  }
+  const words = decoded.words;
+  const version = words[0]; // witness version (0 for P2WPKH)
+  const program = bech32.fromWords(words.slice(1));
+  const programHex = Buffer.from(program).toString("hex");
+  const versionOp = version === 0 ? "00" : version.toString(16).padStart(2, "0");
+  const pushLen = program.length.toString(16).padStart(2, "0");
+  return `${versionOp}${pushLen}${programHex}`;
+}
+
+/**
  * Derive a Thunder / BitAssets drivechain (L2) receive address.
  *
  * Mirrors thunder-rust's `Wallet::get_signing_key` + `get_address`

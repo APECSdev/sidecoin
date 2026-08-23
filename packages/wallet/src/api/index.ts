@@ -18,6 +18,7 @@ import {
   type UtxosResult,
   type GetUtxosParams,
 } from "@sidecoin/api-client";
+import { scriptPubKeyFromAddress } from "@sidecoin/shared";
 
 export type {
   SidechainSummary,
@@ -85,6 +86,9 @@ export function getClient(): SidecoinClient {
 
 /** Read-only SupaQt API base for Coin News and market data. */
 export const SUPAQT_BASE_URL = "https://supaqt.com/v1";
+
+/** Read-only eCash Farm API base for the ECX/USD market projection. */
+export const ECASHFARM_BASE_URL = "https://ecashfarm.com/v1";
 
 export interface CoinNewsFeed {
   id: string;
@@ -191,11 +195,48 @@ export async function getCoinNewsPosts(
   );
 }
 
-/** GET /market/price/:asset — live market price for ECX/eCash aliases. */
+/** GET /market/price/:asset — live market price for ECX/eCash aliases.
+ *
+ * Sources the ECX/USD projection from eCash Farm (`/v1/markets`), which
+ * publishes a `projected.ecxUsd` figure (a forward-looking fair-value
+ * estimate rather than a last-trade print). The `asset` argument is
+ * accepted for backward-compatibility but the projection is always for ECX
+ * (eCash) — non-ECX aliases are coerced to "ecash". The returned `MarketPrice`
+ * shape is preserved so existing callers (Dashboard) keep working; the
+ * `source` field is set to "eCash Farm" and `as_of` carries the upstream
+ * `updatedAt` epoch seconds as an ISO string.
+ */
 export async function getMarketPrice(asset: string): Promise<MarketPrice> {
-  return supaqtGet<MarketPrice>(
-    `/market/price/${encodeURIComponent(asset.toLowerCase())}`,
-  );
+  const url = `${ECASHFARM_BASE_URL}/markets`;
+  const res = await globalThis.fetch(url, {
+    headers: { accept: "application/json" },
+  });
+  if (!res.ok) {
+    throw new Error(
+      `eCash Farm market price request failed (${res.status} ${res.statusText})`,
+    );
+  }
+  const body = (await res.json()) as {
+    ok?: boolean;
+    updatedAt?: number;
+    projected?: { ecxUsd?: number };
+  };
+  const ecxUsd = body?.projected?.ecxUsd;
+  if (typeof ecxUsd !== "number" || !isFinite(ecxUsd)) {
+    throw new Error("eCash Farm response did not include a numeric projected.ecxUsd");
+  }
+  // Coerce non-ECX aliases to "ecash" — the projection is ECX-only.
+  const normalizedAsset =
+    asset && asset.toLowerCase() !== "ecash" ? "ecash" : "ecash";
+  return {
+    asset: normalizedAsset,
+    name: "eCash",
+    price_usd: ecxUsd.toFixed(2),
+    source: "eCash Farm",
+    as_of: body.updatedAt
+      ? new Date(body.updatedAt * 1000).toISOString()
+      : new Date().toISOString(),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -262,11 +303,17 @@ export async function getChainBalance(
 }
 
 /**
- * Convenience: indexed L1/signet balance for an address. This is what the
- * dashboard uses to show the wallet's on-chain (signet) balance.
+ * Convenience: indexed L1 balance for an address on the wallet's current
+ * network (signet or alphanet). Reads from the public Esplora endpoint
+ * (drivechain.dev/config) so balances work even while the sidecoin.app/v1
+ * adapter is offline. `network` defaults to "signet" for back-compat with
+ * callers that haven't been updated.
  */
-export async function getL1Balance(address: string): Promise<ChainBalance> {
-  return _client.getChainBalance(L1_CHAIN_ID, address);
+export async function getL1Balance(
+  address: string,
+  network: L1Network = "signet",
+): Promise<ChainBalance> {
+  return esploraGetChainBalance(network, address);
 }
 
 /**
@@ -291,46 +338,271 @@ export async function getUtxos(
 }
 
 /**
- * Convenience: spendable L1/signet UTXO set for an address. This is what Send
- * uses to fund a signet transaction before signing locally.
+ * Convenience: spendable L1 UTXO set for an address on the wallet's current
+ * network (signet or alphanet). Reads from the public Esplora endpoint so
+ * Send/CoinNews can fund txs even while the sidecoin.app/v1 adapter is offline.
+ * `network` defaults to "signet" for back-compat.
  */
 export async function getL1Utxos(
   address: string,
   params: GetUtxosParams = {},
+  network: L1Network = "signet",
 ): Promise<UtxosResult> {
-  return _client.getUtxos(L1_CHAIN_ID, address, params);
+  return esploraGetUtxos(network, address, params);
 }
 
 /**
- * POST /chains/:chainId/broadcast — relay a fully-signed raw tx hex to a
- * chain's node. Broadcast is signet/L1 ONLY today; pass "signet". L2
- * sidechains are NOT broadcastable here (ApiError "broadcast_unsupported",
- * 501) — use the sidechain's own transfer/withdraw verbs instead.
+ * Relay a fully-signed raw tx hex to the L1 node for the wallet's current
+ * network (signet or alphanet) via the public Esplora `POST /tx` endpoint
+ * (drivechain.dev/config). This keeps Send/CoinNews working while the
+ * sidecoin.app/v1 adapter is offline.
  *
- * Returns the broadcast receipt (txid + accepted). Throws ApiError on
- * failure; notable codes: "rejected" (422 — do not retry same bytes),
- * "rate_limited" (429 — honor details.retryAfter), "relay_error"/
- * "broadcast_unavailable" (502/503 — retry with backoff).
+ * Returns the broadcast receipt (txid + accepted). The Esplora endpoint
+ * returns the txid as plain text on success, or an RPC error body on
+ * failure (mapped to a thrown Error). `network` defaults to "signet" for
+ * back-compat; `chainId` is accepted but ignored — Esplora broadcasts to
+ * whichever chain its instance serves (signet or alphanet).
  */
 export async function broadcastTransaction(
   chainId: string,
   txHex: string,
+  network: L1Network = "signet",
 ): Promise<BroadcastReceipt> {
-  return _client.broadcast(chainId, txHex);
+  void chainId; // Esplora routes by instance, not by chainId param.
+  return esploraBroadcast(network, txHex);
 }
 
 // ---------------------------------------------------------------------------
-// Raw transaction fetch (signet block explorer)
+// Public Esplora fallback for L1 reads + broadcast (drivechain.dev/config)
+// ---------------------------------------------------------------------------
+// The sidecoin.app/v1 adapter is offline (see HANDOFF). Until it's restored,
+// L1 balance / UTXO / broadcast / raw-tx reads route to the public Esplora
+// (mempool-electrs) endpoints published in the drivechain.dev/config registry.
+// Both networks expose the same mempool/esplora API surface:
+//   GET  /address/:addr            -> { chain_stats, mempool_stats }
+//   GET  /address/:addr/utxo       -> [ { txid, vout, value, status:{confirmed,block_height} }, … ]
+//   POST /tx                       -> txid (plain text) on success / RPC error on failure
+//   GET  /tx/:txid/hex             -> raw tx hex
+//   GET  /blocks/tip/height        -> current chain tip height
+// The returned objects are coerced into the same ChainBalance / UtxosResult /
+// BroadcastReceipt shapes the views already consume, so callers are unchanged.
+
+/** The two L1 networks a user can toggle between. Both are non-production. */
+export type L1Network = "signet" | "alphanet";
+
+/** Public Esplora base URLs per L1 network (from drivechain.dev/config). */
+const ESPLORA_BASES: Record<L1Network, string> = {
+  signet: "https://esplora.signet.drivechain.info",
+  alphanet: "https://esplora.alpha.ecash.ninja",
+};
+
+/** Resolve the Esplora base URL for a network (throws on unknown). */
+function esploraBase(network: L1Network): string {
+  const base = ESPLORA_BASES[network];
+  if (!base) {
+    throw new Error(`No Esplora endpoint configured for network "${network}".`);
+  }
+  return base;
+}
+
+/** Shape of the Esplora /address/:addr stats response. */
+interface EsploraAddressStats {
+  address: string;
+  chain_stats: {
+    funded_txo_count: number;
+    funded_txo_sum: number;
+    spent_txo_count: number;
+    spent_txo_sum: number;
+    tx_count: number;
+  };
+  mempool_stats: {
+    funded_txo_count: number;
+    funded_txo_sum: number;
+    spent_txo_count: number;
+    spent_txo_sum: number;
+    tx_count: number;
+  };
+}
+
+/** Shape of one entry in the Esplora /address/:addr/utxo response. */
+interface EsploraUtxo {
+  txid: string;
+  vout: number;
+  value: number;
+  status: {
+    confirmed: boolean;
+    block_height?: number;
+    block_time?: number;
+  };
+}
+
+/**
+ * Fetch the indexed L1 balance for an address from Esplora. Confirmed balance
+ * = chain_stats.funded - chain_stats.spent; mempool balance adds the mempool
+ * deltas. We report the confirmed balance as `totalSats` and mark `seen=true`
+ * when the address has any chain or mempool history. `updatedAtHeight` is the
+ * current chain tip (so the UI can show how fresh the figure is).
+ */
+async function esploraGetChainBalance(
+  network: L1Network,
+  address: string,
+): Promise<ChainBalance> {
+  const base = esploraBase(network);
+  const res = await globalThis.fetch(`${base}/address/${address}`, {
+    headers: { accept: "application/json" },
+  });
+  if (!res.ok) {
+    throw new Error(
+      `Esplora balance request failed: HTTP ${res.status} ${res.statusText}`,
+    );
+  }
+  const stats = (await res.json()) as EsploraAddressStats;
+
+  const funded = BigInt(stats.chain_stats.funded_txo_sum);
+  const spent = BigInt(stats.chain_stats.spent_txo_sum);
+  const totalSats = funded - spent;
+
+  const seen =
+    stats.chain_stats.tx_count > 0 || stats.mempool_stats.tx_count > 0;
+
+  let updatedAtHeight: number | null = null;
+  if (seen) {
+    try {
+      const tipRes = await globalThis.fetch(`${base}/blocks/tip/height`);
+      if (tipRes.ok) {
+        updatedAtHeight = Number((await tipRes.text()).trim());
+      }
+    } catch {
+      // Non-fatal — the balance is still valid without a tip height.
+    }
+  }
+
+  return {
+    chainId: network,
+    address,
+    source: "indexed",
+    totalSats,
+    seen,
+    updatedAtHeight,
+    note: seen
+      ? `Confirmed balance via public Esplora (${network}).`
+      : "Address not yet seen on-chain.",
+  };
+}
+
+/**
+ * Fetch the spendable UTXO set for an address from Esplora. Esplora's
+ * /utxo endpoint already excludes spent outputs and reports per-UTXO
+ * confirmation status. We map to the UtxosResult shape the views expect,
+ * deriving each UTXO's P2WPKH scriptPubKey from the receive address (all L1
+ * wallet UTXOs are index-0 P2WPKH for the wallet's own key).
+ * `minConfirmations` is applied client-side as a global floor (the same
+ * semantics the adapter offered); coinbase maturity is still the caller's
+ * responsibility (Esplora flags coinbase in /txs, not /utxo).
+ */
+async function esploraGetUtxos(
+  network: L1Network,
+  address: string,
+  params: GetUtxosParams = {},
+): Promise<UtxosResult> {
+  const base = esploraBase(network);
+  const res = await globalThis.fetch(`${base}/address/${address}/utxo`, {
+    headers: { accept: "application/json" },
+  });
+  if (!res.ok) {
+    throw new Error(
+      `Esplora UTXO request failed: HTTP ${res.status} ${res.statusText}`,
+    );
+  }
+  const raw = (await res.json()) as EsploraUtxo[];
+  const minConf = params.minConfirmations ?? 0;
+
+  // Derive the P2WPKH scriptPubKey from the receive address so coin
+  // selection / signing have the script they expect. All L1 wallet UTXOs are
+  // index-0 P2WPKH for the wallet's own key, so the address's witness
+  // program IS the script's payload.
+  let scriptPubKey = "";
+  try {
+    scriptPubKey = scriptPubKeyFromAddress(address);
+  } catch (e) {
+    console.error("[api] Could not derive scriptPubKey from address:", e);
+    // Leave scriptPubKey empty — signing will fail fast if it's needed.
+  }
+
+  const utxos = (Array.isArray(raw) ? raw : []).map((u) => ({
+    chainId: network,
+    address,
+    txid: u.txid,
+    vout: u.vout,
+    valueSats: BigInt(u.value),
+    scriptPubKey,
+    isCoinbase: false, // Esplora /utxo does not flag coinbase; default false.
+    confirmations: u.status?.confirmed ? 1 : 0, // confirmed vs mempool only.
+    blockHeight: u.status?.confirmed ? (u.status.block_height ?? -1) : -1,
+  }));
+
+  // Apply the optional global minConfirmations floor (client-side). A
+  // confirmed UTXO counts as >= 1 confirmation; mempool UTXOs are 0.
+  const filtered =
+    minConf > 0 ? utxos.filter((u) => u.confirmations >= minConf) : utxos;
+
+  return {
+    chainId: network,
+    address,
+    utxos: filtered,
+    truncated: false, // Esplora /utxo returns the full set in one response.
+  };
+}
+
+/**
+ * Broadcast a fully-signed raw tx hex via Esplora `POST /tx`. On success the
+ * endpoint returns the txid as plain text; on failure it returns an RPC error
+ * body (e.g. "sendrawtransaction RPC error: …"). We map success/failure to
+ * the BroadcastReceipt shape and throw on failure.
+ */
+async function esploraBroadcast(
+  network: L1Network,
+  txHex: string,
+): Promise<BroadcastReceipt> {
+  const base = esploraBase(network);
+  const res = await globalThis.fetch(`${base}/tx`, {
+    method: "POST",
+    headers: { "content-type": "text/plain" },
+    body: txHex,
+  });
+  const text = (await res.text()).trim();
+  if (!res.ok) {
+    throw new Error(
+      `Esplora broadcast failed (HTTP ${res.status}): ${text || res.statusText}`,
+    );
+  }
+  // Esplora returns the txid (64 hex chars) on success.
+  if (!/^[0-9a-fA-F]{64}$/.test(text)) {
+    throw new Error(`Esplora broadcast returned an unexpected response: ${text.slice(0, 80)}…`);
+  }
+  return {
+    chainId: network,
+    txid: text.toLowerCase(),
+    accepted: true,
+    broadcastAt: Date.now(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Raw transaction fetch (L1 block explorer)
 // ---------------------------------------------------------------------------
 // OneKey firmware requires full prevout transactions (refTxs) even for segwit
-// inputs. The Sidecoin adapter exposes no raw-tx endpoint, so we fetch from the
-// signet mempool.space API. This is read-only and signet-specific.
+// inputs. We fetch raw tx hex from the same public Esplora instance that
+// serves balance/UTXO reads (drivechain.dev/config). Read-only. Network-aware:
+// `network` defaults to "signet" for back-compat.
 
-const SIGNET_TX_API = "https://explorer.signet.drivechain.info/api/tx";
-
-/** Fetch raw transaction hex by txid from the signet block explorer. */
-export async function getRawTransaction(txid: string): Promise<string> {
-  const res = await globalThis.fetch(`${SIGNET_TX_API}/${txid}/hex`);
+/** Fetch raw transaction hex by txid from the L1 block explorer. */
+export async function getRawTransaction(
+  txid: string,
+  network: L1Network = "signet",
+): Promise<string> {
+  const base = esploraBase(network);
+  const res = await globalThis.fetch(`${base}/tx/${txid}/hex`);
   if (!res.ok) {
     throw new Error(
       `Failed to fetch raw tx ${txid}: HTTP ${res.status} ${res.statusText}`,

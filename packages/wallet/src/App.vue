@@ -11,6 +11,7 @@ import {
   getWalletTheme,
   walletThemeClass,
 } from "./theme";
+import { loadWallet, WALLET_NETWORK_EVENT, type WalletNetwork } from "./keystore";
 
 const links = [
   { to: "/", label: "Home" },
@@ -26,8 +27,22 @@ const links = [
 
 const demoMode = ref(isDemoModeEnabled());
 const walletTheme = ref(getWalletTheme());
+// Active L1 network (signet or alphanet). Reactive so the sidebar + mobile
+// header update the instant the user toggles it in Settings or Receive.
+const walletNetwork = ref<WalletNetwork>("signet");
 
 const themeClass = computed(() => walletThemeClass(walletTheme.value));
+
+const networkLabel = computed(() =>
+  walletNetwork.value === "alphanet" ? "Alphanet" : "Signet",
+);
+
+function refreshWalletNetwork() {
+  const wallet = loadWallet();
+  if (wallet) {
+    walletNetwork.value = wallet.network;
+  }
+}
 
 function handleDemoModeChanged() {
   demoMode.value = isDemoModeEnabled();
@@ -40,13 +55,16 @@ function handleThemeChanged() {
 onMounted(() => {
   demoMode.value = isDemoModeEnabled();
   walletTheme.value = getWalletTheme();
+  refreshWalletNetwork();
   window.addEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
   window.addEventListener(THEME_EVENT, handleThemeChanged);
+  window.addEventListener(WALLET_NETWORK_EVENT, refreshWalletNetwork);
 });
 
 onBeforeUnmount(() => {
   window.removeEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
   window.removeEventListener(THEME_EVENT, handleThemeChanged);
+  window.removeEventListener(WALLET_NETWORK_EVENT, refreshWalletNetwork);
 });
 </script>
 
@@ -67,12 +85,18 @@ onBeforeUnmount(() => {
       </div>
       <div class="flex items-center gap-2">
         <span
+          class="rounded-full border border-ecash-700 bg-ecash-950/70 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-ecash-400"
+          data-test="mobile-network-badge"
+        >
+          {{ networkLabel }}
+        </span>
+        <span
           v-if="demoMode"
           class="rounded-full border border-ecash-700 bg-ecash-950/70 px-2 py-1 text-[10px] font-black uppercase tracking-wide text-ecash-400"
         >
           Demo
         </span>
-        <span class="font-mono text-[10px] text-ecash-400">2026·08·21</span>
+        <span class="font-mono text-[10px] text-ecash-400">2026·10·31</span>
       </div>
     </header>
 
@@ -86,9 +110,25 @@ onBeforeUnmount(() => {
           <span class="sr-only">Sidecoin</span>
         </h1>
         <p class="text-xs text-gray-500">Drivechains Financial Hub</p>
+
+        <!-- Active L1 network — always visible so the user knows at a glance
+             which network balances/sends target. Toggles in Settings. -->
+        <div
+          class="mt-3 flex items-center gap-2 rounded-lg border border-gray-800 bg-gray-900 px-3 py-2"
+          data-test="sidebar-network-badge"
+        >
+          <span class="h-2 w-2 rounded-full bg-ecash-500" aria-hidden="true"></span>
+          <span class="text-sm font-black text-white">{{ networkLabel }}</span>
+          <router-link
+            to="/settings"
+            class="ml-auto text-[10px] font-semibold text-gray-500 hover:text-ecash-400"
+          >
+            change
+          </router-link>
+        </div>
       </div>
 
-      <ul class="space-y-1">
+      <ul class="space-y-1 mb-4">
         <li v-for="l in links" :key="l.to">
           <router-link
             :to="l.to"

@@ -1,19 +1,20 @@
 <!-- packages/wallet/src/views/ReceiveView.vue -->
 
 <script setup lang="ts">
-import { computed, ref, watch, onMounted } from "vue";
+import { computed, ref, watch, onMounted, onBeforeUnmount } from "vue";
 import QrcodeVue from "qrcode.vue";
 import { deriveReceiveAddress } from "@sidecoin/shared";
-import type { NetworkId } from "@sidecoin/shared";
-import { loadWallet } from "../keystore";
+import { loadWallet, setWalletNetwork, WALLET_NETWORK_EVENT } from "../keystore";
+import type { WalletNetwork } from "../keystore";
 
 type ReceiveTab = "address" | "payment-code" | "history";
 
 // The two networks a user can receive to from this page. Signet is the
-// live signet ("signet live" on ecash.com); Alphanet is the ECX alpha
+// live signet ("signet" on drivechain.dev/config); Alphanet is the ECX alpha
 // practice network (a mainnet fork — see https://drivechain.dev/config).
-// The choice is session-only: it is NOT persisted to the keystore.
-const RECEIVE_NETWORKS: { id: NetworkId; label: string }[] = [
+// The choice IS persisted to the keystore via setWalletNetwork, and a
+// WALLET_NETWORK_EVENT is dispatched so the Dashboard / Sidebar update live.
+const RECEIVE_NETWORKS: { id: WalletNetwork; label: string }[] = [
   { id: "signet", label: "Signet" },
   { id: "alphanet", label: "Alphanet" },
 ];
@@ -27,7 +28,7 @@ const RECEIVE_NETWORKS: { id: NetworkId; label: string }[] = [
 // re-derives a fresh address without touching the keystore.
 const mnemonic = ref("");
 const hasWallet = ref(false);
-const selectedNetwork = ref<NetworkId>("signet");
+const selectedNetwork = ref<WalletNetwork>("signet");
 const addressIndex = ref(0);
 const address = ref("");
 const copied = ref(false);
@@ -48,8 +49,9 @@ const networkLabel = computed(() => {
 
 // BIP-44 coin type: 0 for mainnet + mainnet forks (alphanet), 1 for test
 // networks. Mirrors the coinTypeFor logic in @sidecoin/shared/wallet/derivation.
+// Here selectedNetwork is signet (coin type 1) or alphanet (coin type 0).
 const coinType = computed(() =>
-  selectedNetwork.value === "mainnet" || selectedNetwork.value === "alphanet" ? 0 : 1,
+  selectedNetwork.value === "alphanet" ? 0 : 1,
 );
 
 const derivationPath = computed(
@@ -87,6 +89,31 @@ function generateNewAddress() {
   addressIndex.value += 1;
 }
 
+// Persist a network switch to the keystore. This dispatches the
+// WALLET_NETWORK_EVENT so the Dashboard / Sidebar re-fetch for the new
+// network. Falls back gracefully when there's no stored wallet yet.
+function handleNetworkChange(network: WalletNetwork) {
+  selectedNetwork.value = network;
+  addressIndex.value = 0;
+  if (hasWallet.value) {
+    try {
+      setWalletNetwork(network);
+    } catch (e) {
+      console.error("[ReceiveView] Could not persist network:", e);
+    }
+  }
+}
+
+// React to a network change made elsewhere (e.g. Settings) so this page
+// stays in sync with the persisted wallet network.
+function handleWalletNetworkChanged() {
+  const wallet = loadWallet();
+  if (wallet) {
+    selectedNetwork.value = wallet.network;
+    addressIndex.value = 0;
+  }
+}
+
 watch([selectedNetwork, addressIndex], updateAddress);
 
 onMounted(() => {
@@ -96,6 +123,11 @@ onMounted(() => {
   mnemonic.value = wallet.mnemonic;
   selectedNetwork.value = wallet.network;
   updateAddress();
+  window.addEventListener(WALLET_NETWORK_EVENT, handleWalletNetworkChanged);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener(WALLET_NETWORK_EVENT, handleWalletNetworkChanged);
 });
 
 async function copyAddress() {
@@ -187,8 +219,8 @@ async function copyPaymentCode() {
               Receive to network
             </p>
             <p class="mt-1 text-xs text-gray-500">
-              Select which network to receive to. This is a session-only
-              choice and is not saved to your wallet.
+              Select which network to receive to. This is saved to your wallet
+              and used everywhere (Dashboard, Send, Sidebar).
             </p>
           </div>
           <div class="flex flex-wrap gap-2">
@@ -198,7 +230,7 @@ async function copyPaymentCode() {
               type="button"
               class="rounded-lg px-4 py-2 text-sm font-semibold transition-colors"
               :class="selectedNetwork === net.id ? 'bg-ecash-600 text-white' : 'bg-gray-950 text-gray-400 hover:bg-gray-800 hover:text-white'"
-              @click="selectedNetwork = net.id; addressIndex = 0"
+              @click="handleNetworkChange(net.id)"
             >
               {{ net.label }}
             </button>

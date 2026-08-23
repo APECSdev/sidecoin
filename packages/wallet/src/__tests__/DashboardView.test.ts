@@ -351,6 +351,11 @@ describe("DashboardView.vue", () => {
     expect(wrapper.text()).toContain("USD 30.00");
     expect(wrapper.text()).toContain("ECX");
     expect(mockGetMarketPrice).toHaveBeenCalledWith("ecash");
+    // Source is now eCash Farm (linked), not SupaQt.
+    const sourceLink = wrapper.find('[data-test="market-price-source"]');
+    expect(sourceLink.exists()).toBe(true);
+    expect(sourceLink.attributes("href")).toBe("https://ecashfarm.com");
+    expect(sourceLink.text()).toContain("eCash Farm");
   });
 
   it("should use Demo Mode display data when enabled", async () => {

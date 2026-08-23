@@ -10,9 +10,14 @@ import { validateMnemonic, normalizeMnemonic } from "@sidecoin/shared";
 
 const STORAGE_KEY = "sidecoin.wallet.v1";
 
+/** The two L1 networks a user can toggle between in Settings. Both are
+ *  non-production (signet = the live L2L signet; alphanet = the ECX alpha
+ *  practice network, a mainnet fork from drivechain.dev/config). */
+export type WalletNetwork = "signet" | "alphanet";
+
 export interface StoredWallet {
   version: 1;
-  network: "signet";
+  network: WalletNetwork;
   mnemonic: string;
   createdAt: number;
 }
@@ -37,6 +42,12 @@ export function loadWallet(): StoredWallet | null {
   try {
     const parsed = JSON.parse(raw) as StoredWallet;
     if (parsed?.version === 1 && typeof parsed.mnemonic === "string") {
+      // Coerce the network field to a known WalletNetwork. Older wallets
+      // (pre-toggle) stored the literal "signet"; anything else is treated
+      // as signet so a corrupt field never blocks access.
+      if (parsed.network !== "alphanet") {
+        parsed.network = "signet";
+      }
       return parsed;
     }
     return null;
@@ -60,6 +71,32 @@ export function saveWallet(mnemonic: string): StoredWallet {
   if (!s) throw new Error("localStorage is unavailable in this context.");
   s.setItem(STORAGE_KEY, JSON.stringify(record));
   return record;
+}
+
+/**
+ * Persist a new network choice (signet or alphanet) onto the stored wallet.
+ * The mnemonic is preserved; only `network` changes. Emits the
+ * WALLET_NETWORK_EVENT so live views (Dashboard, Sidebar, …) re-derive and
+ * re-fetch for the new network. Throws if there is no stored wallet or
+ * localStorage is unavailable.
+ */
+export const WALLET_NETWORK_EVENT = "sidecoin:wallet-network-changed";
+
+export function setWalletNetwork(network: WalletNetwork): StoredWallet {
+  const s = storage();
+  if (!s) throw new Error("localStorage is unavailable in this context.");
+  const current = loadWallet();
+  if (!current) {
+    throw new Error("No wallet found. Create or import a wallet first.");
+  }
+  const updated: StoredWallet = { ...current, network };
+  s.setItem(STORAGE_KEY, JSON.stringify(updated));
+  try {
+    window.dispatchEvent(new CustomEvent(WALLET_NETWORK_EVENT, { detail: { network } }));
+  } catch {
+    // window may be unavailable in some test contexts — non-fatal.
+  }
+  return updated;
 }
 
 export function clearWallet(): void {

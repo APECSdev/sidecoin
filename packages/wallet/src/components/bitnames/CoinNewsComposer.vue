@@ -106,7 +106,7 @@ async function buildNewsTransaction() {
     const opReturnScript = buildOpReturnScript(payload);
 
     const key = deriveSigningKey(wallet.mnemonic, wallet.network, 0);
-    const utxoSet = await getL1Utxos(key.address);
+    const utxoSet = await getL1Utxos(key.address, {}, wallet.network);
 
     if (utxoSet.truncated) {
       error.value =
@@ -155,7 +155,9 @@ async function broadcastNewsTransaction() {
   error.value = null;
 
   try {
-    receipt.value = await broadcastTransaction(L1_CHAIN_ID, built.value.hex);
+    const wallet = loadWallet();
+    const network = wallet?.network ?? "signet";
+    receipt.value = await broadcastTransaction(L1_CHAIN_ID, built.value.hex, network);
   } catch (e) {
     if (e instanceof ApiError) {
       error.value = `Broadcast failed (${e.code}): ${e.message}`;

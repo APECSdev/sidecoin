@@ -21,10 +21,25 @@ vi.mock("../api", () => ({
   setApiBaseUrl: vi.fn(),
 }));
 
+vi.mock("../keystore", () => ({
+  loadWallet: vi.fn(),
+  setWalletNetwork: vi.fn(),
+  WALLET_NETWORK_EVENT: "sidecoin:wallet-network-changed",
+}));
+
+vi.mock("@sidecoin/shared", () => ({
+  deriveNostrIdentityKey: vi.fn(() => ({
+    publicKeyHex: "abc123",
+  })),
+}));
+
 import { getApiBaseUrl, setApiBaseUrl } from "../api";
+import { loadWallet, setWalletNetwork } from "../keystore";
 
 const mockGetApiBaseUrl = vi.mocked(getApiBaseUrl);
 const mockSetApiBaseUrl = vi.mocked(setApiBaseUrl);
+const mockLoadWallet = vi.mocked(loadWallet);
+const mockSetWalletNetwork = vi.mocked(setWalletNetwork);
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -36,6 +51,14 @@ describe("SettingsView.vue", () => {
     vi.useFakeTimers();
     localStorage.clear();
     mockGetApiBaseUrl.mockReturnValue("");
+    // Default: a signet wallet exists so identity-key derivation succeeds.
+    mockLoadWallet.mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic:
+        "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      createdAt: 0,
+    });
   });
 
   afterEach(() => {
@@ -394,5 +417,97 @@ describe("SettingsView.vue", () => {
   it("should render a form element", () => {
     const wrapper = mount(SettingsView);
     expect(wrapper.find("form").exists()).toBe(true);
+  });
+
+  // -----------------------------------------------------------------------
+  // Network selector (Signet / Alphanet) — persisted to the keystore
+  // -----------------------------------------------------------------------
+
+  it("renders the L1 Network selector card", () => {
+    const wrapper = mount(SettingsView);
+    expect(wrapper.find('[data-test="network-selector-card"]').exists()).toBe(true);
+    expect(wrapper.text()).toContain("L1 Network");
+    expect(wrapper.text()).toContain("Signet");
+    expect(wrapper.text()).toContain("Alphanet");
+  });
+
+  it("defaults the selector to the wallet's persisted network (signet)", async () => {
+    mockLoadWallet.mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      createdAt: 0,
+    });
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    const active = wrapper.find('[data-test="network-option"][data-test-id="signet"]');
+    expect(active.attributes("aria-pressed")).toBe("true");
+  });
+
+  it("defaults to alphanet when the wallet persists alphanet", async () => {
+    mockLoadWallet.mockReturnValue({
+      version: 1,
+      network: "alphanet",
+      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      createdAt: 0,
+    });
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    const active = wrapper.find('[data-test="network-option"][data-test-id="alphanet"]');
+    expect(active.attributes("aria-pressed")).toBe("true");
+  });
+
+  it("persists a switch to alphanet via setWalletNetwork", async () => {
+    mockLoadWallet.mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      createdAt: 0,
+    });
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    const alphanet = wrapper.find('[data-test="network-option"][data-test-id="alphanet"]');
+    await alphanet.trigger("click");
+
+    expect(mockSetWalletNetwork).toHaveBeenCalledWith("alphanet");
+    expect(wrapper.text()).toContain("Saved");
+  });
+
+  it("does not call setWalletNetwork when re-selecting the active network", async () => {
+    mockLoadWallet.mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      createdAt: 0,
+    });
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    const signet = wrapper.find('[data-test="network-option"][data-test-id="signet"]');
+    await signet.trigger("click");
+
+    expect(mockSetWalletNetwork).not.toHaveBeenCalled();
+  });
+
+  it("shows an error when setWalletNetwork throws (no wallet)", async () => {
+    mockLoadWallet.mockReturnValue({
+      version: 1,
+      network: "signet",
+      mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
+      createdAt: 0,
+    });
+    mockSetWalletNetwork.mockImplementation(() => {
+      throw new Error("No wallet found.");
+    });
+    const wrapper = mount(SettingsView);
+    await flushPromises();
+
+    const alphanet = wrapper.find('[data-test="network-option"][data-test-id="alphanet"]');
+    await alphanet.trigger("click");
+
+    expect(wrapper.text()).toContain("No wallet found.");
   });
 });

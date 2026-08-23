@@ -15,6 +15,10 @@ import {
   getCoinNewsFeeds,
   getCoinNewsPosts,
   getMarketPrice,
+  getL1Balance,
+  getL1Utxos,
+  broadcastTransaction,
+  getRawTransaction,
   SUPAQT_BASE_URL,
   ApiError,
 } from "../api";
@@ -458,42 +462,330 @@ describe("SupaQt live data helpers", () => {
     expect(page.posts[0].title).toBe("Live API wallet post");
   });
 
-  it("should load the ECX market price from SupaQt", async () => {
+  it("should load the ECX market price from eCash Farm", async () => {
+    // The market price now sources from eCash Farm (/v1/markets), not SupaQt.
+    // See the "eCash Farm market price" describe block for full coverage.
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonBody({
+        ok: true,
+        updatedAt: 1787516407,
+        projected: { ecxUsd: 106.47 },
+      }),
+    );
+    const price = await getMarketPrice("ecash");
+    expect(price.source).toBe("eCash Farm");
+    expect(price.price_usd).toBe("106.47");
+  });
+
+  it("should throw when eCash Farm returns an error", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonBody({ error: "service unavailable" }, 503),
+    );
+
+    await expect(getMarketPrice("ecash")).rejects.toThrow(/eCash Farm/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Public Esplora fallback (L1 balance / UTXOs / broadcast / raw tx)
+// ---------------------------------------------------------------------------
+// The sidecoin.app/v1 adapter is offline, so L1 reads + broadcast route to
+// the public Esplora endpoints (drivechain.dev/config). These tests pin the
+// URL shape + the ChainBalance / UtxosResult / BroadcastReceipt coercion.
+
+const ESPLORA_SIGNET = "https://esplora.signet.drivechain.info";
+const ESPLORA_ALPHANET = "https://esplora.alpha.ecash.ninja";
+
+function jsonBody(body: unknown, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: () => Promise.resolve(JSON.stringify(body)),
+    json: () => Promise.resolve(body),
+  } as Response;
+}
+
+function textBody(body: string, status = 200) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    text: () => Promise.resolve(body),
+  } as Response;
+}
+
+describe("Esplora fallback — getL1Balance", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("hits the signet Esplora /address/:addr endpoint by default", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        jsonBody({
+          address: "tb1qexample",
+          chain_stats: { funded_txo_count: 1, funded_txo_sum: 5250000, spent_txo_count: 0, spent_txo_sum: 0, tx_count: 1 },
+          mempool_stats: { funded_txo_count: 0, funded_txo_sum: 0, spent_txo_count: 0, spent_txo_sum: 0, tx_count: 0 },
+        }),
+      )
+      .mockResolvedValueOnce(textBody("10808")); // /blocks/tip/height
+
+    const bal = await getL1Balance("tb1qexample");
+
+    expect(fetchSpy.mock.calls[0][0]).toBe(
+      `${ESPLORA_SIGNET}/address/tb1qexample`,
+    );
+    expect(bal.chainId).toBe("signet");
+    expect(bal.source).toBe("indexed");
+    expect(bal.totalSats).toBe(5250000n);
+    expect(bal.seen).toBe(true);
+    expect(bal.updatedAtHeight).toBe(10808);
+  });
+
+  it("hits the alphanet Esplora endpoint when network=alphanet", async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValueOnce(
+        jsonBody({
+          address: "bc1qexample",
+          chain_stats: { funded_txo_count: 2, funded_txo_sum: 10000000, spent_txo_count: 1, spent_txo_sum: 4000000, tx_count: 2 },
+          mempool_stats: { funded_txo_count: 0, funded_txo_sum: 0, spent_txo_count: 0, spent_txo_sum: 0, tx_count: 0 },
+        }),
+      )
+      .mockResolvedValueOnce(textBody("987875"));
+
+    const bal = await getL1Balance("bc1qexample", "alphanet");
+
+    expect(fetchSpy.mock.calls[0][0]).toBe(
+      `${ESPLORA_ALPHANET}/address/bc1qexample`,
+    );
+    expect(bal.chainId).toBe("alphanet");
+    expect(bal.totalSats).toBe(6000000n); // 10_000_000 - 4_000_000
+    expect(bal.seen).toBe(true);
+  });
+
+  it("reports seen=false and totalSats 0n for an address with no history", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonBody({
+        address: "tb1qnew",
+        chain_stats: { funded_txo_count: 0, funded_txo_sum: 0, spent_txo_count: 0, spent_txo_sum: 0, tx_count: 0 },
+        mempool_stats: { funded_txo_count: 0, funded_txo_sum: 0, spent_txo_count: 0, spent_txo_sum: 0, tx_count: 0 },
+      }),
+    );
+
+    const bal = await getL1Balance("tb1qnew");
+    expect(bal.totalSats).toBe(0n);
+    expect(bal.seen).toBe(false);
+    expect(bal.updatedAtHeight).toBeNull();
+  });
+
+  it("throws on a non-OK response", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonBody({ error: "bad" }, 500),
+    );
+    await expect(getL1Balance("tb1qexample")).rejects.toThrow(/Esplora balance/);
+  });
+});
+
+describe("Esplora fallback — getL1Utxos", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("maps the /utxo response to UtxosResult with a derived scriptPubKey", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      jsonResponse({
-        asset: "ECX",
-        name: "eCash",
-        price_usd: "30.00",
-        source: "hardcoded",
-        as_of: "2026-06-16T00:00:00Z",
+      jsonBody([
+        {
+          txid: "a".repeat(64),
+          vout: 0,
+          value: 5250000,
+          status: { confirmed: true, block_height: 10800, block_time: 1700000000 },
+        },
+        {
+          txid: "b".repeat(64),
+          vout: 1,
+          value: 100000,
+          status: { confirmed: false },
+        },
+      ]),
+    );
+
+    // Use a real signet P2WPKH address so scriptPubKeyFromAddress works.
+    const addr = "tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl";
+    const res = await getL1Utxos(addr, {}, "signet");
+
+    expect(fetchSpy.mock.calls[0][0]).toBe(
+      `${ESPLORA_SIGNET}/address/${addr}/utxo`,
+    );
+    expect(res.chainId).toBe("signet");
+    expect(res.address).toBe(addr);
+    expect(res.truncated).toBe(false);
+    expect(res.utxos).toHaveLength(2);
+    expect(res.utxos[0].valueSats).toBe(5250000n);
+    expect(res.utxos[0].txid).toBe("a".repeat(64));
+    expect(res.utxos[0].vout).toBe(0);
+    expect(res.utxos[0].scriptPubKey).toMatch(/^0014[0-9a-f]{40}$/);
+    expect(res.utxos[0].blockHeight).toBe(10800);
+    expect(res.utxos[1].blockHeight).toBe(-1); // unconfirmed
+  });
+
+  it("applies the minConfirmations floor (drops mempool UTXOs)", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonBody([
+        { txid: "a".repeat(64), vout: 0, value: 1000, status: { confirmed: true, block_height: 1 } },
+        { txid: "b".repeat(64), vout: 1, value: 2000, status: { confirmed: false } },
+      ]),
+    );
+    const res = await getL1Utxos("tb1q6rz28mcfaxtmd6v789l9rrlrusdprr9pqcpvkl", {
+      minConfirmations: 1,
+    });
+    expect(res.utxos).toHaveLength(1);
+    expect(res.utxos[0].txid).toBe("a".repeat(64));
+  });
+
+  it("hits the alphanet Esplora endpoint when network=alphanet", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      jsonBody([]),
+    );
+    await getL1Utxos("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu", {}, "alphanet");
+    expect(fetchSpy.mock.calls[0][0]).toBe(
+      `${ESPLORA_ALPHANET}/address/bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu/utxo`,
+    );
+  });
+});
+
+describe("Esplora fallback — broadcastTransaction", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("POSTs raw hex to /tx and returns the txid receipt", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      textBody("abcdef0123456789".repeat(4)), // 64 hex chars
+    );
+    const receipt = await broadcastTransaction("signet", "deadbeef", "signet");
+    expect(fetchSpy.mock.calls[0][0]).toBe(`${ESPLORA_SIGNET}/tx`);
+    expect(receipt.txid).toBe("abcdef0123456789".repeat(4));
+    expect(receipt.accepted).toBe(true);
+    expect(receipt.chainId).toBe("signet");
+    expect(typeof receipt.broadcastAt).toBe("number");
+  });
+
+  it("POSTs to the alphanet endpoint when network=alphanet", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      textBody("0".repeat(64)),
+    );
+    await broadcastTransaction("signet", "deadbeef", "alphanet");
+    expect(fetchSpy.mock.calls[0][0]).toBe(`${ESPLORA_ALPHANET}/tx`);
+  });
+
+  it("throws when the endpoint returns an RPC error", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      textBody(`sendrawtransaction RPC error: {"code":-22,"message":"TX decode failed."}`, 400),
+    );
+    await expect(broadcastTransaction("signet", "bad", "signet")).rejects.toThrow(
+      /Esplora broadcast/,
+    );
+  });
+});
+
+describe("Esplora fallback — getRawTransaction", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("fetches raw hex from the signet Esplora /tx/:txid/hex endpoint", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      textBody("deadbeef"),
+    );
+    const hex = await getRawTransaction("a".repeat(64), "signet");
+    expect(fetchSpy.mock.calls[0][0]).toBe(
+      `${ESPLORA_SIGNET}/tx/${"a".repeat(64)}/hex`,
+    );
+    expect(hex).toBe("deadbeef");
+  });
+
+  it("fetches from the alphanet endpoint when network=alphanet", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      textBody("deadbeef"),
+    );
+    await getRawTransaction("b".repeat(64), "alphanet");
+    expect(fetchSpy.mock.calls[0][0]).toBe(
+      `${ESPLORA_ALPHANET}/tx/${"b".repeat(64)}/hex`,
+    );
+  });
+
+  it("throws on a non-OK response", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(textBody("not found", 404));
+    await expect(getRawTransaction("a".repeat(64), "signet")).rejects.toThrow(
+      /Failed to fetch raw tx/,
+    );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// eCash Farm market price (ECX/USD projection)
+// ---------------------------------------------------------------------------
+
+const ECASHFARM_MARKETS = "https://ecashfarm.com/v1/markets";
+
+describe("getMarketPrice — eCash Farm /v1/markets", () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it("sources the ECX/USD projection from eCash Farm", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonBody({
+        ok: true,
+        updatedAt: 1787516407,
+        projected: { ecxUsd: 106.47006023873226 },
       }),
     );
 
     const price = await getMarketPrice("ecash");
 
-    expect(fetchSpy).toHaveBeenCalledWith(
-      `${SUPAQT_BASE_URL}/market/price/ecash`,
-      expect.objectContaining({ headers: { accept: "application/json" } }),
-    );
-    expect(price).toEqual({
-      asset: "ECX",
-      name: "eCash",
-      price_usd: "30.00",
-      source: "hardcoded",
-      as_of: "2026-06-16T00:00:00Z",
-    });
+    expect(fetchSpy.mock.calls[0][0]).toBe(ECASHFARM_MARKETS);
+    expect(price.asset).toBe("ecash");
+    expect(price.name).toBe("eCash");
+    expect(price.price_usd).toBe("106.47");
+    expect(price.source).toBe("eCash Farm");
+    // updatedAt epoch seconds → ISO string.
+    expect(price.as_of).toBe(new Date(1787516407 * 1000).toISOString());
   });
 
-  it("should throw when SupaQt returns an error", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      jsonResponse(
-        { error: { message: "service unavailable" } },
-        { ok: false, status: 503 },
-      ),
+  it("coerces a non-ECX asset alias to \"ecash\"", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonBody({
+        ok: true,
+        updatedAt: 1787516407,
+        projected: { ecxUsd: 30 },
+      }),
     );
 
-    await expect(getMarketPrice("ecash")).rejects.toThrow(
-      "service unavailable",
+    const price = await getMarketPrice("ECX");
+    expect(price.asset).toBe("ecash");
+    expect(price.price_usd).toBe("30.00");
+  });
+
+  it("rounds the price to 2 decimal places", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonBody({
+        ok: true,
+        updatedAt: 1787516407,
+        projected: { ecxUsd: 106.47006023873226 },
+      }),
     );
+    const price = await getMarketPrice("ecash");
+    expect(price.price_usd).toBe("106.47");
+  });
+
+  it("throws when the upstream returns a non-OK status", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonBody({ error: "down" }, 503),
+    );
+    await expect(getMarketPrice("ecash")).rejects.toThrow(/eCash Farm/);
+  });
+
+  it("throws when projected.ecxUsd is missing or non-numeric", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonBody({ ok: true, updatedAt: 1, projected: {} }),
+    );
+    await expect(getMarketPrice("ecash")).rejects.toThrow(/projected.ecxUsd/);
+
+    vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(
+      jsonBody({ ok: true, updatedAt: 1, projected: { ecxUsd: NaN } }),
+    );
+    await expect(getMarketPrice("ecash")).rejects.toThrow(/projected.ecxUsd/);
   });
 });

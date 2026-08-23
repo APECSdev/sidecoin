@@ -16,6 +16,8 @@ import { mount, flushPromises } from "@vue/test-utils";
 
 vi.mock("../keystore", () => ({
   loadWallet: vi.fn(),
+  setWalletNetwork: vi.fn(),
+  WALLET_NETWORK_EVENT: "sidecoin:wallet-network-changed",
 }));
 
 vi.mock("@sidecoin/shared", () => ({
@@ -23,7 +25,7 @@ vi.mock("@sidecoin/shared", () => ({
 }));
 
 import ReceiveView from "../views/ReceiveView.vue";
-import { loadWallet } from "../keystore";
+import { loadWallet, setWalletNetwork } from "../keystore";
 import { deriveReceiveAddress } from "@sidecoin/shared";
 
 // ---------------------------------------------------------------------------
@@ -209,7 +211,7 @@ describe("ReceiveView.vue", () => {
   });
 
   // -------------------------------------------------------------------------
-  // Network selector + address index cycling (session-only, not persisted)
+  // Network selector + address index cycling (persisted to the keystore)
   // -------------------------------------------------------------------------
 
   it("should render the Signet + Alphanet network selector when a wallet exists", async () => {
@@ -224,7 +226,7 @@ describe("ReceiveView.vue", () => {
     await flushPromises();
 
     expect(wrapper.text()).toContain("Receive to network");
-    expect(wrapper.text()).toContain("session-only");
+    expect(wrapper.text()).toContain("saved to your wallet");
     expect(wrapper.text()).toContain("Signet");
     expect(wrapper.text()).toContain("Alphanet");
   });
@@ -261,6 +263,7 @@ describe("ReceiveView.vue", () => {
     await alphanet!.trigger("click");
 
     expect(deriveReceiveAddress).toHaveBeenCalledWith(VALID_12, "alphanet", 0);
+    expect(setWalletNetwork).toHaveBeenCalledWith("alphanet");
     expect(wrapper.text()).toContain("Alphanet");
     expect(wrapper.text()).toContain("m/84'/0'/0'/0/0");
   });

@@ -249,6 +249,84 @@ site is authoritative for the fork date; fast-facts remains useful for
 stable facts (network magic/ports, replay protection, node software,
 address-format parity with Bitcoin).
 
+## Next work item — Public Esplora fallback + Signet/Alphanet network toggle
+
+### STATUS: DONE ✅
+
+Restored L1 wallet balance display (the sidecoin.app/v1 adapter is offline)
+by routing L1 reads + broadcast through the public Esplora endpoints from
+[drivechain.dev/config](https://drivechain.dev/config), and added a
+definitive, persisted Signet/Alphanet network toggle (Settings + Sidebar).
+
+### What was implemented
+
+1. **Public Esplora fallback for L1** (`packages/wallet/src/api/index.ts`):
+   - New `L1Network` type (`"signet" | "alphanet"`) + `ESPLORA_BASES` map:
+     signet → `https://esplora.signet.drivechain.info`, alphanet →
+     `https://esplora.alpha.ecash.ninja` (both from drivechain.dev/config).
+   - `esploraGetChainBalance` — `GET /address/:addr` → `ChainBalance`
+     (confirmed = `chain_stats.funded - spent`; `seen` = any history;
+     `updatedAtHeight` = `GET /blocks/tip/height`).
+   - `esploraGetUtxos` — `GET /address/:addr/utxo` → `UtxosResult`, deriving
+     each UTXO's P2WPKH `scriptPubKey` from the address (Esplora /utxo
+     doesn't return it) via the new `scriptPubKeyFromAddress` helper.
+     `minConfirmations` applied client-side.
+   - `esploraBroadcast` — `POST /tx` → `BroadcastReceipt` (txid on success).
+   - `getL1Balance`, `getL1Utxos`, `broadcastTransaction`, `getRawTransaction`
+     are now network-aware (extra `network: L1Network = "signet"` arg, default
+     signet for back-compat) and route to Esplora. They return the SAME shapes
+     the views already consume, so views only needed to pass
+     `wallet.network`.
+   - `getSidechains` / `getDeposits` / `getWalletBalance` still hit the
+     adapter client (sidechain/L2, not L1) and will fail until the adapter
+     returns — the Dashboard platform-activity section degrades gracefully
+     (it already falls back to the static PLATFORMS list).
+2. **`scriptPubKeyFromAddress`** (`packages/shared/src/wallet/derivation.ts`):
+   decodes a bech32 SegWit address → `OP_<ver> <push len> <program>` hex.
+   Exported from `@sidecoin/shared`. +4 derivation tests.
+3. **Persistent Signet/Alphanet network toggle**
+   (`packages/wallet/src/keystore.ts`):
+   - `StoredWallet.network` broadened from literal `"signet"` to
+     `WalletNetwork = "signet" | "alphanet"`.
+   - `setWalletNetwork(network)` persists the change + dispatches
+     `WALLET_NETWORK_EVENT` (a `CustomEvent`) so live views re-fetch.
+   - `loadWallet()` coerces any unknown network field back to `"signet"`
+     (forward-compat with pre-toggle wallets). +6 keystore tests.
+4. **Settings toggle** (`packages/wallet/src/views/SettingsView.vue`): a
+   prominent "L1 Network" card at the top of Settings with Signet/Alphanet
+   option buttons; persists via `setWalletNetwork` and shows "Saved ✓".
+   +6 SettingsView tests.
+5. **Sidebar + mobile-header badge** (`packages/wallet/src/App.vue`): the
+   active network is shown under the title in the desktop sidebar (with a
+   "change" link to /settings) and as a pill in the mobile top bar. Reactive
+   to `WALLET_NETWORK_EVENT`. Also fixed a stale `2026·08·21` date in the
+   mobile header → `2026·10·31`. +4 App tests.
+6. **Receive page now persists** (`packages/wallet/src/views/ReceiveView.vue`):
+   the Signet/Alphanet selector on Receive now saves to the keystore (was
+   session-only) and listens for `WALLET_NETWORK_EVENT` so it stays in sync
+   with Settings. Tests updated.
+7. **Views pass `wallet.network`** to the L1 calls: `DashboardView.vue`
+   (balance + reactive network label on the L1 card + re-fetches on
+   `WALLET_NETWORK_EVENT`), `SendView.vue`, `CoinNewsComposer.vue`,
+   `HardwareWalletView.vue` (narrows to `l1Network` for the API calls).
+   +18 Esplora API tests in `api.test.ts`.
+
+### Endpoints verified against the live services
+
+- `GET /address/:addr` → `{ chain_stats, mempool_stats }` (funded/spent sums).
+- `GET /address/:addr/utxo` → `[{ txid, vout, value, status:{confirmed,block_height} }]`.
+- `POST /tx` → txid (plain text) on success; `sendrawtransaction` RPC error
+  body on failure (broadcast works — verified with an empty-body POST that
+  returned a TX-decode RPC error, proving the endpoint accepts txs).
+- `GET /tx/:txid/hex` → raw hex.
+- `GET /blocks/tip/height` → tip height (signet 10808, alphanet 987875 at
+  probe time).
+
+### Test baselines
+
+shared 248 passed + 1 skipped · wallet 374 passed · web 118 · desktop 76 ·
+mobile 21 · explorer 43 · api-client 12 · smarthub 5. All type-checks clean.
+
 ## In-flight
 
 (Nothing else in-flight. Add items here when work starts.)

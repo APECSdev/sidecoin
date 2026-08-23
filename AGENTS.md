@@ -130,12 +130,17 @@ must be green before commit.
    officially assigned). Coming soon: elementsplus (no slot).
    `LAUNCH_SIDECHAINS` has 10 entries. Slots are sparse — never assume
    `slot === array index`.
-4. **The wallet keystore is signet-only and plaintext.**
+4. **The wallet keystore is signet/alphanet-only and plaintext.**
    `packages/wallet/src/keystore.ts` stores the mnemonic in `localStorage`
-   under `sidecoin.wallet.v1`. This is acceptable only for throwaway signet
+   under `sidecoin.wallet.v1`. This is acceptable only for throwaway test
    funds; encryption-at-rest must land before any mainnet support.
-   `StoredWallet.network` is typed as the literal `"signet"` (not the full
-   `NetworkId` union) — the wallet always targets signet today.
+   `StoredWallet.network` is typed as `WalletNetwork` = `"signet" | "alphanet"`
+   (NOT the full `NetworkId` union). The active network is toggled in
+   Settings (and on the Receive page) via `setWalletNetwork()`, which
+   persists to the keystore and dispatches `WALLET_NETWORK_EVENT` so the
+   Dashboard, Receive, and Sidebar re-derive/re-fetch live. `loadWallet()`
+   coerces any unknown network field back to `"signet"` (forward-compat with
+   pre-toggle wallets).
 5. **`NetworkId` has 6 members** (`packages/shared/src/types/network.ts`):
    `mainnet`, `testnet`, `signet`, `regtest`, `l2l-signet`, `alphanet`.
    `alphanet` is the ECX alpha practice network (a fork of mainnet with a
@@ -183,6 +188,23 @@ must be green before commit.
    sources, routes, or migrations, that work happens in the `sidecoin-api`
    repo, not here. The only API-related code left here is
    `packages/api-client`.
+9. **L1 reads + broadcast route to public Esplora, NOT sidecoin.app/v1.**
+   The `sidecoin.app/v1` adapter is offline (see `docs/HANDOFF.md`). Until it's
+   restored, all L1 balance / UTXO / broadcast / raw-tx reads in the wallet go
+   to the public Esplora (mempool-electrs) endpoints published at
+   [drivechain.dev/config](https://drivechain.dev/config):
+   - signet → `https://esplora.signet.drivechain.info`
+   - alphanet → `https://esplora.alpha.ecash.ninja`
+   These live in `packages/wallet/src/api/index.ts` (`ESPLORA_BASES` + the
+   `esplora*` helpers). `getL1Balance`, `getL1Utxos`, `broadcastTransaction`,
+   and `getRawTransaction` are network-aware (third arg `network: L1Network =
+   "signet"`) and return the SAME `ChainBalance` / `UtxosResult` /
+   `BroadcastReceipt` shapes the views already consume, so views only need to
+   pass `wallet.network`. UTXO `scriptPubKey` is recovered from the address
+   via `scriptPubKeyFromAddress` (`@sidecoin/shared/wallet/derivation`) since
+   Esplora `/utxo` doesn't return it. `getSidechains` / `getDeposits` /
+   `getWalletBalance` still hit the adapter client (they're sidechain/L2, not
+   L1) and will fail until the adapter returns.
 
 ## Committing
 

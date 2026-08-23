@@ -6,7 +6,7 @@ import { makeWallet, type HardwareDeviceKind } from "../hardware";
 import ProGate from "../components/pro/ProGate.vue";
 import { loadWallet } from "../keystore";
 import { toSpendableUtxo, parseCoinsToSats } from "../send";
-import { getL1Balance, getL1Utxos, broadcastTransaction, getRawTransaction, satsToBtc, L1_CHAIN_ID, ApiError, type BroadcastReceipt } from "../api";
+import { getL1Balance, getL1Utxos, broadcastTransaction, getRawTransaction, satsToBtc, L1_CHAIN_ID, ApiError, type BroadcastReceipt, type L1Network } from "../api";
 import { selectCoins, type NetworkId } from "@sidecoin/shared";
 import { address as btcAddress, networks as btcNetworks } from "bitcoinjs-lib";
 
@@ -22,6 +22,11 @@ const stored = loadWallet();
 const isMainnet = (stored?.network as string | undefined) === "mainnet";
 const coinType = isMainnet ? 0 : 1;
 const walletNetwork: NetworkId = (stored?.network as NetworkId) ?? "signet";
+// L1Network for API calls (signet or alphanet). The keystore only persists
+// signet/alphanet, but walletNetwork is typed as the broader NetworkId for
+// bitcoinjs-lib / hardware signing, so narrow here for the Esplora reads.
+const l1Network: L1Network =
+  walletNetwork === "alphanet" ? "alphanet" : "signet";
 const status = ref<"idle" | "connecting" | "connected" | "error">("idle");
 const busy = ref(false);
 const error = ref("");
@@ -47,7 +52,7 @@ async function fetchAddress() {
   balanceSats.value = null;
   try {
     account.value = await wallet.value.getAddress(path.value, { coin: coin.value, showOnDevice: showOnDevice.value });
-    try { const bal = await getL1Balance(account.value.address); balanceSats.value = bal.totalSats; }
+    try { const bal = await getL1Balance(account.value.address, l1Network); balanceSats.value = bal.totalSats; }
     catch { balanceSats.value = null; }
   } catch (e) { error.value = e instanceof Error ? e.message : String(e); }
   finally { busy.value = false; }
@@ -72,13 +77,13 @@ async function handleSign() {
   try {
     if (!account.value) { signError.value = "Connect and derive an address first."; return; }
     const amountSatoshis = parseCoinsToSats(sendAmount.value);
-    const utxoSet = await getL1Utxos(account.value.address);
+    const utxoSet = await getL1Utxos(account.value.address, {}, l1Network);
     if (utxoSet.truncated) { signError.value = "The UTXO set was truncated upstream; refusing to build from an incomplete set. Please try again shortly."; return; }
     const spendable = utxoSet.utxos.map(toSpendableUtxo);
     const selection = selectCoins({ utxos: spendable, targetSatoshis: amountSatoshis, feeRateSatPerVb: FEE_RATE_SAT_PER_VB });
     const uniqueTxids = [...new Set(selection.selectedUtxos.map((u) => u.txid))];
     const rawTxs: Record<string, string> = {};
-    for (const txid of uniqueTxids) { rawTxs[txid] = await getRawTransaction(txid); }
+    for (const txid of uniqueTxids) { rawTxs[txid] = await getRawTransaction(txid, l1Network); }
     const changeScriptPubKey = Buffer.from(
       btcAddress.toOutputScript(account.value.address, networkObj.value),
     ).toString("hex");
@@ -97,7 +102,7 @@ async function broadcast() {
   if (!built.value) return;
   broadcasting.value = true;
   signError.value = null;
-  try { receipt.value = await broadcastTransaction(L1_CHAIN_ID, built.value.hex); }
+  try { receipt.value = await broadcastTransaction(L1_CHAIN_ID, built.value.hex, l1Network); }
   catch (e) { signError.value = e instanceof ApiError ? `Broadcast failed (${e.code}): ${e.message}` : e instanceof Error ? e.message : String(e); }
   finally { broadcasting.value = false; }
 }

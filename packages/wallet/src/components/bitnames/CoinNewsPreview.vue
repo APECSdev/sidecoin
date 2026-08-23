@@ -207,21 +207,21 @@ onMounted(() => {
           </p>
         </div>
 
-        <div class="grid grid-cols-3 gap-3 rounded-2xl border border-gray-800 bg-gray-950/70 p-3 text-center">
+        <div class="grid shrink-0 grid-cols-3 gap-x-4 self-start rounded-2xl border border-gray-800 bg-gray-950/70 p-3 text-center">
           <div class="px-3 py-2">
-            <p class="text-lg font-black text-ecash-400">
+            <p class="whitespace-nowrap text-lg font-black text-ecash-400">
               {{ feedsLoading ? "…" : totalPostCount }}
             </p>
             <p class="text-[10px] uppercase tracking-wide text-gray-500">Posts</p>
           </div>
           <div class="border-x border-gray-800 px-3 py-2">
-            <p class="text-lg font-black text-ecash-400">
+            <p class="whitespace-nowrap text-lg font-black text-ecash-400">
               {{ feedsLoading ? "…" : enabledFeeds.length }}
             </p>
             <p class="text-[10px] uppercase tracking-wide text-gray-500">Feeds</p>
           </div>
           <div class="px-3 py-2">
-            <p class="text-lg font-black text-ecash-400">Signet</p>
+            <p class="whitespace-nowrap text-lg font-black text-ecash-400">Signet</p>
             <p class="text-[10px] uppercase tracking-wide text-gray-500">Network</p>
           </div>
         </div>
