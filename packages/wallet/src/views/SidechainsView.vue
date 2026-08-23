@@ -29,6 +29,7 @@ const EVM_ADDRESS_SLOTS = new Set<number>([88]);
 const PLATFORM_DISPLAY_PRIORITY: Record<string, number> = {
   bitnames: 0,
   thunder: 1,
+  snowside: 2,
 };
 
 const sidechains = ref<WalletSidechainSummary[]>([]);
@@ -65,11 +66,17 @@ onMounted(async () => {
     }
   }
 
+  // The platform grid + locally-derived addresses render from the static
+  // PLATFORMS registry, so they are always visible even when the live API
+  // is unreachable. The API call only enriches cards with live status — a
+  // failure is surfaced as a non-fatal banner, not a full-page error.
   try {
     sidechains.value = mergePlatformSidechains(await getSidechains());
   } catch (e) {
     error.value = String(e);
     console.error("[SidechainsView] Failed to load sidechains:", e);
+    // Fall back to the static platform list so addresses still display.
+    sidechains.value = mergePlatformSidechains([]);
   } finally {
     loading.value = false;
   }
@@ -192,7 +199,7 @@ async function copyAddress(slot: number | null) {
           to="/pro"
           class="rounded-xl bg-amber-500 px-5 py-3 text-sm font-black text-gray-950 transition-colors hover:bg-amber-400"
         >
-          View PRO benefits
+          Go PRO!
         </router-link>
       </div>
     </section>

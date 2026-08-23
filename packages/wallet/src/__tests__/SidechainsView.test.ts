@@ -84,13 +84,14 @@ describe("Platforms view", () => {
     expect(wrapper.text()).toContain("Elements Plus");
   });
 
-  it("should display BitNames before Thunder while preserving the rest of the API order", async () => {
+  it("should display BitNames, Thunder, then Snowside while preserving the rest of the API order", async () => {
     const wrapper = await mountPlatforms();
     const headings = wrapper.findAll("h3").map((heading) => heading.text());
 
-    expect(headings.slice(0, 4)).toEqual([
+    expect(headings.slice(0, 5)).toEqual([
       "BitNames",
       "Thunder Network",
+      "Snowside",
       "zSide",
       "BitAssets",
     ]);
