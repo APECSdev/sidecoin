@@ -347,9 +347,8 @@ describe("DashboardView.vue", () => {
   it("should render the live ECX market price", async () => {
     const wrapper = await mountDashboard();
 
-    expect(wrapper.text()).toContain("ECX Market Price");
+    expect(wrapper.text()).toContain("ECX (Projected) Market Price");
     expect(wrapper.text()).toContain("USD 30.00");
-    expect(wrapper.text()).toContain("ECX");
     expect(mockGetMarketPrice).toHaveBeenCalledWith("ecash");
     // Source is now eCash Farm (linked), not SupaQt.
     const sourceLink = wrapper.find('[data-test="market-price-source"]');

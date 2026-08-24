@@ -233,6 +233,20 @@ function formatSats(sats: bigint): string {
   return `${neg ? "-" : ""}${whole}.${frac}`;
 }
 
+/** Format an ISO timestamp as a human-readable local time string. */
+function formatLocalTime(iso: string): string {
+  const date = new Date(iso);
+  if (isNaN(date.getTime())) return iso;
+  return date.toLocaleString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+}
+
 function isDashboardPlatformLocked(platformId: string): boolean {
   return isProPlatform(platformId) && !canAccessPlatform(platformId);
 }
@@ -342,7 +356,7 @@ function platformHref(platformId: string): string {
 
         <div class="rounded-2xl border border-gray-800 bg-gray-900 p-6">
           <div class="flex flex-wrap items-center justify-between gap-3">
-            <p class="text-sm text-gray-400">ECX Market Price</p>
+            <p class="text-sm text-gray-400">ECX (Projected) Market Price</p>
             <a
               href="https://ecashfarm.com"
               target="_blank"
@@ -371,10 +385,9 @@ function platformHref(platformId: string): string {
           <template v-else-if="marketPrice">
             <p class="mt-2 text-4xl font-bold text-ecash-400">
               USD {{ marketPrice.price_usd }}
-              <span class="text-lg text-gray-500">{{ marketPrice.asset }}</span>
             </p>
             <p class="mt-2 font-mono text-xs text-gray-600">
-              {{ marketPrice.as_of }}
+              {{ formatLocalTime(marketPrice.as_of) }}
             </p>
           </template>
 

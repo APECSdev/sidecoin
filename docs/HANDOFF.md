@@ -324,8 +324,83 @@ definitive, persisted Signet/Alphanet network toggle (Settings + Sidebar).
 
 ### Test baselines
 
-shared 248 passed + 1 skipped · wallet 374 passed · web 118 · desktop 76 ·
+shared 248 passed + 1 skipped · wallet 379 passed · web 118 · desktop 76 ·
 mobile 21 · explorer 43 · api-client 12 · smarthub 5. All type-checks clean.
+
+## Next work item — ECX market price (eCash Farm) + Coin News UI + sidebar polish
+
+### STATUS: DONE ✅
+
+Replaced the offline SupaQt market-price source with the eCash Farm
+`projected.ecxUsd` projection, polished the Coin News stats box layout,
+and added breathing room below the sidebar Settings link. Commit:
+`feat(wallet): Esplora balance fallback + Signet/Alphanet toggle + eCash
+Farm price + UI fixes` (`528265e`, pushed) + the follow-up label/time edits
+in this commit.
+
+### What was implemented
+
+1. **ECX market price → eCash Farm** (`packages/wallet/src/api/index.ts`):
+   - New `ECASHFARM_BASE_URL = "https://ecashfarm.com/v1"` constant (next
+     to `SUPAQT_BASE_URL`).
+   - `getMarketPrice(asset)` rewritten to `GET /v1/markets` and read
+     `projected.ecxUsd` (a forward-looking fair-value projection, not a
+     last-trade print). Returns the SAME `MarketPrice` shape (`asset`,
+   - `name`, `price_usd`, `source`, `as_of`) so the Dashboard consumes it
+     unchanged: `source` is `"eCash Farm"`, `price_usd` is the projection
+     formatted to 2 decimals, `as_of` is the upstream `updatedAt` epoch
+     seconds as an ISO string. Non-ECX aliases are coerced to `"ecash"`.
+   - Throws on non-OK responses or a missing/non-numeric `ecxUsd`.
+2. **Dashboard market-price card** (`packages/wallet/src/views/DashboardView.vue`):
+   - Label changed from "ECX Market Price" → **"ECX (Projected) Market
+     Price"**.
+   - Source badge changed from a static "SupaQt" pill → a linked
+     **"eCash Farm ↗"** anchor (`href="https://ecashfarm.com"`, opens in a
+     new tab, `data-test="market-price-source"`).
+   - Timestamp rendered with a new `formatLocalTime(iso)` helper
+     (`toLocaleString` with year/month/day + 2-digit time) instead of the
+     raw ISO string.
+   - Price line shows just `USD <price>` — the `asset`/`eCash` suffix span
+     was removed.
+3. **Coin News stats box** (`packages/wallet/src/components/bitnames/CoinNewsPreview.vue`):
+   the Posts/Feeds/Network box was overlapping its rounded border on narrow
+   widths. Fixed by accommodating the box in the flex parent rather than
+   shrinking the text:
+   - Added `shrink-0` + `self-start` to the grid so the `lg:flex-row` parent
+     no longer compresses it.
+   - `whitespace-nowrap` on each value so labels never wrap into the
+     divider or border.
+   - Column gap `gap-x-4`, container padding `p-3`, cell padding `px-3`.
+   - All three values keep the original `text-lg font-black` size (no
+     truncation, no down-sizing).
+4. **Sidebar spacing** (`packages/wallet/src/App.vue`): added `mb-4` to the
+   nav `<ul>` so the Settings link no longer touches the "Sidecoin Basic"
+   card below it.
+5. **Mobile header date** (`packages/wallet/src/App.vue`): fixed a stale
+   `2026·08·21` → `2026·10·31` (left over from the fork-date pushback).
+
+### Endpoints verified
+
+- `GET https://ecashfarm.com/v1/markets` →
+  `{ ok, updatedAt, projected: { ecxUsd, marketCap, poolSize,
+  referencePriceUsd, maxPoolSize }, creatorWallet, token, source }`.
+  `projected.ecxUsd` is a `number` (e.g. `106.47…`); `updatedAt` is epoch
+  seconds.
+
+### Test updates
+
+- `api.test.ts`: replaced the two old SupaQt market-price tests with eCash
+  Farm equivalents (loads `projected.ecxUsd`, coerces aliases, rounds to 2
+  decimals, throws on non-OK + missing/NaN `ecxUsd`). Added a dedicated
+  `getMarketPrice — eCash Farm /v1/markets` describe block (5 tests).
+- `DashboardView.test.ts`: label assertion → "ECX (Projected) Market
+  Price"; added `market-price-source` link assertions (href + text).
+
+### Test baselines (post-this-commit)
+
+shared 248 passed + 1 skipped · wallet **379 passed** · web 118 · desktop
+76 · mobile 21 · explorer 43 · api-client 12 · smarthub 5. All type-checks
+clean.
 
 ## In-flight
 

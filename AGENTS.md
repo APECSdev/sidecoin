@@ -151,7 +151,7 @@ must be green before commit.
    The Receive page (`ReceiveView.vue`) exposes a session-only
    Signet/Alphanet selector that re-derives the L1 address on switch — it
    is NOT persisted to the keystore. `DEFAULT_NETWORK_ID` is still `"signet"`.
-7. **Fork activation is block ~973,728 on 2026-10-31 15:00 UTC** (pushed back
+6. **Fork activation is block ~973,728 on 2026-10-31 15:00 UTC** (pushed back
    from the earlier Aug 21 / block ~964,000 target). Authoritative source:
    [ecash.com](https://ecash.com) (live page title + bundled JS
    `2026-10-31T15:00:00Z`). This value lives in every `ChainConfig.fork`
@@ -161,7 +161,7 @@ must be green before commit.
    (fork at block 0); alphanet forks at height 963,648 (from drivechain.dev).
    When the fork date changes again, grep for `2026-10-31` and `973_728` /
    `973,728` and update every hit.
-8. **Primary external sources for eCash/ECX facts** (consult before changing
+7. **Primary external sources for eCash/ECX facts** (consult before changing
    consensus params, address formats, or fork values):
    - [ecash.com](https://ecash.com) — official site, FAQ, live fork
      countdown (authoritative for the current fork block + date).
@@ -181,14 +181,14 @@ must be green before commit.
    - [BIP-300](https://github.com/bitcoin/bips/blob/master/bip-0300.mediawiki),
      [BIP-301](https://github.com/bitcoin/bips/blob/master/bip-0301.mediawiki)
      — drivechain + BMM specs.
-5. **`@sidecoin/api-client` talks to the external Worker.** Its
+8. **`@sidecoin/api-client` talks to the external Worker.** Its
    `DEFAULT_BASE_URL` is `https://sidecoin.app/v1`. It never imports from
    `sidecoin-api`; it consumes the public HTTPS surface.
-6. **No `packages/api` here anymore.** If a task references the API adapter's
+9. **No `packages/api` here anymore.** If a task references the API adapter's
    sources, routes, or migrations, that work happens in the `sidecoin-api`
    repo, not here. The only API-related code left here is
    `packages/api-client`.
-9. **L1 reads + broadcast route to public Esplora, NOT sidecoin.app/v1.**
+10. **L1 reads + broadcast route to public Esplora, NOT sidecoin.app/v1.**
    The `sidecoin.app/v1` adapter is offline (see `docs/HANDOFF.md`). Until it's
    restored, all L1 balance / UTXO / broadcast / raw-tx reads in the wallet go
    to the public Esplora (mempool-electrs) endpoints published at
@@ -205,6 +205,17 @@ must be green before commit.
    Esplora `/utxo` doesn't return it. `getSidechains` / `getDeposits` /
    `getWalletBalance` still hit the adapter client (they're sidechain/L2, not
    L1) and will fail until the adapter returns.
+11. **ECX market price comes from eCash Farm, not SupaQt.** `getMarketPrice`
+   (`packages/wallet/src/api/index.ts`) fetches `https://ecashfarm.com/v1/markets`
+   and reads `projected.ecxUsd` (a forward-looking fair-value projection, not
+   a last-trade print). It returns the SAME `MarketPrice` shape (`asset`,
+   `name`, `price_usd`, `source`, `as_of`) so the Dashboard consumes it
+   unchanged; `source` is `"eCash Farm"` and `as_of` is the upstream
+   `updatedAt` epoch seconds as an ISO string. The Dashboard renders it as
+   "ECX (Projected) Market Price" with a linked "eCash Farm ↗" badge
+   (→ ecashfarm.com) and a local-time-formatted timestamp (no `asset` suffix
+   on the price line). The `ECASHFARM_BASE_URL` constant lives next to
+   `SUPAQT_BASE_URL`.
 
 ## Committing
 
