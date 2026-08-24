@@ -105,7 +105,7 @@ onBeforeUnmount(() => {
       class="fixed left-0 top-0 hidden h-full w-56 flex-col border-r border-gray-800 bg-gray-950 p-4 md:flex"
     >
       <div class="mb-8">
-        <h1 class="text-xl font-bold text-ecash-400">
+        <h1 class="text-3xl font-bold text-ecash-400">
           <span aria-hidden="true">SidΞcoin</span>
           <span class="sr-only">Sidecoin</span>
         </h1>

@@ -253,11 +253,10 @@ export function satsToBtc(sats: bigint): string {
   const abs = neg ? -sats : sats;
   const whole = abs / SATS_PER_COIN;
   const frac = abs % SATS_PER_COIN;
-  let out = whole.toString();
-  if (frac > 0n) {
-    const f = frac.toString().padStart(8, "0").replace(/0+$/, "");
-    out += `.${f}`;
-  }
+  // Always show at least 2 decimal places (e.g. 4 → "4.00", 4.1 → "4.10").
+  const f = frac.toString().padStart(8, "0").replace(/0+$/, "");
+  const decimals = f.length < 2 ? f.padEnd(2, "0") : f;
+  const out = `${whole}.${decimals}`;
   return neg ? `-${out}` : out;
 }
 

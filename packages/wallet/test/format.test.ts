@@ -7,12 +7,12 @@ describe("satsToBtc", () => {
     expect(satsToBtc(133700000n)).toBe("1.337");
   });
 
-  it("formats a whole coin without a fraction", () => {
-    expect(satsToBtc(100000000n)).toBe("1");
+  it("formats a whole coin with at least 2 decimal places", () => {
+    expect(satsToBtc(100000000n)).toBe("1.00");
   });
 
-  it("formats zero", () => {
-    expect(satsToBtc(0n)).toBe("0");
+  it("formats zero with at least 2 decimal places", () => {
+    expect(satsToBtc(0n)).toBe("0.00");
   });
 
   it("keeps full precision down to 1 sat", () => {
