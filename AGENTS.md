@@ -70,8 +70,8 @@ must be green before commit.
 
 | Package | Tests |
 | --- | --- |
-| `@sidecoin/shared` | 244 passed, 1 skipped (12 files) |
-| `@sidecoin/wallet` | 346 passed (26 files) |
+| `@sidecoin/shared` | 248 passed, 1 skipped (12 files) |
+| `@sidecoin/wallet` | 379 passed (26 files) |
 | `@sidecoin/web` | 118 passed (3 files) |
 | `@sidecoin/explorer` | 43 passed (7 files) |
 | `@sidecoin/smarthub` | 5 passed (1 file) |
@@ -216,6 +216,13 @@ must be green before commit.
    (→ ecashfarm.com) and a local-time-formatted timestamp (no `asset` suffix
    on the price line). The `ECASHFARM_BASE_URL` constant lives next to
    `SUPAQT_BASE_URL`.
+12. **`satsToBtc` always shows at least 2 decimal places.**
+   `packages/wallet/src/api/index.ts` `satsToBtc(sats: bigint): string`
+   formats satoshis as a decimal coin string. It strips trailing zeros from
+   the 8-digit fraction but **pads to a minimum of 2 decimal places** — so
+   `4` renders as `"4.00"`, `4.1` as `"4.10"`, `0` as `"0.00"`. Values with
+   more precision (e.g. `1.337`) are unchanged. Used by the Dashboard L1
+   balance card, SendView, HardwareWalletView, and CoinNews components.
 
 ## Committing
 

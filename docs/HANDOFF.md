@@ -402,6 +402,35 @@ shared 248 passed + 1 skipped · wallet **379 passed** · web 118 · desktop
 76 · mobile 21 · explorer 43 · api-client 12 · smarthub 5. All type-checks
 clean.
 
+## Next work item — satsToBtc 2-decimal minimum + sidebar title size
+
+### STATUS: DONE ✅
+
+Two small UI polish items. Commit:
+`feat(wallet): force 2 decimal places on satsToBtc + enlarge sidebar title`
+(`bd2750e`, pushed).
+
+### What was implemented
+
+1. **`satsToBtc` minimum 2 decimal places**
+   (`packages/wallet/src/api/index.ts`): the formatter strips trailing zeros
+   from the 8-digit fraction but now **pads to a minimum of 2 decimal
+   places**. `4` → `"4.00"`, `4.1` → `"4.10"`, `0` → `"0.00"`. Values with
+   more precision (e.g. `1.337`) are unchanged. Affects the Dashboard L1
+   balance card, SendView, HardwareWalletView, and CoinNews components.
+2. **Sidebar title enlarged** (`packages/wallet/src/App.vue`): the desktop
+   sidebar "SidΞcoin" `<h1>` bumped from `text-xl` to `text-3xl` so it fills
+   more of the sidebar width.
+3. **Tests** (`packages/wallet/test/format.test.ts`): updated the two
+   assertions that expected bare `"1"` and `"0"` → now expect `"1.00"` and
+   `"0.00"`.
+
+### Test baselines (post-this-commit)
+
+shared 248 passed + 1 skipped · wallet **379 passed** · web 118 · desktop
+76 · mobile 21 · explorer 43 · api-client 12 · smarthub 5. All type-checks
+clean.
+
 ## In-flight
 
 (Nothing else in-flight. Add items here when work starts.)
