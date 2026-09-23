@@ -4,11 +4,131 @@ State of work and next steps for the `sidecoin` monorepo. Maintained as a
 rolling log — update it when you finish a chunk of work so the next agent can
 pick up exactly where you left off.
 
-## Current state (last updated: post-API-extraction)
+## Current state (last updated: post-mobile Phase 4c + import/icon fixes)
 
-The monorepo just shed its API adapter. The Cloudflare Worker
-(`packages/api`, formerly `@sidecoin/api`) was extracted into a standalone
-repository: [`sidecoin-api`](https://github.com/APECSdev/sidecoin-api).
+The monorepo now ships a **React Native Android wallet** (`apps/mobile`) that
+is feature-complete against the Vue wallet except for `platform-detail` and
+`hardware` (the latter is permanently out of scope — WebUSB/WebHID). It is
+installed and running on the operator's Pixel 5.
+
+### Latest commit
+
+- `d38ee85 fix(mobile): register all stack routes and bundle icon fonts` on
+  `master`, pushed to BOTH `origin` (GitHub) and `gitlab`.
+
+### Mobile milestone history (newest first)
+
+| Commit | What landed |
+| --- | --- |
+| `d38ee85` | Import no-op + missing tab-icon fixes (see below) |
+| `7bd2723` | Phase 4c — Settings, Dashboard, Send, Coin News, QR scanner |
+| `3f627c2` | Phase 4b — Sidechains, Receive, Toolbox, AssetSwap |
+| `becdedd` | Phase 4a — Onboarding, Markets, ProBenefits + UI kit |
+| `b09d899` | Phase 3 — pure logic layer (api, send, entitlements, platforms, hardware/network) |
+| `fd9b4bf` | Refactor — deployables → `apps/`, libraries stay in `packages/` |
+| `baa1f75` | Phase 2 — navigation shell + encrypted keystore |
+| `c0e4e1f` | F-Droid compliance — own signing key, optional Sentry |
+
+### The two bugs fixed in `d38ee85` (both blocked first-run on device)
+
+1. **Seed-phrase import was a silent no-op.** `RootNavigator` registered the
+   main stack *conditionally* on `walletPresent`, so with no stored wallet the
+   only registered route was `onboarding`. `OnboardingScreen.finish()` then
+   called `navigation.replace("main")` on a route that did not exist, and
+   React Navigation drops such an action silently. Fixed by registering every
+   route unconditionally; `initialRouteName` still gates startup on the
+   keystore (parity with the Vue router's always-registered routes + a
+   `beforeEach` guard).
+2. **Tab bar icons rendered as missing-glyph boxes.** Autolinking wires the
+   `react-native-vector-icons` native module but NOT its typefaces, and
+   `android/app/build.gradle` never applied `fonts.gradle` — the APK contained
+   **zero `.ttf` assets** (confirmed with `unzip -l`). Fixed by applying
+   `fonts.gradle` with an explicit list (`MaterialIcons.ttf`, `Ionicons.ttf` —
+   the only sets imported).
+
+A regression test (`App.test.tsx` → "should register every route while gated
+on onboarding") records the registered route names via the native-stack mock
+and **fails on the old navigator**.
+
+### Verification (all green at `d38ee85`)
+
+| Check | Result |
+| --- | --- |
+| `apps/mobile` `npx tsc --noEmit` | clean |
+| `apps/mobile` `npx jest` | **143 passed / 8 suites** |
+| `.ttf` in rebuilt APK | `assets/fonts/Ionicons.ttf`, `assets/fonts/MaterialIcons.ttf` |
+| APK signature | `CN=APECS Dev`, SHA-256 `4212…d65d4` |
+| Device | installed, launches clean, no FATAL; tab icons occupy real glyph bounds |
+| Workspace `pnpm -r test` | shared 262 (+1 skip), wallet 382, web 118, desktop 76, explorer 43, mobile 143, api-client 12, smarthub 5 |
+
+### Remaining mobile work
+
+- **Port `PlatformDetailView.vue`** (1249 lines + `bitnames/` ≈1006 lines) —
+  the last sizeable screen; `platform-detail` is still a placeholder.
+- `hardware` stays a placeholder permanently (WebUSB/WebHID).
+- Optionally add an ESLint config for `apps/mobile` (pre-existing gap; the
+  `lint` script currently has nothing to read).
+- APK size is ~148 MB — ABI splits / dependency trimming is an open item.
+- Phase 7 (iOS), Phase 8 (CI Android job), Phase 9 (F-Droid repo + optional
+  `fdroiddata` MR).
+
+---
+
+## NEXT SESSION — test/verify Send & Receive on Signet, then Alphanet, then Betanet
+
+Operator's plan for the next session (in this order):
+
+1. **Signet** — send + receive
+2. **Alphanet** — send + receive
+3. **Betanet** — send + receive
+
+### Verified starting facts (checked this session)
+
+- **Esplora tip heights at probe time** (`GET /blocks/tip/height`):
+  signet **15264**, alphanet **997253**, betanet **970082**. All three
+  endpoints responded.
+- **Faucet availability** (from [drivechain.dev/config](https://drivechain.dev/config)):
+  | Network | Esplora | Faucet |
+  | --- | --- | --- |
+  | signet | `https://esplora.signet.drivechain.info` | ✅ `https://node.signet.drivechain.info/api` — 3 coins, 3600 s cooldown |
+  | alphanet | `https://esplora.alpha.ecash.ninja` | ❌ none published |
+  | betanet | `https://esplora.beta.ecash.ninja` | ❌ none published |
+- **`GET https://node.signet.drivechain.info/api` returned 404** for a bare
+  GET (it is a Next.js faucet web app, not a plain JSON endpoint) — the UI at
+  `https://node.signet.drivechain.info/` is titled "Drivechain Faucet
+  (signet)". Use the web UI to request coins.
+- **Two different "signet" configs exist.** `drivechain.dev/config` describes
+  the L2L **Bitcoin** signet (family `bitcoin`, currency `sBTC`, p2p port
+  38333, faucet above). `packages/shared` describes the eCash **`signet`**
+  chain with its own `NetworkId`. The wallet's `L1Network = "signet"` maps to
+  the `ESPLORA_BASES.signet` URL above.
+
+### Test procedure (per network)
+
+1. In the app, Settings → select the network (Betanet / Alphanet / Signet).
+2. Receive tab → confirm the derived address and copy it.
+3. **Fund it.** Signet: use the faucet UI. Alphanet/Betanet: there is no
+   faucet, so find an external source first — this may need operator input.
+4. Confirm the Dashboard L1 balance updates for that address.
+5. Send a small amount back (or to a second derived address) and confirm the
+   broadcast returns a txid and the balance decreases.
+6. Cross-check the txid/address against the network's explorer template from
+   `drivechain.dev/config`.
+
+### Things to watch for
+
+- `SendScreen` derives the signing key with
+  `deriveSigningKey(wallet.mnemonic, wallet.network, 0)` and fetches UTXOs with
+  `getL1Utxos(key.address, {}, wallet.network)` — confirm the network string
+  passed through matches the selected network (it now comes from
+  `wallet.network`, not a hardcoded "signet").
+- `FEE_RATE_SAT_PER_VB = 1` in `SendScreen`; fine for an empty mempool.
+- If a broadcast fails, capture the raw Esplora error body — `esploraBroadcast`
+  surfaces the RPC error text on non-OK responses.
+
+---
+
+## Historical: pre-mobile state
 
 ### Extraction commit
 
@@ -433,4 +553,17 @@ clean.
 
 ## In-flight
 
-(Nothing else in-flight. Add items here when work starts.)
+- **NEXT SESSION: test/verify Send & Receive on Signet → Alphanet → Betanet.**
+  See the "NEXT SESSION" section near the top for the verified endpoints,
+  faucet availability, and the per-network procedure.
+- **Mobile: port `PlatformDetailView.vue`** — the last remaining placeholder
+  screen. `hardware` stays a placeholder permanently (WebUSB/WebHID).
+- Open mobile items: ESLint config for `apps/mobile` (none exists — the `lint`
+  script fails, pre-existing), APK size (~148 MB; ABI splits / dep trimming not
+  yet investigated), `DOM` in the mobile tsconfig `lib` (needed for
+  `@types/node@25` `URL` types), FreeBank `platforms.ts` scaffold + slot 130 in
+  `ADDRESS_DERIVATION_SLOTS`, `sidechainsAtLaunch` betanet/alphanet counts.
+- Note: `docs/HANDOFF.md` sections below the mobile history still contain the
+  historical `packages/<app>` paths from before the `apps/` refactor
+  (`fd9b4bf`). They are intentionally NOT rewritten — they are a log of what
+  happened at the time. New entries use `apps/<app>`.

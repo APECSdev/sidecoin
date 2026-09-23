@@ -16,8 +16,10 @@ repository: [`sidecoin-api`](https://github.com/APECSdev/sidecoin-api). It is
 no longer present in this monorepo. The typed client that talks to that Worker
 (`@sidecoin/api-client`) stays here.
 
-- **Remote:** `git@github.com:APECSdev/sidecoin.git`
-- **Branch:** `master`
+- **Remotes:** `origin` = `git@github.com:APECSdev/sidecoin.git` (PRIMARY —
+  GitHub), `gitlab` = `git@gitlab.com:nyusternie/sidecoin.git` (F-Droid
+  staging + publication only). Push to BOTH when the operator asks.
+- **Branch:** `master` (linear history)
 - **Root package:** `sidecoin` v26.6.8 (private)
 - **Package manager:** pnpm `9.15.4` (via `packageManager` in root
   `package.json`); the machine's `pnpm` binary is v11.21.0 but honors the pin
@@ -57,9 +59,103 @@ packages/
 | `apps/web` | `@sidecoin/web` | `@sidecoin/shared` | Astro marketing + web wallet site. |
 | `apps/explorer` | `@sidecoin/explorer` | `@sidecoin/shared` | Vue chain explorer. |
 | `apps/desktop` | `@sidecoin/desktop` | `@sidecoin/shared` | Tauri + Rust + Vue desktop wallet. |
-| `apps/mobile` | `@sidecoin/mobile` | `@sidecoin/shared` | React Native mobile wallet. |
+| `apps/mobile` | `@sidecoin/mobile` | `@sidecoin/shared`, `@sidecoin/api-client` | React Native wallet (Android/F-Droid first; iOS deferred). Encrypted keychain keystore. See the dedicated section below. |
 | `apps/smarthub` | `@sidecoin/smarthub` | — | Vue "Smart Hub" secure portal challenge landing page. |
 | `packages/src` | (no package.json) | — | Stale generated `bindings.ts` placeholder; ignore. |
+
+## React Native mobile app (`apps/mobile`)
+
+The RN wallet is a port of the Vue browser wallet (`apps/wallet`). It builds
+in place — do **not** create a separate package for it. Android/F-Droid is the
+current priority; iOS is deferred.
+
+### What is ported (as of `d38ee85`)
+
+Every route in `apps/wallet/src/router/index.ts` is wired, except the two
+placeholders below. `apps/mobile/src/screens/index.tsx` `SCREEN_SOURCES` is the
+authoritative route → Vue-file map; keep it current as screens land.
+
+| Ported | Module |
+| --- | --- |
+| Shell + keystore | `App.tsx`, `navigation/RootNavigator.tsx`, `keystore.ts` |
+| Logic layer | `api/index.ts`, `send.ts`, `entitlements.ts`, `data/platforms.ts`, `hardware/network.ts`, `theme/`, `demo.ts`, `polyfills.ts` |
+| Screens | onboarding, dashboard, send, receive, platforms (Sidechains), swap, markets, toolbox, pro, settings |
+| Components | `components/ui.tsx`, `components/pro/*`, `components/QrScanner.tsx`, `components/paymenturi.ts`, `components/bitnames/*` |
+| **Still placeholders** | `platform-detail`, `hardware` |
+
+`hardware` is a permanent placeholder — Ledger/Trezor/OneKey use WebUSB/WebHID
+in the browser build, which is not portable to React Native.
+
+### Network model (differs from the Vue wallet)
+
+- `WalletNetwork = "signet" | "alphanet" | "betanet"` in
+  `apps/mobile/src/keystore.ts`. **Default is `betanet`.**
+- Settings offers all three (Betanet / Alphanet / Signet, in that order).
+- Receive offers Signet + Alphanet only, matching the Vue view.
+- L1 reads go to Esplora; the `ESPLORA_BASES` map in `apps/mobile/src/api/index.ts`
+  covers all three: signet → `https://esplora.signet.drivechain.info`,
+  alphanet → `https://esplora.alpha.ecash.ninja`, betanet →
+  `https://esplora.beta.ecash.ninja`.
+- **Only signet publishes a faucet** (`https://node.signet.drivechain.info/api`,
+  3 coins / 3600 s — from [drivechain.dev/config](https://drivechain.dev/config)).
+  Alphanet and betanet have NO faucet, so funding a test wallet there requires
+  an external source.
+
+### Build & deploy (Android)
+
+```
+cd apps/mobile
+npx tsc --noEmit                 # type-check
+npx jest                         # 143 tests, 8 suites
+cd android && ./gradlew assembleFdroidRelease
+adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
+```
+
+- `applicationId app.sidecoin`, `versionCode 26050030`, `versionName 26.5.30`,
+  minSdk 24, compileSdk/targetSdk 35. Release APK is ~148 MB (large — ABI
+  splits / dependency trimming is an open item, not yet investigated).
+- Flavors `fdroid` / `playstore`. Sentry is `optionalDependencies`-scoped and
+  therefore absent from `fdroid` builds (crash reporting intentionally lost).
+- Signing uses our own key (`android/keystore.properties` +
+  `apecsdev-release.keystore`, both gitignored). Cert:
+  `CN=APECS Dev`, SHA-256 `42126930dd049c558fcebc7f5893fa83cba0021a24aafe447e4dc6b3452d65d4`.
+- `./gradlew` runs are long (~1.5 h cold, minutes warm) — background them and
+  poll the log rather than blocking.
+
+### Mobile gotchas (each cost real debugging time)
+
+1. **Register every navigator route unconditionally.** React Navigation
+   silently drops a navigation action that targets an unregistered route. An
+   earlier `RootNavigator` registered the stack conditionally on whether a
+   wallet was stored, so `navigation.replace("main")` after importing a seed
+   did nothing at all. `initialRouteName` gates startup; registration must
+   not. `App.test.tsx` now asserts the registration set and fails on the old
+   behavior.
+2. **`react-native-vector-icons` needs `fonts.gradle` applied manually.**
+   Autolinking wires the native module but NOT the typefaces — without
+   `apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")`
+   in `android/app/build.gradle`, the APK contains zero `.ttf` files and every
+   icon renders as a missing-glyph box. Verify with `unzip -l <apk> | grep ttf`.
+3. **`.tsx` is required for any file containing JSX** — `screens/index.tsx`
+   must keep the `.tsx` extension.
+4. **The `Button` component has no `testID` prop.** Select buttons by their
+   text in tests. `Card` does support `testID`.
+5. **Use `getAllByText(...).length` + `toBeGreaterThan(0)`** when a string can
+   render in more than one mounted screen (e.g. "Drivechains Financial Hub");
+   `getByText` throws "Found multiple elements".
+6. **Ambiguous/native modules must be mocked in `App.test.tsx`** —
+   `@react-native-async-storage/async-storage`, `react-native-vision-camera`,
+   `@react-native-clipboard/clipboard`, `react-native-qrcode-svg`.
+7. **Jest transforms ESM-only crypto deps**: `@noble`, `@scure`,
+   `micro-key-producer`, `micro-packed` are allowlisted in
+   `jest.config.ts` `transformIgnorePatterns`.
+8. **Mobile tests use Jest globals** — do NOT import from `@jest/globals`
+   (its types are unavailable in the mobile tsconfig).
+9. **`apps/mobile` has no ESLint config** (pre-existing gap). Its
+   `lint` script (`eslint .`) therefore fails; this is not caused by any port
+   change. Adding a config is an open item.
+10. **Stale Jest cache masks fixes** — if a module-resolution fix appears not
+    to take, `rm -rf /tmp/jest_rs` and re-run before debugging further.
 
 ## Commands (run from the repo root unless noted)
 
@@ -75,6 +171,11 @@ pnpm --filter @sidecoin/wallet type-check        # vue-tsc --noEmit
 pnpm --filter @sidecoin/shared test              # 262 passed / 1 skipped
 pnpm --filter @sidecoin/shared type-check        # tsc --noEmit
 pnpm --filter @sidecoin/api-client test          # 12 passed
+pnpm --filter @sidecoin/mobile test              # 143 passed (8 suites, jest)
+pnpm --filter @sidecoin/mobile type-check        # tsc --noEmit
+
+# Android (from apps/mobile/android — see the React Native section above):
+./gradlew assembleFdroidRelease                   # release APK, our signing key
 
 # Dev servers (root scripts):
 pnpm dev:wallet     # Vite dev server for the browser wallet
@@ -98,7 +199,7 @@ must be green before commit.
 | `@sidecoin/explorer` | 43 passed (7 files) |
 | `@sidecoin/desktop` | 76 passed (6 files) |
 | `@sidecoin/smarthub` | 5 passed (1 file) |
-| `@sidecoin/mobile` | 25 passed (2 files) |
+| `@sidecoin/mobile` | 143 passed (8 suites) |
 | `@sidecoin/api-client` | 12 passed (1 file) |
 
 (Counts from `pnpm --filter <pkg> test`; verify before citing in a PR.)
@@ -110,7 +211,9 @@ must be green before commit.
   (the `api` job now covers **only** `@sidecoin/api-client`; the
   `@sidecoin/api` adapter steps were removed when that package was extracted),
   plus gated deploys: `deploy-web`, `deploy-wallet`, `deploy-explorer`,
-  `deploy-smarthub`. There is **no** `deploy-api` job anymore — the Worker is
+  `deploy-smarthub`. The `mobile` job runs `pnpm --filter @sidecoin/mobile test`
+  only — there is NO Android build or deploy job in CI; the APK is built and
+  installed locally. There is **no** `deploy-api` job anymore — the Worker is
   built/deployed from the `sidecoin-api` repo.
 - **`explorer-smoke.yml`** — scheduled (every 6h) + manual live API smoke
   check against the public explorer endpoints. Does NOT gate deploys.
