@@ -60,9 +60,11 @@ const config: Config = {
   // ────────────────────────────────────────────────────
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/src/$1",
-    // The mobile app lives in apps/mobile, a sibling of packages/shared,
-    // so the workspace lib is two levels up then into packages/.
+    // The mobile app lives in apps/mobile, a sibling of packages/shared and
+    // packages/api-client, so the workspace libs are two levels up then into
+    // packages/.
     "^@sidecoin/shared(.*)$": "<rootDir>/../../packages/shared/src$1",
+    "^@sidecoin/api-client(.*)$": "<rootDir>/../../packages/api-client/src$1",
   },
 
   // ────────────────────────────────────────────────────
@@ -96,6 +98,13 @@ const config: Config = {
       + "|@shopify/react-native-skia"
       + "|victory-native"
       + "|@sidecoin/shared"
+      + "|@sidecoin/api-client"
+      // @sidecoin/shared imports these ESM-only crypto libraries at runtime
+      // (derivation/signing), so Jest must transform them too.
+      + "|@noble"
+      + "|@scure"
+      + "|micro-key-producer"
+      + "|micro-packed"
     + ")/)",
   ],
 

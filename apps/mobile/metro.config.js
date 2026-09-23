@@ -18,6 +18,7 @@ const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config");
 const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "../..");
 const sharedPackage = path.resolve(monorepoRoot, "packages/shared");
+const apiClientPackage = path.resolve(monorepoRoot, "packages/api-client");
 
 // ──────────────────────────────────────────────────────
 // Default config from React Native 0.81
@@ -46,6 +47,7 @@ const config = {
   // ────────────────────────────────────────────────────
   watchFolders: [
     sharedPackage,
+    apiClientPackage,
     path.resolve(monorepoRoot, "node_modules"),
   ],
 

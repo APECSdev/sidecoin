@@ -1,0 +1,22 @@
+// apps/mobile/src/__tests__/format.test.ts
+//
+// Ported 1:1 from apps/wallet/test/format.test.ts (vitest -> Jest).
+import { satsToBtc } from "../api";
+
+describe("satsToBtc", () => {
+  it("formats 133700000 sats as 1.337 (the test deposit)", () => {
+    expect(satsToBtc(133700000n)).toBe("1.337");
+  });
+
+  it("formats a whole coin with at least 2 decimal places", () => {
+    expect(satsToBtc(100000000n)).toBe("1.00");
+  });
+
+  it("formats zero with at least 2 decimal places", () => {
+    expect(satsToBtc(0n)).toBe("0.00");
+  });
+
+  it("keeps full precision down to 1 sat", () => {
+    expect(satsToBtc(1n)).toBe("0.00000001");
+  });
+});

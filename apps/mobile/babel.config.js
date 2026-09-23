@@ -80,6 +80,7 @@ module.exports = function (api) {
           alias: {
             "@": "./src",
             "@sidecoin/shared": "../../packages/shared/src",
+            "@sidecoin/api-client": "../../packages/api-client/src",
           },
         },
       ],
