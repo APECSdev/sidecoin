@@ -20,7 +20,7 @@
 //     (`mergePlatformSidechains([])`).
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Clipboard from "@react-native-clipboard/clipboard";
@@ -280,7 +280,7 @@ export function SidechainsScreen(): React.JSX.Element {
   );
 
   return (
-    <View style={styles.root}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.rootContent}>
       <Card style={styles.hero}>
         <Eyebrow>Drivechains Financial Hub</Eyebrow>
         <Title>Platforms</Title>
@@ -377,13 +377,19 @@ export function SidechainsScreen(): React.JSX.Element {
           style={styles.moreButton}
         />
       ) : null}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    gap: 16,
+  },
+  // ScrollView content container -- see the note in ReceiveScreen.tsx.
+  rootContent: {
+    padding: 20,
+    paddingBottom: 48,
     gap: 16,
   },
   hero: {

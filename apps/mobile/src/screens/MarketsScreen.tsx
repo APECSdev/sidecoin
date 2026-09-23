@@ -17,7 +17,7 @@
 //     the upstream `source` value.
 
 import React, { useCallback, useEffect, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import { getMarketPrice, type MarketPrice } from "../api";
 import { GRAY } from "../theme/colors";
@@ -72,7 +72,7 @@ export function MarketsScreen(): React.JSX.Element {
   }, [loadMarketPrice]);
 
   return (
-    <View style={styles.root}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.rootContent}>
       <View>
         <Eyebrow>Live market data</Eyebrow>
         <Title>Markets</Title>
@@ -154,13 +154,19 @@ export function MarketsScreen(): React.JSX.Element {
           </Muted>
         </View>
       </Card>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    gap: 24,
+  },
+  // ScrollView content container -- see the note in ReceiveScreen.tsx.
+  rootContent: {
+    padding: 20,
+    paddingBottom: 48,
     gap: 24,
   },
   intro: {

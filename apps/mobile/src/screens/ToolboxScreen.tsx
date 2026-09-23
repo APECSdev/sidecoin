@@ -17,7 +17,7 @@
 //     on a phone they stack, so RN renders them vertically always.
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Clipboard from "@react-native-clipboard/clipboard";
 
 import { ECASH, GRAY } from "../theme/colors";
@@ -122,7 +122,7 @@ export function ToolboxScreen(): React.JSX.Element {
   }, []);
 
   return (
-    <View style={styles.root}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.rootContent}>
       <View>
         <Eyebrow>Wallet utilities</Eyebrow>
         <Title>Toolbox</Title>
@@ -371,13 +371,19 @@ export function ToolboxScreen(): React.JSX.Element {
           </Mono>
         </View>
       </Card>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    gap: 24,
+  },
+  // ScrollView content container -- see the note in ReceiveScreen.tsx.
+  rootContent: {
+    padding: 20,
+    paddingBottom: 48,
     gap: 24,
   },
   intro: {

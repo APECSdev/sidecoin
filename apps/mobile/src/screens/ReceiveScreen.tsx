@@ -23,7 +23,7 @@
 //     view's behaviour when the stored network was not in its two-chip list.
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import Clipboard from "@react-native-clipboard/clipboard";
 import QRCode from "react-native-qrcode-svg";
@@ -178,7 +178,7 @@ export function ReceiveScreen(): React.JSX.Element {
   }, [paymentCodePreview]);
 
   return (
-    <View style={styles.root}>
+    <ScrollView style={styles.root} contentContainerStyle={styles.rootContent}>
       <Card style={styles.hero}>
         <View style={styles.heroHead}>
           <View style={styles.heroCopy}>
@@ -390,13 +390,22 @@ export function ReceiveScreen(): React.JSX.Element {
           )}
         </Card>
       )}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   root: {
     flex: 1,
+    gap: 16,
+  },
+  // ScrollView content container -- mirrors the Dashboard/Settings pattern so
+  // the address card (below the fold) is reachable. `gap` moved here because
+  // ScrollView ignores it on the outer style; `flex: 1` stays on the outer
+  // style so short content still fills the screen exactly as before.
+  rootContent: {
+    padding: 20,
+    paddingBottom: 48,
     gap: 16,
   },
   hero: {
