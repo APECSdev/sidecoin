@@ -1,5 +1,9 @@
 Initial release:
-• Dashboard with balance and block info
-• Fork countdown (2026-10-31 15:00 UTC)
-• 10 BIP-300 sidechains displayed
-• Workspace linking with @sidecoin/shared
+• Betanet (default) and Signet support, with live balance + broadcast
+• Send / Receive with on-device signing, QR scanning, and an explicit
+  review step before funds leave your wallet
+• Encrypted keystore (Android Keystore-backed) — no plaintext seed on disk
+• Sidechain registry: 10 active BIP-300 platforms at launch (Thunder,
+  zSide, BitNames, BitAssets, Photon, Truthcoin, CoinShift, and more)
+• Markets view with the projected ECX price from eCash Farm
+• 11 sidechains tracked, 10 active
