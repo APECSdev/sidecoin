@@ -27,7 +27,7 @@ describe("keystore", () => {
     const saved = saveWallet(VALID_12);
     expect(saved.mnemonic).toBe(VALID_12);
     expect(saved.version).toBe(1);
-    expect(saved.network).toBe("signet");
+    expect(saved.network).toBe("betanet");
     expect(hasWallet()).toBe(true);
     expect(loadWallet()?.mnemonic).toBe(VALID_12);
   });
@@ -59,12 +59,19 @@ describe("keystore", () => {
 
   it("persists a network change to alphanet and reloads it", () => {
     saveWallet(VALID_12);
-    expect(loadWallet()?.network).toBe("signet");
+    expect(loadWallet()?.network).toBe("betanet");
 
     const updated = setWalletNetwork("alphanet");
     expect(updated.network).toBe("alphanet");
     expect(updated.mnemonic).toBe(VALID_12); // mnemonic preserved
     expect(loadWallet()?.network).toBe("alphanet");
+  });
+
+  it("persists a network change to betanet and reloads it", () => {
+    saveWallet(VALID_12);
+    const updated = setWalletNetwork("betanet");
+    expect(updated.network).toBe("betanet");
+    expect(loadWallet()?.network).toBe("betanet");
   });
 
   it("round-trips back to signet from alphanet", () => {
@@ -94,13 +101,13 @@ describe("keystore", () => {
     expect(() => setWalletNetwork("alphanet")).toThrow(/no wallet/i);
   });
 
-  it("coerces an unknown network field back to signet on load", () => {
+  it("coerces an unknown network field back to the default on load", () => {
     saveWallet(VALID_12);
     // Manually corrupt the network field to simulate an old/foreign record.
     const raw = JSON.parse(localStorage.getItem("sidecoin.wallet.v1")!);
     raw.network = "regtest"; // not a valid WalletNetwork
     localStorage.setItem("sidecoin.wallet.v1", JSON.stringify(raw));
 
-    expect(loadWallet()?.network).toBe("signet");
+    expect(loadWallet()?.network).toBe("betanet");
   });
 });

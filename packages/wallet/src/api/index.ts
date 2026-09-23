@@ -387,12 +387,13 @@ export async function broadcastTransaction(
 // BroadcastReceipt shapes the views already consume, so callers are unchanged.
 
 /** The two L1 networks a user can toggle between. Both are non-production. */
-export type L1Network = "signet" | "alphanet";
+export type L1Network = "signet" | "alphanet" | "betanet";
 
 /** Public Esplora base URLs per L1 network (from drivechain.dev/config). */
 const ESPLORA_BASES: Record<L1Network, string> = {
   signet: "https://esplora.signet.drivechain.info",
   alphanet: "https://esplora.alpha.ecash.ninja",
+  betanet: "https://esplora.beta.ecash.ninja",
 };
 
 /** Resolve the Esplora base URL for a network (throws on unknown). */
