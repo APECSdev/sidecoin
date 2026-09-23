@@ -46,7 +46,10 @@ function hash160(data: Uint8Array): Uint8Array {
  * networks (testnet, signet, regtest, l2l-signet).
  */
 function coinTypeFor(network: NetworkId): number {
-  return network === "mainnet" || network === "alphanet" ? 0 : 1;
+  // Alphanet and betanet are mainnet forks (shared UTXO set) → coin type 0.
+  return network === "mainnet" || network === "alphanet" || network === "betanet"
+    ? 0
+    : 1;
 }
 
 /**

@@ -253,7 +253,7 @@ export const ECASH_REGTEST: ChainConfig = {
 // confirming tb1 is the correct prefix.)
 //
 // This is NOT a production network (isProduction: false) and is NOT the
-// default — DEFAULT_NETWORK_ID remains "signet" (see chain/networks.ts).
+// default — DEFAULT_NETWORK_ID is "betanet" (see chain/networks.ts).
 // ---------------------------------------------------------------------------
 
 export const ECASH_L2L_SIGNET: ChainConfig = {
@@ -346,13 +346,13 @@ export const ECASH_ALPHANET: ChainConfig = {
   //
   // P2P network parameters — from the official drivechain.dev config.
   // network_magic "eca5a104", fork_height 963648, p2p seed port 8533.
-  // rpcPort is not published in the drivechain.dev config; 8332 is the
-  // mainnet default inherited by this mainnet fork.
+  // rpcPort 8532 is confirmed by ecash-com/fast-facts (01-node-setup.md):
+  // "eCash has its own default ports (P2P 8533, RPC 8532)".
   //
   networkParams: {
     magic: "eca5a104",    // From https://drivechain.dev/config (alphanet)
     defaultPort: 8533,     // From seed.alpha.ecash.ninja:8533
-    rpcPort: 8332,         // Inherited from mainnet (not published in config)
+    rpcPort: 8532,         // From ecash-com/fast-facts 01-node-setup.md
     dnsSeeds: [
       "seed.alpha.ecash.ninja",
     ],
@@ -371,10 +371,98 @@ export const ECASH_ALPHANET: ChainConfig = {
   fork: {
     // From drivechain.dev config: alphanet forks mainnet at height 963648
     // with a PoW difficulty reset (the "practice" fork point).
+    // The timestamp is the observed header time of block 963,648 (verified
+    // against the live alphanet Esplora; matches fast-facts' "alphanet live
+    // since 2026-08-23"). This previously held mainnet's date by mistake.
     activationBlockHeight: 963_648,
-    activationTimestampUtc: "2026-10-31T15:00:00Z",
+    activationTimestampUtc: "2026-08-23T00:04:19Z",
     bip300Active: true,
     bip301Active: true,
     sidechainsAtLaunch: 0,   // No sidechains listed in the alphanet config yet
+  },
+};
+
+// ---------------------------------------------------------------------------
+// eCash Betanet
+//
+// The ECX beta "practice" network — the second fork of mainnet, one stage
+// past alphanet, also with a PoW difficulty reset (to 1e9). Authoritative
+// config: https://drivechain.dev/config (id "betanet", family "ecash",
+// networks[3]). Cross-checked against ecash-com/fast-facts
+// (01-node-setup.md): magic 0xeca5b104, fork block 967,680.
+//
+// Like alphanet, betanet forks the mainnet UTXO set, so it inherits mainnet's
+// address format verbatim: coin type 0, bech32 HRP "bc", P2PKH/P2SH version
+// bytes 0x00/0x05. The same mnemonic produces the same addresses on betanet
+// and mainnet.
+//
+// This is NOT a production network (isProduction: false). It IS the default
+// network (see chain/networks.ts DEFAULT_NETWORK_ID).
+// ---------------------------------------------------------------------------
+
+export const ECASH_BETANET: ChainConfig = {
+  network: {
+    id: "betanet",
+    displayName: "eCash Betanet",
+    shortName: "beta",
+    isProduction: false,
+  },
+
+  //
+  // Address version bytes — inherited from mainnet (betanet is a mainnet
+  // fork with a shared UTXO set, so the address formats must match exactly).
+  //
+  addressVersions: {
+    p2pkh: 0x00,   // '1...' addresses (same as mainnet)
+    p2sh: 0x05,    // '3...' addresses (same as mainnet)
+    xpub: 0x0488b21e,  // xpub... (same as mainnet)
+    xprv: 0x0488ade4,  // xprv... (same as mainnet)
+  },
+
+  //
+  // Bech32 human-readable part — "bc", same as mainnet. Betanet addresses
+  // are byte-identical to mainnet addresses; only the chain differs.
+  //
+  bech32: {
+    hrp: "bc",
+  },
+
+  //
+  // P2P network parameters — from the official drivechain.dev config.
+  // network_magic "eca5b104", fork_height 967680, p2p seed port 8533.
+  // rpcPort 8532 is confirmed by ecash-com/fast-facts (01-node-setup.md):
+  // "eCash has its own default ports (P2P 8533, RPC 8532)".
+  //
+  networkParams: {
+    magic: "eca5b104",    // From https://drivechain.dev/config (betanet)
+    defaultPort: 8533,     // From seed.beta.ecash.ninja:8533
+    rpcPort: 8532,         // From ecash-com/fast-facts 01-node-setup.md
+    dnsSeeds: [
+      "seed.beta.ecash.ninja",
+    ],
+  },
+
+  consensus: {
+    powAlgorithm: "sha256d",
+    targetBlockTimeSeconds: 600,                // 10 minutes
+    difficultyAdjustmentInterval: 2016,         // ~2 weeks
+    initialSubsidySatoshis: BigInt("312500000"), // 3.125 BTC (post-4th-halving)
+    halvingInterval: 210_000,
+    maxBlockWeight: 4_000_000,                  // SegWit weight units
+    coinbaseMaturity: 100,
+  },
+
+  fork: {
+    // From drivechain.dev config: betanet forks mainnet at height 967680
+    // with a PoW difficulty reset to 1e9 (fast-facts 01-node-setup.md).
+    // The timestamp is the observed header time of block 967,680 (verified
+    // against the live betanet Esplora; matches fast-facts' "betanet
+    // expected ~2026-09-19"). Betanet had already activated (Esplora tip
+    // 970,016) at the time this config was written.
+    activationBlockHeight: 967_680,
+    activationTimestampUtc: "2026-09-19T07:09:03Z",
+    bip300Active: true,
+    bip301Active: true,
+    sidechainsAtLaunch: 1,   // Thunder (slot 9) is listed in the betanet config
   },
 };

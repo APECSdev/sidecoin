@@ -18,6 +18,13 @@
  *             Authoritative config: https://drivechain.dev/config
  *             Shares mainnet's address format (coin type 0, "bc" HRP) because
  *             it forks the mainnet UTXO set; it is NOT a production network.
+ *             Fork activated at block 963,648 on 2026-08-23.
+ * - betanet: The ECX beta practice network — a second fork of mainnet with a
+ *            PoW difficulty reset (to 1e9), one stage past alphanet.
+ *            Authoritative config: https://drivechain.dev/config (networks[3]).
+ *            Fork activated at block 967,680 on 2026-09-19. Shares mainnet's
+ *            address format (coin type 0, "bc" HRP) for the same reason as
+ *            alphanet. This is the DEFAULT network; it is NOT production.
  */
 export type NetworkId =
   | "mainnet"
@@ -25,7 +32,8 @@ export type NetworkId =
   | "signet"
   | "regtest"
   | "l2l-signet"
-  | "alphanet";
+  | "alphanet"
+  | "betanet";
 
 /**
  * Human-readable network metadata used for display in the UI

@@ -13,6 +13,7 @@ import {
   ECASH_REGTEST,
   ECASH_L2L_SIGNET,
   ECASH_ALPHANET,
+  ECASH_BETANET,
 } from "./config";
 
 // ---------------------------------------------------------------------------
@@ -33,6 +34,7 @@ export const NETWORKS: Readonly<Record<NetworkId, ChainConfig>> = {
   regtest: ECASH_REGTEST,
   "l2l-signet": ECASH_L2L_SIGNET,
   alphanet: ECASH_ALPHANET,
+  betanet: ECASH_BETANET,
 } as const;
 
 /**
@@ -46,6 +48,7 @@ export const NETWORK_IDS: readonly NetworkId[] = [
   "regtest",
   "l2l-signet",
   "alphanet",
+  "betanet",
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -55,12 +58,13 @@ export const NETWORK_IDS: readonly NetworkId[] = [
 /**
  * The default network used when no explicit selection has been made.
  *
- * During pre-fork development this defaults to "signet" (the live signet
- * referenced on ecash.com). Switch to "mainnet" after the fork activates.
+ * Defaults to "betanet" — the current live ECX practice network (activated
+ * at block 967,680 on 2026-09-19). Users can switch to "alphanet" (the
+ * earlier practice stage) or "signet" from Settings.
  *
- * IMPORTANT: Update this to "mainnet" after the August 21, 2026 fork.
+ * IMPORTANT: Update this to "mainnet" after the October 31, 2026 fork.
  */
-export const DEFAULT_NETWORK_ID: NetworkId = "signet";
+export const DEFAULT_NETWORK_ID: NetworkId = "betanet";
 
 export const DEFAULT_NETWORK: ChainConfig = NETWORKS[DEFAULT_NETWORK_ID];
 
