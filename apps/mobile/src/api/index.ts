@@ -374,7 +374,7 @@ export async function broadcastTransaction(
 // ---------------------------------------------------------------------------
 // Public Esplora fallback for L1 reads + broadcast (drivechain.dev/config)
 // ---------------------------------------------------------------------------
-// The sidecoin.app/v1 adapter is offline (see HANDOFF). Until it's restored,
+// The sidecoin.app/v1 adapter is offline. Until it is restored,
 // L1 balance / UTXO / broadcast / raw-tx reads route to the public Esplora
 // (mempool-electrs) endpoints published in the drivechain.dev/config registry.
 // Both networks expose the same mempool/esplora API surface:
