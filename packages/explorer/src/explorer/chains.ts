@@ -5,6 +5,11 @@ import type { ExplorerChain } from "./types";
 
 export const DEFAULT_CHAIN_ID = "l1";
 
+// Chains the explorer will actually fetch live data for. This is NOT the
+// sidechain registry status (which is our source of truth for slot
+// assignment + lifecycle) — it gates whether the explorer issues live API
+// requests. Flipping a chain to "active" here makes it call the Sidecoin API
+// for real data, so only do it once that chain has a live indexer.
 const ACTIVE_EXPLORER_CHAIN_IDS = new Set(["l1", "bitnames", "thunder"]);
 
 const L1_CHAIN: ExplorerChain = {

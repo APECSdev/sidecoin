@@ -56,6 +56,7 @@ describe("explorer chain registry", () => {
       coinshift: "coming soon",
       riscy: "coming soon",
       snowside: "coming soon",
+      freebank: "coming soon",
       elementsplus: "coming soon",
     });
   });
