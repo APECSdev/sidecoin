@@ -31,6 +31,50 @@ jest.mock("../keystore", () => ({
 
 import { hasWallet } from "../keystore";
 
+// Demo Mode / theme persistence use AsyncStorage. The native module is absent
+// in Jest, so provide an in-memory store (the real ../demo + ../theme helpers
+// then stay under test).
+jest.mock("@react-native-async-storage/async-storage", () => {
+  const store = new Map<string, string>();
+  return {
+    __esModule: true,
+    default: {
+      getItem: jest.fn(async (k: string) => store.get(k) ?? null),
+      setItem: jest.fn(async (k: string, v: string) => {
+        store.set(k, v);
+      }),
+      removeItem: jest.fn(async (k: string) => {
+        store.delete(k);
+      }),
+      clear: jest.fn(async () => {
+        store.clear();
+      }),
+    },
+  };
+});
+
+// The dashboard (the Home tab) performs live API reads on mount. Stub them so
+// the shell test does not hit the network; the dashboard's own behaviour is
+// covered by ./DashboardScreen.test.tsx.
+jest.mock("../api", () => {
+  const actual = jest.requireActual("../api");
+  return {
+    ...actual,
+    getSidechains: jest.fn(async () => []),
+    getDeposits: jest.fn(async () => ({
+      slot: 0,
+      chainId: "chain-0",
+      provisioned: false,
+      deposits: [],
+      nextCursor: null,
+    })),
+    getL1Balance: jest.fn(async () => null),
+    getCoinNewsFeeds: jest.fn(async () => []),
+    getCoinNewsPosts: jest.fn(async () => ({ feed: null, posts: [], next_cursor: null })),
+    getMarketPrice: jest.fn(async () => null),
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Mock native modules that crash in a Jest environment
 //
@@ -38,6 +82,18 @@ import { hasWallet } from "../keystore";
 // They cannot reference any imported variables (like `React`).
 // Instead, use require() inline inside each factory.
 // ---------------------------------------------------------------------------
+
+// react-native-vision-camera — the QR scanner module is imported (though not
+// mounted) via the Send screen, and the native module is absent in Jest.
+jest.mock("react-native-vision-camera", () => ({
+  Camera: () => null,
+  useCameraDevice: () => null,
+  useCameraPermission: () => ({
+    hasPermission: false,
+    requestPermission: async () => false,
+  }),
+  useCodeScanner: () => ({ codeTypes: ["qr"], onCodeScanned: () => {} }),
+}));
 
 // react-native-gesture-handler
 jest.mock("react-native-gesture-handler", () => {
@@ -255,7 +311,9 @@ describe("App", () => {
     render(<App />);
     // DashboardScreen (the Home tab) is the landing surface for a stored wallet.
     await waitFor(() => {
-      expect(screen.getByText("SidΞcoin")).toBeTruthy();
+      expect(
+        screen.getAllByText("Drivechains Financial Hub").length,
+      ).toBeGreaterThan(0);
     });
   });
 });

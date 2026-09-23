@@ -1,141 +1,507 @@
 // apps/mobile/src/__tests__/DashboardScreen.test.tsx
 //
-// Tests for the Dashboard screen.
-//
-// These assertions were moved verbatim out of App.test.tsx when App.tsx
-// became a provider shell (Phase 2). The content they cover — branding, the
-// fork countdown, chain info, the sidechain list, and workspace validation —
-// now lives in ./screens/DashboardScreen.tsx, which was relocated 1:1 from the
-// pre-shell App body so nothing regresses.
+// Tests for the Dashboard screen — ported from
+// apps/wallet/src/__tests__/DashboardView.test.ts and adapted to the React
+// Native port. Covers loading/error states, platform activity fan-out,
+// aggregate inflow, Basic/PRO dashboard card treatment, the fork banner, Demo
+// Mode, the bigint formatSats helper, and the L1 wallet balance card.
 
 import React from "react";
-import { render, screen } from "@testing-library/react-native";
-import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
+import { render, screen, waitFor } from "@testing-library/react-native";
+
 import { DashboardScreen } from "../screens/DashboardScreen";
 
-// react-native-safe-area-context — the dashboard reads insets for padding.
-jest.mock("react-native-safe-area-context", () => {
-  const React = require("react");
-  const inset = { top: 0, right: 0, bottom: 0, left: 0 };
-  const View = require("react-native").View;
+// ---------------------------------------------------------------------------
+// Navigation — the dashboard navigates on its links and re-fetches the L1
+// balance on focus. Both are no-ops here; useFocusEffect is turned into a
+// plain mount effect so the focus refetch still runs.
+// ---------------------------------------------------------------------------
+jest.mock("@react-navigation/native", () => ({
+  useNavigation: () => ({ navigate: jest.fn() }),
+  useFocusEffect: (cb: () => void | (() => void)) => {
+    const React = require("react");
+    React.useEffect(cb, [cb]);
+  },
+}));
+
+// ---------------------------------------------------------------------------
+// Mock the API module
+//
+// Spread the REAL module (so satsToBtc — used in the template — stays the
+// genuine lossless formatter) and override only the network data functions.
+// ---------------------------------------------------------------------------
+jest.mock("../api", () => {
+  const actual = jest.requireActual("../api");
   return {
-    SafeAreaProvider: ({ children, ...props }: any) =>
-      React.createElement(View, props, children),
-    SafeAreaView: ({ children, ...props }: any) =>
-      React.createElement(View, props, children),
-    useSafeAreaInsets: () => inset,
-    SafeAreaInsetsContext: {
-      Consumer: ({ children }: any) => children(inset),
-    },
-    initialWindowMetrics: { frame: { x: 0, y: 0, width: 0, height: 0 }, insets: inset },
+    ...actual,
+    getSidechains: jest.fn(),
+    getDeposits: jest.fn(),
+    getL1Balance: jest.fn(),
+    getCoinNewsFeeds: jest.fn(),
+    getCoinNewsPosts: jest.fn(),
+    getMarketPrice: jest.fn(),
   };
 });
 
+jest.mock("../keystore", () => ({
+  loadWallet: jest.fn(async () => null),
+  hasWallet: jest.fn(async () => false),
+  saveWallet: jest.fn(async () => undefined),
+  setWalletNetwork: jest.fn(async () => undefined),
+  clearWallet: jest.fn(async () => undefined),
+}));
+
+// AsyncStorage backs Demo Mode. An in-memory store keeps the real ../demo
+// helper (and its listener set) exercised rather than mocked.
+jest.mock("@react-native-async-storage/async-storage", () => {
+  const store = new Map<string, string>();
+  return {
+    __esModule: true,
+    default: {
+      getItem: jest.fn(async (k: string) => store.get(k) ?? null),
+      setItem: jest.fn(async (k: string, v: string) => {
+        store.set(k, v);
+      }),
+      removeItem: jest.fn(async (k: string) => {
+        store.delete(k);
+      }),
+      clear: jest.fn(async () => {
+        store.clear();
+      }),
+    },
+  };
+});
+
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  getSidechains,
+  getDeposits,
+  getL1Balance,
+  getCoinNewsFeeds,
+  getCoinNewsPosts,
+  getMarketPrice,
+} from "../api";
+import { loadWallet } from "../keystore";
+import { DEMO_MODE_STORAGE_KEY } from "../demo";
+
+const mockGetSidechains = getSidechains as jest.Mock;
+const mockGetDeposits = getDeposits as jest.Mock;
+const mockGetL1Balance = getL1Balance as jest.Mock;
+const mockGetCoinNewsFeeds = getCoinNewsFeeds as jest.Mock;
+const mockGetCoinNewsPosts = getCoinNewsPosts as jest.Mock;
+const mockGetMarketPrice = getMarketPrice as jest.Mock;
+const mockLoadWallet = loadWallet as jest.Mock;
+
+// Default network is betanet, a mainnet fork, so it uses the "bc" HRP.
+const VALID_12 =
+  "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
+
+// ---------------------------------------------------------------------------
+// Fixtures
+//
+// Slots match the authoritative registry (sparse, per-proposal):
+// thunder=9, bitnames=2, zside=98. Never sequential, never the array index.
+// ---------------------------------------------------------------------------
+const SUMMARIES = [
+  {
+    slot: 9,
+    id: "thunder",
+    displayName: "Thunder Network",
+    description: "Payment channels",
+    status: "active",
+  },
+  {
+    slot: 2,
+    id: "bitnames",
+    displayName: "BitNames",
+    description: "Identity records",
+    status: "active",
+  },
+  {
+    slot: 98,
+    id: "zside",
+    displayName: "zSide",
+    description: "Shielded txs",
+    status: "active",
+  },
+];
+
+function deposit(valueSats: bigint, slot: number) {
+  return {
+    slot,
+    chainId: `chain-${slot}`,
+    l1Txid: "a".repeat(64),
+    vout: 0,
+    ctipSeq: 1,
+    address: "tb1qexample",
+    valueSats,
+    status: "credited",
+    confirmations: 6,
+    firstSeenTs: 1787320000,
+    l1ConfirmedTs: 1787320600,
+    l2CreditedTs: 1787321200,
+  };
+}
+
+function chainBalance(totalSats: bigint, seen: boolean) {
+  return {
+    chainId: "signet",
+    address: "tb1qexample",
+    source: "indexed" as const,
+    totalSats,
+    seen,
+    updatedAtHeight: seen ? 210123 : null,
+    note: "indexed balance from upstream (sats)",
+  };
+}
+
+beforeEach(async () => {
+  jest.clearAllMocks();
+  await AsyncStorage.clear(); // ensure the no-wallet (setup-required) L1 state
+  mockLoadWallet.mockResolvedValue(null);
+  mockGetSidechains.mockResolvedValue(SUMMARIES);
+  mockGetDeposits.mockImplementation(async (slot: number) => ({
+    slot,
+    chainId: `chain-${slot}`,
+    provisioned: slot === 9,
+    deposits: [deposit(100000000n, slot)],
+    nextCursor: null,
+  }));
+  mockGetCoinNewsFeeds.mockResolvedValue([
+    {
+      id: "us-weekly",
+      name: "US Weekly",
+      language: "en",
+      enabled: true,
+      post_count: 1,
+    },
+  ]);
+  mockGetCoinNewsPosts.mockResolvedValue({
+    feed: { id: "us-weekly", name: "US Weekly" },
+    posts: [
+      {
+        id: "post_live",
+        title: "Live API wallet post",
+        body: null,
+        link: null,
+        author: null,
+        created_at: 1781568001,
+        fee_sats: "1108",
+        flag: 1,
+        txid: "a".repeat(64),
+        status: "confirmed",
+      },
+    ],
+    next_cursor: null,
+  });
+  mockGetMarketPrice.mockResolvedValue({
+    asset: "ECX",
+    name: "eCash",
+    price_usd: "30.00",
+    source: "hardcoded",
+    as_of: "2026-06-16T00:00:00Z",
+  });
+});
+
 describe("DashboardScreen", () => {
-  it("should render without crashing", () => {
+  it("should render without crashing", async () => {
     const { toJSON } = render(<DashboardScreen />);
+    await waitFor(() => {
+      expect(mockGetSidechains).toHaveBeenCalled();
+    });
     expect(toJSON()).not.toBeNull();
   });
 
-  it("should display the app title 'SidΞcoin'", () => {
+  it("should render the Dashboard heading", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText("SidΞcoin")).toBeTruthy();
+    expect(screen.getByText("Dashboard")).toBeTruthy();
   });
 
-  it("should display the subtitle 'eCash Drivechain Wallet'", () => {
+  it("should render Drivechains Financial Hub copy", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText("eCash Drivechain Wallet")).toBeTruthy();
+    expect(screen.getByText("Drivechains Financial Hub")).toBeTruthy();
   });
 
-  it("should display 'Fork Countdown' section", () => {
+  it("should call getSidechains once on mount", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText("Fork Countdown")).toBeTruthy();
+    await waitFor(() => {
+      expect(mockGetSidechains).toHaveBeenCalledTimes(1);
+    });
   });
 
-  it("should display the fork activation timestamp", () => {
+  it("should call getDeposits once per platform slot", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText("2026-10-31T15:00:00Z")).toBeTruthy();
+    await waitFor(() => {
+      expect(mockGetDeposits).toHaveBeenCalledTimes(SUMMARIES.length);
+    });
+    expect(mockGetDeposits).toHaveBeenCalledWith(9);
+    expect(mockGetDeposits).toHaveBeenCalledWith(2);
+    expect(mockGetDeposits).toHaveBeenCalledWith(98);
   });
 
-  it("should display 'Chain' section", () => {
+  it("should display the platform activity label", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText("Chain")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText("Platform Activity")).toBeTruthy();
+    });
   });
 
-  it("should display PoW algorithm as sha256d", () => {
+  it("should sum inflow across platforms and format it", async () => {
+    // 100000000 * 3 = 300000000 sats = 3.00000000
     render(<DashboardScreen />);
-    expect(screen.getByText("PoW: sha256d")).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText(/3\.00000000/)).toBeTruthy();
+    });
   });
 
-  it("should display BIP-300 status", () => {
+  it("should display the aggregate event and platform counts", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText("BIP-300: Active")).toBeTruthy();
+    await waitFor(() => {
+      expect(
+        screen.getByText(/3 events across 3 platforms/),
+      ).toBeTruthy();
+    });
   });
 
-  it("should display BIP-301 status", () => {
+  it("should explain the financial hub activity model", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText("BIP-301: Active")).toBeTruthy();
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          /Track balances, deposits, and platform activity across the/,
+        ),
+      ).toBeTruthy();
+    });
   });
 
-  it("should display the Sidechains section with count", () => {
+  it("should render each platform displayName", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText(`Sidechains (${LAUNCH_SIDECHAINS.length})`)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText("Thunder Network")).toBeTruthy();
+    });
+    expect(screen.getByText("BitNames")).toBeTruthy();
+    expect(screen.getByText("zSide")).toBeTruthy();
   });
 
-  it("should display Thunder Network sidechain", () => {
+  it("should show active platform status badges", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText(/#9 Thunder Network/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getAllByText("Active").length).toBeGreaterThan(0);
+    });
   });
 
-  it("should display zSide sidechain", () => {
+  it("should display open Basic platform activity and slot data", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText(/#98 zSide/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText(/1 event · slot 9/)).toBeTruthy();
+    });
+    expect(screen.getByText(/1 event · slot 2/)).toBeTruthy();
   });
 
-  it("should display BitNames sidechain", () => {
+  it("should show PRO treatment for premium platform analytics", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText(/#2 BitNames/)).toBeTruthy();
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("Unlock platform analytics with Sidecoin PRO.").length,
+      ).toBeGreaterThan(0);
+    });
+    expect(screen.getAllByText("Unlock analytics").length).toBeGreaterThan(0);
   });
 
-  it("should display BitAssets sidechain", () => {
+  it("should not render the broad historical analysis upsell on first landing", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText(/#4 BitAssets/)).toBeTruthy();
+    await waitFor(() => {
+      expect(mockGetSidechains).toHaveBeenCalled();
+    });
+    expect(
+      screen.queryByText(/Unlock Historical Analysis with Sidecoin PRO/),
+    ).toBeNull();
+    expect(screen.queryByText(/Historical portfolio analysis/)).toBeNull();
+    expect(screen.queryByText(/Advanced wallet insights/)).toBeNull();
+    expect(screen.queryByText("Upgrade to PRO")).toBeNull();
+    expect(screen.queryByText("View PRO benefits")).toBeNull();
   });
 
-  it("should display Photon sidechain", () => {
+  it("should render the Coin News preview on first landing", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText(/#99 Photon/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-summary-grid")).toBeTruthy();
+    });
+    expect(screen.getByTestId("dashboard-summary-values")).toBeTruthy();
+    expect(screen.getAllByText("Coin News").length).toBeGreaterThan(0);
+    expect(screen.getByText("Broadcast News")).toBeTruthy();
+    expect(screen.getAllByText("US Weekly").length).toBeGreaterThan(0);
+    await waitFor(() => {
+      expect(screen.getByText("Live API wallet post")).toBeTruthy();
+    });
+    expect(screen.getAllByText("Title").length).toBeGreaterThan(0);
+    expect(mockGetCoinNewsPosts).toHaveBeenCalledWith("us-weekly", {
+      limit: 5,
+    });
   });
 
-  it("should display Truthcoin sidechain", () => {
+  it("should render the fork countdown banner", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText(/#13 Truthcoin/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText(/eCash Hard Fork/)).toBeTruthy();
+    });
+    expect(screen.getByText(/2026-10-31 15:00Z/)).toBeTruthy();
+    expect(screen.getByText(/Block ~973,728/)).toBeTruthy();
   });
 
-  it("should display CoinShift sidechain", () => {
+  it("should render BIP-300/301 drivechain info in fork banner", async () => {
     render(<DashboardScreen />);
-    expect(screen.getByText(/#255 CoinShift/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText(/BIP-300 \/ BIP-301 Drivechains/)).toBeTruthy();
+    });
+    expect(screen.getByText(/7 platforms at launch/)).toBeTruthy();
   });
 
-  it("should display the active RISCy sidechain slot", () => {
+  it("should show a friendly error (not the raw error) when getSidechains fails", async () => {
+    // The raw transport string must NOT leak to the user — it goes to the
+    // console only. The UI shows a friendly, actionable message instead.
+    mockGetSidechains.mockRejectedValue(new Error("Connection refused"));
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     render(<DashboardScreen />);
-    expect(screen.getByText(/#3 RISCy/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText("Error loading dashboard")).toBeTruthy();
+    });
+    expect(
+      screen.getByText(
+        "We couldn't load your dashboard. Please check your connection and try again.",
+      ),
+    ).toBeTruthy();
+    // The raw error string is logged for developers, never rendered.
+    expect(screen.queryByText("Connection refused")).toBeNull();
+    expect(consoleSpy).toHaveBeenCalledWith(
+      "[DashboardScreen] Failed to load data:",
+      expect.any(Error),
+    );
+    consoleSpy.mockRestore();
   });
 
-  it("should display the coming-soon Elements Plus sidechain without a fake slot", () => {
+  it("should show error state when a getDeposits call fails", async () => {
+    mockGetDeposits.mockRejectedValue(new Error("Slot unavailable"));
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
     render(<DashboardScreen />);
-    expect(screen.getByText(/Slot TBD Elements Plus/)).toBeTruthy();
+    await waitFor(() => {
+      expect(screen.getByText("Error loading dashboard")).toBeTruthy();
+    });
+    consoleSpy.mockRestore();
   });
 
-  it("should display workspace validation success", () => {
+  it("should log error to console when loading fails", async () => {
+    const consoleSpy = jest.spyOn(console, "error").mockImplementation(() => {});
+    mockGetSidechains.mockRejectedValue(new Error("Timeout"));
     render(<DashboardScreen />);
-    expect(screen.getByText("Workspace")).toBeTruthy();
-    expect(screen.getByText("✅ @sidecoin/shared linked and working")).toBeTruthy();
+    await waitFor(() => {
+      expect(consoleSpy).toHaveBeenCalledWith(
+        "[DashboardScreen] Failed to load data:",
+        expect.any(Error),
+      );
+    });
+    consoleSpy.mockRestore();
   });
 
-  it("should display the block height estimate", () => {
+  it("should format large satoshi sums correctly", async () => {
+    mockGetSidechains.mockResolvedValue([SUMMARIES[0]]);
+    mockGetDeposits.mockImplementation(async (slot: number) => ({
+      slot,
+      chainId: `chain-${slot}`,
+      provisioned: true,
+      deposits: [deposit(2100000000000000n, slot)],
+      nextCursor: null,
+    }));
     render(<DashboardScreen />);
-    // Block ~973,728 formatted with toLocaleString
-    expect(screen.getByText(/973/)).toBeTruthy();
+    await waitFor(() => {
+      // The aggregate card and the single-platform card both format the same
+      // satoshi sum, so more than one match is expected.
+      expect(
+        screen.getAllByText(/21000000\.00000000/).length,
+      ).toBeGreaterThan(0);
+    });
+  });
+
+  it("should render the live ECX market price", async () => {
+    render(<DashboardScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("ECX (Projected) Market Price")).toBeTruthy();
+    });
+    expect(screen.getByText(/USD 30\.00/)).toBeTruthy();
+    expect(mockGetMarketPrice).toHaveBeenCalledWith("ecash");
+    // Source is now eCash Farm (linked), not SupaQt.
+    expect(screen.getByTestId("market-price-source")).toBeTruthy();
+    expect(screen.getByText(/eCash Farm/)).toBeTruthy();
+  });
+
+  it("should use Demo Mode display data when enabled", async () => {
+    await AsyncStorage.setItem(DEMO_MODE_STORAGE_KEY, "1");
+
+    render(<DashboardScreen />);
+
+    await waitFor(() => {
+      expect(screen.getAllByText("Demo Mode").length).toBeGreaterThan(0);
+    });
+    expect(mockGetSidechains).not.toHaveBeenCalled();
+    expect(mockGetDeposits).not.toHaveBeenCalled();
+    expect(mockGetL1Balance).not.toHaveBeenCalled();
+    expect(
+      screen.getByText("Sample financial hub activity is enabled"),
+    ).toBeTruthy();
+    expect(screen.getByText(/1\.32257244/)).toBeTruthy();
+    expect(screen.getByText(/28 events across 8 platforms/)).toBeTruthy();
+    expect(screen.getByText("RISCy")).toBeTruthy();
+  });
+
+  // --- L1 wallet balance card ----------------------------------------------
+
+  it("should show 'Wallet setup required' for the L1 balance when no wallet exists", async () => {
+    // beforeEach cleared storage, so loadWallet() resolves null.
+    render(<DashboardScreen />);
+    await waitFor(() => {
+      expect(screen.getByText("L1 Wallet Balance")).toBeTruthy();
+    });
+    expect(screen.getByText(/Wallet setup required/)).toBeTruthy();
+    expect(mockGetL1Balance).not.toHaveBeenCalled();
+  });
+
+  it("should display the derived L1 balance when a wallet exists", async () => {
+    mockLoadWallet.mockResolvedValue({
+      mnemonic: VALID_12,
+      network: "betanet",
+      createdAt: 1787320000000,
+      version: 1,
+    });
+    mockGetL1Balance.mockResolvedValue(chainBalance(133700000n, true));
+    render(<DashboardScreen />);
+
+    await waitFor(() => {
+      expect(mockGetL1Balance).toHaveBeenCalledTimes(1);
+    });
+    // The address queried is the real BIP-84 receive address derived from the
+    // stored mnemonic — never a hardcoded string. The default network is
+    // betanet, which is a mainnet fork, so it uses the "bc" HRP.
+    const queried = mockGetL1Balance.mock.calls[0][0];
+    expect(queried.startsWith("bc1q")).toBe(true);
+
+    // 133700000 sats = 1.337 eCash.
+    await waitFor(() => {
+      expect(screen.getAllByText(/1\.337/).length).toBeGreaterThan(0);
+    });
+    expect(screen.getAllByText("eCash").length).toBeGreaterThan(0);
+  });
+
+  it("should show a not-yet-indexed note when the address is unseen", async () => {
+    mockLoadWallet.mockResolvedValue({
+      mnemonic: VALID_12,
+      network: "betanet",
+      createdAt: 1787320000000,
+      version: 1,
+    });
+    mockGetL1Balance.mockResolvedValue(chainBalance(0n, false));
+    render(<DashboardScreen />);
+    await waitFor(() => {
+      expect(screen.getByText(/Address not yet seen on-chain/)).toBeTruthy();
+    });
   });
 });

@@ -84,6 +84,7 @@ export interface CardProps {
   children: React.ReactNode;
   tone?: CardTone;
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }
 
 const CARD_TONE: Record<CardTone, ViewStyle> = {
@@ -93,8 +94,8 @@ const CARD_TONE: Record<CardTone, ViewStyle> = {
   accent: { backgroundColor: "#052e16", borderColor: ECASH[800] },
 };
 
-export function Card({ children, tone = "surface", style }: CardProps): React.JSX.Element {
-  return <View style={[styles.card, CARD_TONE[tone], style]}>{children}</View>;
+export function Card({ children, tone = "surface", style, testID }: CardProps): React.JSX.Element {
+  return <View testID={testID} style={[styles.card, CARD_TONE[tone], style]}>{children}</View>;
 }
 
 // ──────────────────────────────────────────────────────

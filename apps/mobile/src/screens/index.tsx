@@ -8,8 +8,9 @@
 //
 //   Phase 4 (view port) replaces the staging placeholders one batch at a time.
 //   Ported so far: dashboard, onboarding, markets, pro, platforms (4b),
-//                  receive (4b), swap (4b), toolbox (4b).
-//   Still staged:  send, platform-detail, hardware, settings.
+//                  receive (4b), swap (4b), toolbox (4b), settings (4c),
+//                  send (4c).
+//   Still staged:  platform-detail, hardware.
 
 import React from "react";
 
@@ -20,7 +21,9 @@ import { OnboardingScreen } from "./OnboardingScreen";
 import { PlaceholderScreen } from "./PlaceholderScreen";
 import { ProBenefitsScreen } from "./ProBenefitsScreen";
 import { ReceiveScreen } from "./ReceiveScreen";
+import { SendScreen } from "./SendScreen";
 import { SidechainsScreen } from "./SidechainsScreen";
+import { SettingsScreen } from "./SettingsScreen";
 import { ToolboxScreen } from "./ToolboxScreen";
 
 /**
@@ -52,7 +55,9 @@ export { OnboardingScreen } from "./OnboardingScreen";
 export { PlaceholderScreen } from "./PlaceholderScreen";
 export { ProBenefitsScreen } from "./ProBenefitsScreen";
 export { ReceiveScreen } from "./ReceiveScreen";
+export { SendScreen } from "./SendScreen";
 export { SidechainsScreen } from "./SidechainsScreen";
+export { SettingsScreen } from "./SettingsScreen";
 export { ToolboxScreen } from "./ToolboxScreen";
 
 /**

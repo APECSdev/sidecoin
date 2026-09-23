@@ -42,6 +42,8 @@ import {
   OnboardingScreen,
   ProBenefitsScreen,
   ReceiveScreen,
+  SendScreen,
+  SettingsScreen,
   SidechainsScreen,
   ToolboxScreen,
   makePlaceholder,
@@ -53,9 +55,6 @@ const Tab = createBottomTabNavigator<TabParamList>();
 // ──────────────────────────────────────────────────────
 // Tab screens
 // ──────────────────────────────────────────────────────
-const SendScreen = makePlaceholder("send", "Send", "Transaction composer.");
-const SettingsScreen = makePlaceholder("settings", "Settings", "Network + theme toggles.");
-
 // ──────────────────────────────────────────────────────
 // Stack screens pushed above the tab shell
 // ──────────────────────────────────────────────────────

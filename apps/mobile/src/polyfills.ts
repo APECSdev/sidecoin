@@ -75,6 +75,31 @@ if (typeof globalThis.URL === "undefined") {
 }
 
 // ──────────────────────────────────────────────────────
+// 6. URLSearchParams.realSearchParams
+//
+//    react-native-quick-crypto's URLSearchParams patch (installed at import
+//    time for its fetch/crypto stack) REPLACES globalThis.URLSearchParams with
+//    a class whose internals are not accessible until its lazy `_set()` runs.
+//    The WHATWG spec (and the `url` polyfill above) expose the REAL params
+//    object at `.realSearchParams` so callers can unwrap it. Porting the
+//    payment-URI parser 1:1 means it calls `new URLSearchParams(...)` exactly
+//    like the Vue original, so this accessor is restored here instead of
+//    changing the parser. Only defined when absent, so the `url` polyfill (and
+//    any future native fix) is left untouched.
+// ──────────────────────────────────────────────────────
+if (
+  typeof globalThis.URLSearchParams === "function" &&
+  !("realSearchParams" in globalThis.URLSearchParams.prototype)
+) {
+  Object.defineProperty(globalThis.URLSearchParams.prototype, "realSearchParams", {
+    configurable: true,
+    get(this: { _searchParams?: URLSearchParams }) {
+      return this._searchParams ?? this;
+    },
+  });
+}
+
+// ──────────────────────────────────────────────────────
 // Debug: log polyfill status in development builds.
 // This helps diagnose "X is not defined" crashes early.
 // ──────────────────────────────────────────────────────
