@@ -40,6 +40,7 @@ import {
   DashboardScreen,
   MarketsScreen,
   OnboardingScreen,
+  PlatformDetailScreen,
   ProBenefitsScreen,
   ReceiveScreen,
   SendScreen,
@@ -59,11 +60,6 @@ const Tab = createBottomTabNavigator<TabParamList>();
 // Stack screens pushed above the tab shell
 // ──────────────────────────────────────────────────────
 const SwapScreen = AssetSwapScreen;
-const PlatformDetailScreen = makePlaceholder(
-  "platform-detail",
-  "Platform detail",
-  "Per-platform deposit/withdraw.",
-);
 const HardwareScreen = makePlaceholder(
   "hardware",
   "Hardware wallet",
