@@ -388,10 +388,11 @@ describe("DashboardView.vue", () => {
     const wrapper = await mountDashboard();
 
     expect(mockGetL1Balance).toHaveBeenCalledTimes(1);
-    // The address queried is the real BIP-84 signet receive address derived
-    // from the stored mnemonic — never a hardcoded string.
+    // The address queried is the real BIP-84 receive address derived from the
+    // stored mnemonic — never a hardcoded string. The default network is
+    // betanet, which is a mainnet fork, so it uses the "bc" HRP.
     const queried = mockGetL1Balance.mock.calls[0][0];
-    expect(queried.startsWith("tb1q")).toBe(true);
+    expect(queried.startsWith("bc1q")).toBe(true);
 
     // 133700000 sats = 1.337 eCash.
     expect(wrapper.text()).toContain("1.337");

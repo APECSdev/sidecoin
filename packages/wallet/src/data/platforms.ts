@@ -282,7 +282,7 @@ export const PLATFORMS: PlatformScaffold[] = [
     slot: 88,
     displayName: "Snowside",
     shortName: "Snowside",
-    status: "proposed",
+    status: "active",
     tagline: "Avalanche L1 EVM with native BTC gas via BMM.",
     primaryUseCase: "EVM",
     description:
@@ -350,7 +350,7 @@ export const PLATFORMS: PlatformScaffold[] = [
     slot: 3,
     displayName: "RISCy",
     shortName: "RISCy",
-    status: "proposed",
+    status: "active",
     tagline: "Proposed VM and programmable-contract platform.",
     primaryUseCase: "Contracts",
     description:

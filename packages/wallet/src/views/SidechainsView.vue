@@ -26,6 +26,8 @@ interface WalletSidechainSummary {
 const ADDRESS_DERIVATION_SLOTS = new Set<number>([9, 4, 88]);
 const EVM_ADDRESS_SLOTS = new Set<number>([88]);
 
+// Featured platforms lead the grid, in this order. Every other registered
+// sidechain is rendered under the collapsible "More platforms" section.
 const PLATFORM_DISPLAY_PRIORITY: Record<string, number> = {
   bitnames: 0,
   thunder: 1,
@@ -43,16 +45,43 @@ const derivedAddresses = ref<Record<number, string>>({});
 const addressError = ref("");
 const copiedSlot = ref<number | null>(null);
 
-const orderedSidechains = computed(() => {
+function byDisplayPriority(
+  a: { sidechain: WalletSidechainSummary; index: number },
+  b: { sidechain: WalletSidechainSummary; index: number },
+): number {
+  const aPriority = PLATFORM_DISPLAY_PRIORITY[a.sidechain.id] ?? 100 + a.index;
+  const bPriority = PLATFORM_DISPLAY_PRIORITY[b.sidechain.id] ?? 100 + b.index;
+  return aPriority - bPriority;
+}
+
+// Featured grid: only the platforms named in PLATFORM_DISPLAY_PRIORITY.
+const featuredSidechains = computed(() => {
   return sidechains.value
     .map((sidechain, index) => ({ sidechain, index }))
-    .sort((a, b) => {
-      const aPriority = PLATFORM_DISPLAY_PRIORITY[a.sidechain.id] ?? 100 + a.index;
-      const bPriority = PLATFORM_DISPLAY_PRIORITY[b.sidechain.id] ?? 100 + b.index;
-      return aPriority - bPriority;
-    })
+    .filter((entry) => entry.sidechain.id in PLATFORM_DISPLAY_PRIORITY)
+    .sort(byDisplayPriority)
     .map((entry) => entry.sidechain);
 });
+
+// Everything else — revealed by the "More platforms" toggle.
+const moreSidechains = computed(() => {
+  return sidechains.value
+    .map((sidechain, index) => ({ sidechain, index }))
+    .filter((entry) => !(entry.sidechain.id in PLATFORM_DISPLAY_PRIORITY))
+    .sort(byDisplayPriority)
+    .map((entry) => entry.sidechain);
+});
+
+const showMore = ref(false);
+
+// The grid renders the featured platforms, then appends the remainder once
+// the "More platforms" toggle is expanded. A single grid keeps the card
+// markup from being duplicated.
+const visibleSidechains = computed(() =>
+  showMore.value
+    ? [...featuredSidechains.value, ...moreSidechains.value]
+    : featuredSidechains.value,
+);
 
 onMounted(async () => {
   const wallet = loadWallet();
@@ -217,7 +246,7 @@ async function copyAddress(slot: number | null) {
 
     <div v-else class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       <div
-        v-for="sc in orderedSidechains"
+        v-for="sc in visibleSidechains"
         :key="sc.id"
         class="rounded-xl border border-gray-800 bg-gray-900 p-4"
       >
@@ -270,6 +299,15 @@ async function copyAddress(slot: number | null) {
           </button>
         </div>
       </div>
+    </div>
+
+    <div v-if="!loading && !error && moreSidechains.length > 0" class="mt-4">
+      <button
+        class="rounded-lg border border-gray-700 px-3 py-2 text-xs font-semibold text-gray-300 hover:border-ecash-500 hover:bg-gray-800 hover:text-white"
+        @click="showMore = !showMore"
+      >
+        {{ showMore ? "Show fewer platforms" : `More platforms (${moreSidechains.length})` }}
+      </button>
     </div>
   </div>
 </template>

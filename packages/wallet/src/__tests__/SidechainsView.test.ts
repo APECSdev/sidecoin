@@ -8,6 +8,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { mount, flushPromises } from "@vue/test-utils";
 import { createRouter, createWebHashHistory } from "vue-router";
 import SidechainsView from "../views/SidechainsView.vue";
+import { PLATFORMS } from "../data/platforms";
 
 vi.mock("../api", () => ({
   getSidechains: vi.fn(),
@@ -27,6 +28,19 @@ const MOCK_SIDECHAINS = [
   { slot: 255, id: "coinshift", displayName: "CoinShift", description: "Atomic swaps.", status: "active" },
   { slot: 3, id: "riscy", displayName: "RISCy", description: "Reserved — not activated.", status: "proposed" },
 ];
+
+// Chains rendered in the featured grid (see PLATFORM_DISPLAY_PRIORITY).
+const FEATURED_IDS = new Set(["bitnames", "thunder", "snowside"]);
+
+/** Expand the "More platforms" toggle so every card is mounted. */
+async function expandMore(wrapper: Awaited<ReturnType<typeof mountPlatforms>>) {
+  const toggle = wrapper
+    .findAll("button")
+    .find((button) => button.text().startsWith("More platforms"));
+  expect(toggle).toBeDefined();
+  await toggle!.trigger("click");
+  await flushPromises();
+}
 
 function createTestRouter() {
   return createRouter({
@@ -76,8 +90,21 @@ describe("Platforms view", () => {
     expect(wrapper.text()).toContain("early access to proposed platforms like RISCy");
   });
 
-  it("should render all platform cards", async () => {
+  it("should render only the featured platform cards initially", async () => {
     const wrapper = await mountPlatforms();
+    const headings = wrapper.findAll("h3").map((heading) => heading.text());
+
+    expect(headings).toEqual([
+      "BitNames",
+      "Thunder Network",
+      "Snowside",
+    ]);
+  });
+
+  it("should render all platform cards once 'More platforms' is expanded", async () => {
+    const wrapper = await mountPlatforms();
+    await expandMore(wrapper);
+
     for (const sc of MOCK_SIDECHAINS) {
       expect(wrapper.text()).toContain(sc.displayName);
     }
@@ -86,6 +113,7 @@ describe("Platforms view", () => {
 
   it("should display BitNames, Thunder, then Snowside while preserving the rest of the API order", async () => {
     const wrapper = await mountPlatforms();
+    await expandMore(wrapper);
     const headings = wrapper.findAll("h3").map((heading) => heading.text());
 
     expect(headings.slice(0, 5)).toEqual([
@@ -97,8 +125,24 @@ describe("Platforms view", () => {
     ]);
   });
 
+  it("should list the non-featured platforms under the More platforms toggle", async () => {
+    const wrapper = await mountPlatforms();
+    // The view merges the API payload with the local PLATFORMS catalogue, so
+    // the remainder is everything that is neither featured nor L1.
+    const mergedIds = new Set([
+      ...MOCK_SIDECHAINS.map((sc) => sc.id),
+      ...PLATFORMS.map((platform) => platform.id),
+    ]);
+    const remainingCount = Array.from(mergedIds).filter(
+      (id) => id !== "l1" && !FEATURED_IDS.has(id),
+    ).length;
+
+    expect(wrapper.text()).toContain(`More platforms (${remainingCount})`);
+  });
+
   it("should display platform descriptions", async () => {
     const wrapper = await mountPlatforms();
+    await expandMore(wrapper);
     for (const sc of MOCK_SIDECHAINS) {
       expect(wrapper.text()).toContain(sc.description);
     }
@@ -106,6 +150,7 @@ describe("Platforms view", () => {
 
   it("should display slot numbers for each platform", async () => {
     const wrapper = await mountPlatforms();
+    await expandMore(wrapper);
     for (const sc of MOCK_SIDECHAINS) {
       expect(wrapper.text()).toContain(`Slot ${sc.slot}`);
     }
@@ -113,6 +158,7 @@ describe("Platforms view", () => {
 
   it("should render platform detail links", async () => {
     const wrapper = await mountPlatforms();
+    await expandMore(wrapper);
     const hrefs = wrapper.findAll("a").map((a) => a.attributes("href"));
     expect(hrefs).toContain("#/platforms/thunder");
     expect(hrefs).toContain("#/platforms/zside");
@@ -122,6 +168,7 @@ describe("Platforms view", () => {
 
   it("should show 'Active' badge for active platforms", async () => {
     const wrapper = await mountPlatforms();
+    await expandMore(wrapper);
     const html = wrapper.html();
     const activeMatches = html.match(/Active/g);
     expect(activeMatches).not.toBeNull();
@@ -130,6 +177,7 @@ describe("Platforms view", () => {
 
   it("should show 'Proposed' badge for proposed platforms", async () => {
     const wrapper = await mountPlatforms();
+    await expandMore(wrapper);
     expect(wrapper.text()).toContain("Proposed");
     expect(wrapper.text()).toContain("Coming Soon");
   });
@@ -163,6 +211,7 @@ describe("Platforms view", () => {
     mockGetSidechains.mockResolvedValue([]);
     const wrapper = await mountPlatforms();
     expect(wrapper.find("h2").text()).toBe("Platforms");
+    await expandMore(wrapper);
     expect(wrapper.text()).toContain("Elements Plus");
     expect(wrapper.text()).toContain("Slot TBD");
   });
