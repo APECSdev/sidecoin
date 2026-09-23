@@ -1,11 +1,11 @@
 Sidecoin is an open-source wallet for the upcoming eCash hard fork
-(block ~964,000, August 21 2026).
+(block ~973,728, October 31 2026).
 
 It supports BIP-300 Hashrate Escrows and BIP-301 Blind Merged Mining,
 enabling trustless sidechains secured by Bitcoin's full SHA-256d hashrate.
 
 Features:
-• 8 sidechains at launch (Thunder, zSide, BitNames, BitAssets, Photon, Truthcoin, CoinShift, and more)
+• 10 sidechains at launch (Thunder, zSide, BitNames, BitAssets, Photon, Truthcoin, CoinShift, and more)
 • BIP-300 deposit and withdrawal management
 • QR code scanning for payments
 • Biometric authentication

@@ -78,6 +78,24 @@ const config = {
     ],
 
     // ──────────────────────────────────────────────────
+    // resolveRequest:
+    //   Redirect @sentry/react-native to a local no-op
+    //   module. Sentry is an optionalDependency and is
+    //   absent from F-Droid builds; without this alias
+    //   Metro would fail to resolve the import.
+    // ──────────────────────────────────────────────────
+    resolveRequest: (context, moduleName, platform) => {
+      if (moduleName === "@sentry/react-native") {
+        return context.resolveRequest(
+          context,
+          path.resolve(projectRoot, "src/lib/sentry-noop.ts"),
+          platform,
+        );
+      }
+      return context.resolveRequest(context, moduleName, platform);
+    },
+
+    // ──────────────────────────────────────────────────
     // extraNodeModules:
     //   Node.js core module polyfills required by
     //   various crypto and networking libraries.

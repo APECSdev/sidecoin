@@ -12,13 +12,13 @@ module.exports = {
   //   Explicit paths to native projects. Required when
   //   the RN project isn't at the repo root (monorepo).
   // ────────────────────────────────────────────────────
+  //   NOTE: iOS is not yet initialized — there is no ./ios directory.
+  //   The `ios` entry is intentionally omitted until the Xcode project
+  //   lands, otherwise the CLI resolves a path that does not exist.
   project: {
     android: {
       sourceDir: "./android",
       appName: "app",
-    },
-    ios: {
-      sourceDir: "./ios",
     },
   },
 
