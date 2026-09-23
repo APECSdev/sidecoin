@@ -17,6 +17,7 @@
 // wallet is stored (the Vue router's beforeEach gate).
 
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
+import type { NavigatorScreenParams } from "@react-navigation/native";
 import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 
 /** Screens inside the bottom tab shell. */
@@ -30,7 +31,7 @@ export type TabParamList = {
 
 /** Top-level native stack. "main" hosts the tab shell. */
 export type RootStackParamList = {
-  main: undefined;
+  main: NavigatorScreenParams<TabParamList> | undefined;
   onboarding: undefined;
   swap: undefined;
   markets: undefined;

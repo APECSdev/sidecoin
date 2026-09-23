@@ -2,15 +2,22 @@
 //
 // Screen registry for the Sidecoin React Native wallet.
 //
-// Phase 2 wires every route from apps/wallet/src/router/index.ts into the
-// navigation shell. DashboardScreen is the real (carried-over) screen; the
-// rest are staging placeholders that name their Vue source file. Each is
-// replaced during Phase 4 (view port).
+// Every route from apps/wallet/src/router/index.ts is wired into the
+// navigation shell. Each entry below records the Vue file it is ported from,
+// so the port progress is greppable:
+//
+//   Phase 4 (view port) replaces the staging placeholders one batch at a time.
+//   Ported so far: dashboard, onboarding, markets, pro.
+//   Still staged:  send, receive, swap, platforms, platform-detail, hardware,
+//                  toolbox, settings.
 
 import React from "react";
 
 import { DashboardScreen } from "./DashboardScreen";
+import { MarketsScreen } from "./MarketsScreen";
+import { OnboardingScreen } from "./OnboardingScreen";
 import { PlaceholderScreen } from "./PlaceholderScreen";
+import { ProBenefitsScreen } from "./ProBenefitsScreen";
 
 /**
  * Every route name in the Vue router (`apps/wallet/src/router/index.ts`),
@@ -35,7 +42,10 @@ export const SCREEN_SOURCES = {
 export type ScreenKey = keyof typeof SCREEN_SOURCES;
 
 export { DashboardScreen } from "./DashboardScreen";
+export { MarketsScreen } from "./MarketsScreen";
+export { OnboardingScreen } from "./OnboardingScreen";
 export { PlaceholderScreen } from "./PlaceholderScreen";
+export { ProBenefitsScreen } from "./ProBenefitsScreen";
 
 /**
  * Build a placeholder screen component for a given route. Kept as a factory so

@@ -35,7 +35,7 @@ import type { RootStackParamList, TabParamList } from "./types";
 import { SC, ECASH, GRAY } from "../theme/colors";
 import { hasWallet } from "../keystore";
 
-import { DashboardScreen, makePlaceholder } from "../screens";
+import { DashboardScreen, MarketsScreen, OnboardingScreen, ProBenefitsScreen, makePlaceholder } from "../screens";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -55,13 +55,7 @@ const SettingsScreen = makePlaceholder("settings", "Settings", "Network + theme 
 // ──────────────────────────────────────────────────────
 // Stack screens pushed above the tab shell
 // ──────────────────────────────────────────────────────
-const OnboardingScreen = makePlaceholder(
-  "onboarding",
-  "Set up your wallet",
-  "Create or import a wallet.",
-);
 const SwapScreen = makePlaceholder("swap", "Swap", "Asset swap interface.");
-const MarketsScreen = makePlaceholder("markets", "Markets", "Market prices + charts.");
 const PlatformDetailScreen = makePlaceholder(
   "platform-detail",
   "Platform detail",
@@ -73,7 +67,6 @@ const HardwareScreen = makePlaceholder(
   "Ledger / Trezor / OneKey (WebUSB in the web build — out of scope for the RN port).",
 );
 const ToolboxScreen = makePlaceholder("toolbox", "Toolbox", "Coin control + splitter.");
-const ProScreen = makePlaceholder("pro", "Pro", "Entitlements + benefits.");
 
 // ──────────────────────────────────────────────────────
 // Tab icon map — MaterialIcons names.
@@ -187,7 +180,7 @@ export function RootNavigator(): React.JSX.Element {
             component={ToolboxScreen}
             options={{ title: "Toolbox" }}
           />
-          <Stack.Screen name="pro" component={ProScreen} options={{ title: "Pro" }} />
+          <Stack.Screen name="pro" component={ProBenefitsScreen} options={{ title: "Pro" }} />
         </>
       ) : (
         <Stack.Screen
