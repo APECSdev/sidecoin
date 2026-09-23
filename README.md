@@ -72,18 +72,22 @@ position.
 
 ## Repository Structure
 
-This is a [pnpm](https://pnpm.io) workspace monorepo.
+This is a [pnpm](https://pnpm.io) workspace monorepo, split into two trees:
+`apps/` holds the deployable products, `packages/` holds the shared libraries.
 
 ```
+apps/
+  desktop/      Tauri + Rust + Vue desktop wallet
+  explorer/     Vue chain explorer
+  mobile/       React Native mobile wallet
+  smarthub/     Vue "Smart Hub" landing page
+  wallet/       Browser-based Vue wallet
+  web/          Astro marketing + web wallet site
 packages/
   api-client/   Typed API client shared by frontends
   # NOTE: the API adapter (Cloudflare Worker) now lives in its own
   # repo: https://github.com/APECSdev/sidecoin-api
-  desktop/      Tauri + Rust + Vue desktop wallet
-  mobile/       React Native mobile wallet
   shared/       Chain config, sidechain logic, shared utils
-  wallet/       Browser-based Vue wallet
-  web/ Astro marketing + web wallet site
 ```
 
 ## Getting Started

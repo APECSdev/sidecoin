@@ -1,0 +1,67 @@
+# apps/mobile/.gitignore
+#
+# Mobile-specific ignores (supplements root .gitignore)
+
+# ──────────────────────────────────────────────────────
+# React Native / Metro
+# ──────────────────────────────────────────────────────
+*.bundle
+*.jsbundle
+*.map
+
+# ──────────────────────────────────────────────────────
+# Android
+# ──────────────────────────────────────────────────────
+android/.gradle/
+android/app/build/
+android/app/.cxx/
+android/app/debug.keystore
+
+# Release signing secrets — NEVER commit these.
+# The keystore itself lives outside the repo (see keystore.properties
+# storeFile); these patterns are a defence-in-depth backstop.
+android/keystore.properties
+android/*.keystore
+android/*.jks
+
+android/build/
+android/local.properties
+android/captures/
+android/*.apk
+
+# Kotlin build artifacts (generated on first build)
+android/.kotlin/
+android/**/.kotlin/
+*.kotlin_module
+*.kotlin_metadata
+
+# ──────────────────────────────────────────────────────
+# iOS
+# ──────────────────────────────────────────────────────
+ios/Pods/
+ios/build/
+ios/*.xcworkspace/xcuserdata/
+ios/**/*.xcuserdata
+ios/**/*.xccheckout
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# ──────────────────────────────────────────────────────
+# Ruby (CocoaPods / Bundler)
+# ──────────────────────────────────────────────────────
+ios/Podfile.lock
+vendor/bundle/
+.bundle/
+
+# ──────────────────────────────────────────────────────
+# Coverage
+# ──────────────────────────────────────────────────────
+coverage/
+
+# ──────────────────────────────────────────────────────
+# Temporary files
+# ──────────────────────────────────────────────────────
+*.tmp
+*.temp

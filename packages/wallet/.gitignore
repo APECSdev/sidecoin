@@ -1,7 +1,0 @@
-# packages/webapp/.gitignore
-
-node_modules/
-dist/
-coverage/
-.DS_Store
-*.log

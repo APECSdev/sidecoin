@@ -1,0 +1,38 @@
+---
+// apps/web/src/components/chains/ChainsGrid.astro
+//
+// Primary section: displays all sidechains as expandable cards.
+// Data comes from ../../data/sidechains (single source of truth,
+// derived from @sidecoin/shared registry). Slots are SPARSE.
+
+import ChainCard from "./ChainCard.astro";
+import { SIDECHAINS, ACTIVE_SIDECHAIN_COUNT } from "../../data/sidechains";
+---
+
+<section id="chains" class="mx-auto max-w-5xl px-6 py-20">
+  <h2 class="text-center text-3xl font-bold md:text-4xl">
+    {ACTIVE_SIDECHAIN_COUNT} Sidechains at
+    <span class="bg-gradient-to-r from-amber-400 to-orange-400 bg-clip-text text-transparent">
+      Launch
+    </span>
+  </h2>
+  <p class="mx-auto mt-4 max-w-2xl text-center text-gray-400">
+    Each assigned sidechain occupies a sparse BIP-300 slot and is secured by
+    Bitcoin's full hashrate via Blind Merged Mining (BIP-301). Announced
+    chains without final assignments display Slot TBD.
+    Click any chain to learn more.
+  </p>
+
+  <div class="mt-12 grid gap-4 md:grid-cols-2">
+    {SIDECHAINS.map((chain) => (
+      <ChainCard
+        slotNumber={chain.slot}
+        name={chain.displayName}
+        tagline={chain.tagline}
+        description={chain.description}
+        status={chain.status}
+        features={chain.features}
+      />
+    ))}
+  </div>
+</section>

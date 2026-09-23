@@ -70,7 +70,7 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           key: ${{ runner.os }}-v2
-          workspaces: "./packages/desktop/src-tauri -> target"
+          workspaces: "./apps/desktop/src-tauri -> target"
 
       - name: Install Linux dependencies
         if: matrix.platform == 'ubuntu-latest'
@@ -104,23 +104,23 @@ jobs:
 
       - name: Create Placeholder Dist
         shell: bash
-        run: mkdir -p packages/desktop/dist && touch packages/desktop/dist/index.html
+        run: mkdir -p apps/desktop/dist && touch apps/desktop/dist/index.html
 
       # ── Desktop — Rust Quality Gates ────────────────────────
 
       - name: Check Rust Formatting
-        working-directory: packages/desktop/src-tauri
+        working-directory: apps/desktop/src-tauri
         run: cargo fmt --all -- --check
 
       - name: Clippy Lint
-        working-directory: packages/desktop/src-tauri
+        working-directory: apps/desktop/src-tauri
         run: cargo clippy --locked --all-features --lib -- -D warnings
 
       # ── Desktop — Build ─────────────────────────────────────
 
       - name: Generate Types (Specta)
         shell: bash
-        working-directory: packages/desktop/src-tauri
+        working-directory: apps/desktop/src-tauri
         run: |
           cargo run --locked --bin export_types
           node -e "
@@ -139,14 +139,14 @@ jobs:
         run: pnpm --filter @sidecoin/desktop exec vite build
 
       - name: Build Tauri App
-        working-directory: packages/desktop/src-tauri
+        working-directory: apps/desktop/src-tauri
         run: cargo build --locked
 
       # ── Desktop — Tests ─────────────────────────────────────
 
       - name: Run Rust Unit Tests (with coverage)
         if: matrix.platform != 'windows-latest'
-        working-directory: packages/desktop/src-tauri
+        working-directory: apps/desktop/src-tauri
         shell: bash
         run: cargo llvm-cov --locked --all-features --lib --lcov --output-path lcov-rust.info
 
@@ -172,7 +172,7 @@ jobs:
 
       - name: Verify coverage file exists
         if: matrix.platform == 'ubuntu-latest'
-        working-directory: packages/desktop/src-tauri
+        working-directory: apps/desktop/src-tauri
         shell: bash
         run: |
           if [ -f lcov-rust.info ]; then
@@ -188,7 +188,7 @@ jobs:
         if: matrix.platform == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
-          files: packages/desktop/src-tauri/lcov-rust.info
+          files: apps/desktop/src-tauri/lcov-rust.info
           flags: rust
           fail_ci_if_error: false
           verbose: true
@@ -198,7 +198,7 @@ jobs:
         if: matrix.platform == 'ubuntu-latest'
         uses: codecov/codecov-action@v5
         with:
-          files: packages/desktop/coverage/lcov.info
+          files: apps/desktop/coverage/lcov.info
           flags: desktop-frontend
           fail_ci_if_error: false
           verbose: true
@@ -252,7 +252,7 @@ jobs:
       - name: Upload Wallet Coverage
         uses: codecov/codecov-action@v5
         with:
-          files: packages/wallet/coverage/lcov.info
+          files: apps/wallet/coverage/lcov.info
           flags: wallet
           fail_ci_if_error: false
           verbose: true
@@ -368,7 +368,7 @@ jobs:
       - name: Upload Explorer Coverage
         uses: codecov/codecov-action@v5
         with:
-          files: packages/explorer/coverage/lcov.info
+          files: apps/explorer/coverage/lcov.info
           flags: explorer
           fail_ci_if_error: false
           verbose: true
@@ -412,7 +412,7 @@ jobs:
       - name: Upload Smart Hub Coverage
         uses: codecov/codecov-action@v5
         with:
-          files: packages/smarthub/coverage/lcov.info
+          files: apps/smarthub/coverage/lcov.info
           flags: smarthub
           fail_ci_if_error: false
           verbose: true
@@ -491,7 +491,7 @@ jobs:
         run: pnpm --filter @sidecoin/web build
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy packages/web/dist --project-name=sidecoin --commit-dirty=true
+        run: npx wrangler pages deploy apps/web/dist --project-name=sidecoin --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -527,7 +527,7 @@ jobs:
         run: pnpm --filter @sidecoin/wallet build
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy packages/wallet/dist --project-name=sidecoin-wallet --commit-dirty=true
+        run: npx wrangler pages deploy apps/wallet/dist --project-name=sidecoin-wallet --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -563,7 +563,7 @@ jobs:
         run: pnpm --filter @sidecoin/explorer build
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy packages/explorer/dist --project-name=sidecoin-explorer --commit-dirty=true
+        run: npx wrangler pages deploy apps/explorer/dist --project-name=sidecoin-explorer --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -596,7 +596,7 @@ jobs:
         run: pnpm --filter @sidecoin/smarthub build
 
       - name: Deploy to Cloudflare Pages
-        run: npx wrangler pages deploy packages/smarthub/dist --project-name=sidecoin-hub --commit-dirty=true
+        run: npx wrangler pages deploy apps/smarthub/dist --project-name=sidecoin-hub --commit-dirty=true
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

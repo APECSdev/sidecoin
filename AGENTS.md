@@ -23,7 +23,29 @@ no longer present in this monorepo. The typed client that talks to that Worker
   `package.json`); the machine's `pnpm` binary is v11.21.0 but honors the pin
   and emits a `pnpm.onlyBuiltDependencies` deprecation warning (harmless)
 - **Node:** `>=22` (enforced via root `engines`)
-- **Workspace glob:** `packages/*` (see `pnpm-workspace.yaml`)
+- **Workspace glob:** `packages/*` + `apps/*` (see `pnpm-workspace.yaml`)
+
+## Layout: apps vs packages
+
+The workspace is split into two trees:
+
+- **`apps/*`** — deployable end-user products. Each one has a build (or
+  bundle) step and is deployed by a `deploy-*` job in CI.
+- **`packages/*`** — shared libraries. These are consumed via `workspace:*`
+  and are never deployed on their own.
+
+```
+apps/
+  mobile/     @sidecoin/mobile     React Native wallet (Android; iOS deferred)
+  desktop/    @sidecoin/desktop    Tauri + Rust + Vue desktop wallet
+  wallet/     @sidecoin/wallet     Browser-based Vue 3 wallet
+  explorer/   @sidecoin/explorer   Vue chain explorer
+  web/        @sidecoin/web        Astro marketing + web wallet site
+  smarthub/   @sidecoin/smarthub   Vue "Smart Hub" landing page
+packages/
+  shared/     @sidecoin/shared     Chain config, registry, derivation, signing, tx, types
+  api-client/ @sidecoin/api-client Frozen typed client for the Sidecoin adapter API
+```
 
 ## Workspace packages
 
@@ -31,13 +53,13 @@ no longer present in this monorepo. The typed client that talks to that Worker
 | --- | --- | --- | --- |
 | `packages/shared` | `@sidecoin/shared` | — | Chain config, sidechain registry, HD derivation, signing, tx building, types. **Source of truth for derivation + sidechain slots.** |
 | `packages/api-client` | `@sidecoin/api-client` | — | Frozen typed client for the Sidecoin adapter API (talks to the external `sidecoin-api` Worker). No deps. |
-| `packages/wallet` | `@sidecoin/wallet` | `@sidecoin/shared`, `@sidecoin/api-client` | Browser-based Vue 3 wallet (Vite + Pinia + Tailwind + vitest). Hardware signing (Ledger, Trezor, OneKey). |
-| `packages/web` | `@sidecoin/web` | `@sidecoin/shared` | Astro marketing + web wallet site. |
-| `packages/explorer` | `@sidecoin/explorer` | `@sidecoin/shared` | Vue chain explorer. |
-| `packages/desktop` | `@sidecoin/desktop` | `@sidecoin/shared` | Tauri + Rust + Vue desktop wallet. |
-| `packages/mobile` | `@sidecoin/mobile` | `@sidecoin/shared` | React Native mobile wallet. |
-| `packages/smarthub` | `@sidecoin/smarthub` | — | Vue "Smart Hub" secure portal challenge landing page. |
-| `packages/src` | (no package.json) | — | Empty placeholder dir; ignore. |
+| `apps/wallet` | `@sidecoin/wallet` | `@sidecoin/shared`, `@sidecoin/api-client` | Browser-based Vue 3 wallet (Vite + Pinia + Tailwind + vitest). Hardware signing (Ledger, Trezor, OneKey). |
+| `apps/web` | `@sidecoin/web` | `@sidecoin/shared` | Astro marketing + web wallet site. |
+| `apps/explorer` | `@sidecoin/explorer` | `@sidecoin/shared` | Vue chain explorer. |
+| `apps/desktop` | `@sidecoin/desktop` | `@sidecoin/shared` | Tauri + Rust + Vue desktop wallet. |
+| `apps/mobile` | `@sidecoin/mobile` | `@sidecoin/shared` | React Native mobile wallet. |
+| `apps/smarthub` | `@sidecoin/smarthub` | — | Vue "Smart Hub" secure portal challenge landing page. |
+| `packages/src` | (no package.json) | — | Stale generated `bindings.ts` placeholder; ignore. |
 
 ## Commands (run from the repo root unless noted)
 
@@ -50,7 +72,7 @@ pnpm type-check               # pnpm -r type-check
 # Per-package (examples):
 pnpm --filter @sidecoin/wallet test
 pnpm --filter @sidecoin/wallet type-check        # vue-tsc --noEmit
-pnpm --filter @sidecoin/shared test              # 228 passed / 1 skipped
+pnpm --filter @sidecoin/shared test              # 262 passed / 1 skipped
 pnpm --filter @sidecoin/shared type-check        # tsc --noEmit
 pnpm --filter @sidecoin/api-client test          # 12 passed
 
@@ -70,11 +92,13 @@ must be green before commit.
 
 | Package | Tests |
 | --- | --- |
-| `@sidecoin/shared` | 248 passed, 1 skipped (12 files) |
-| `@sidecoin/wallet` | 379 passed (26 files) |
+| `@sidecoin/shared` | 262 passed, 1 skipped (12 files) |
+| `@sidecoin/wallet` | 382 passed (26 files) |
 | `@sidecoin/web` | 118 passed (3 files) |
 | `@sidecoin/explorer` | 43 passed (7 files) |
+| `@sidecoin/desktop` | 76 passed (6 files) |
 | `@sidecoin/smarthub` | 5 passed (1 file) |
+| `@sidecoin/mobile` | 25 passed (2 files) |
 | `@sidecoin/api-client` | 12 passed (1 file) |
 
 (Counts from `pnpm --filter <pkg> test`; verify before citing in a PR.)
@@ -125,39 +149,50 @@ must be green before commit.
    platform card shows its own distinct receive address.
 3. **Sidechain slots are authoritative** in
    `packages/shared/src/sidechains/registry.ts`. Active: 2 (bitnames),
-   4 (bitassets), 9 (thunder), 13 (truthcoin), 98 (zside), 99 (photon),
-   255 (coinshift). Proposed: 3 (riscy), 88 (snowside — requested, not yet
-   officially assigned). Coming soon: elementsplus (no slot).
-   `LAUNCH_SIDECHAINS` has 10 entries. Slots are sparse — never assume
-   `slot === array index`.
-4. **The wallet keystore is signet/alphanet-only and plaintext.**
-   `packages/wallet/src/keystore.ts` stores the mnemonic in `localStorage`
+   3 (riscy), 4 (bitassets), 9 (thunder), 13 (truthcoin), 88 (snowside —
+   requested, not yet officially assigned), 98 (zside), 99 (photon),
+   130 (freebank), 255 (coinshift). Coming soon: elementsplus (no slot).
+   `LAUNCH_SIDECHAINS` has 11 entries; `getActiveSidechains()` returns 10.
+   Slots are sparse — never assume `slot === array index`.
+4. **The wallet keystore is non-production-only and plaintext; the mobile
+   keystore is encrypted.**
+   `apps/wallet/src/keystore.ts` stores the mnemonic in `localStorage`
    under `sidecoin.wallet.v1`. This is acceptable only for throwaway test
    funds; encryption-at-rest must land before any mainnet support.
-   `StoredWallet.network` is typed as `WalletNetwork` = `"signet" | "alphanet"`
-   (NOT the full `NetworkId` union). The active network is toggled in
-   Settings (and on the Receive page) via `setWalletNetwork()`, which
-   persists to the keystore and dispatches `WALLET_NETWORK_EVENT` so the
-   Dashboard, Receive, and Sidebar re-derive/re-fetch live. `loadWallet()`
-   coerces any unknown network field back to `"signet"` (forward-compat with
-   pre-toggle wallets).
-5. **`NetworkId` has 6 members** (`packages/shared/src/types/network.ts`):
-   `mainnet`, `testnet`, `signet`, `regtest`, `l2l-signet`, `alphanet`.
-   `alphanet` is the ECX alpha practice network (a fork of mainnet with a
-   PoW difficulty reset — authoritative config at
-   `https://drivechain.dev/config`). It is a mainnet fork: `coinTypeFor`
-   returns 0 and `bech32.hrp` is `"bc"`, so the same mnemonic produces the
-   same addresses as mainnet. It is NOT production (`isProduction: false`).
+   `StoredWallet.network` is typed as `WalletNetwork` = `"signet" | "alphanet"
+   | "betanet"` (NOT the full `NetworkId` union). The active network is
+   toggled in Settings (and on the Receive page) via `setWalletNetwork()`,
+   which persists to the keystore and dispatches `WALLET_NETWORK_EVENT` so
+   the Dashboard, Receive, and Sidebar re-derive/re-fetch live.
+   `loadWallet()` validates the persisted network against the `WalletNetwork`
+   allowlist and falls back to `"betanet"` (forward-compat with pre-toggle
+   wallets).
+   `apps/mobile/src/keystore.ts` instead keeps the mnemonic in the platform
+   keychain (`react-native-keychain`, service `app.sidecoin.wallet`) with
+   only a non-secret envelope in AsyncStorage, and exposes an async API.
+5. **`NetworkId` has 7 members** (`packages/shared/src/types/network.ts`):
+   `mainnet`, `testnet`, `signet`, `regtest`, `l2l-signet`, `alphanet`,
+   `betanet`.
+   - `alphanet` is the ECX alpha practice network (a fork of mainnet with a
+     PoW difficulty reset — authoritative config at
+     `https://drivechain.dev/config`). Fork activated at block 963,648 on
+     2026-08-23.
+   - `betanet` is the ECX beta practice network — a second mainnet fork
+     with a PoW difficulty reset to 1e9 (magic `eca5b104`, fork height
+     967,680, activated 2026-09-19). It is the **default** network.
+   Both are mainnet forks: `coinTypeFor` returns 0 and `bech32.hrp` is
+   `"bc"`, so the same mnemonic produces the same addresses as mainnet.
+   Neither is production (`isProduction: false`).
    The Receive page (`ReceiveView.vue`) exposes a session-only
    Signet/Alphanet selector that re-derives the L1 address on switch — it
-   is NOT persisted to the keystore. `DEFAULT_NETWORK_ID` is still `"signet"`.
+   is NOT persisted to the keystore. `DEFAULT_NETWORK_ID` is now `"betanet"`.
 6. **Fork activation is block ~973,728 on 2026-10-31 15:00 UTC** (pushed back
    from the earlier Aug 21 / block ~964,000 target). Authoritative source:
    [ecash.com](https://ecash.com) (live page title + bundled JS
    `2026-10-31T15:00:00Z`). This value lives in every `ChainConfig.fork`
    (`packages/shared/src/chain/config.ts`) plus the countdown components in
-   `packages/web`, `packages/wallet`, `packages/desktop`, and the Rust node
-   log in `packages/desktop/src-tauri/src/lib.rs`. Regtest is the exception
+   `apps/web`, `apps/wallet`, `apps/desktop`, and the Rust node
+   log in `apps/desktop/src-tauri/src/lib.rs`. Regtest is the exception
    (fork at block 0); alphanet forks at height 963,648 (from drivechain.dev).
    When the fork date changes again, grep for `2026-10-31` and `973_728` /
    `973,728` and update every hit.
@@ -195,7 +230,7 @@ must be green before commit.
    [drivechain.dev/config](https://drivechain.dev/config):
    - signet → `https://esplora.signet.drivechain.info`
    - alphanet → `https://esplora.alpha.ecash.ninja`
-   These live in `packages/wallet/src/api/index.ts` (`ESPLORA_BASES` + the
+   These live in `apps/wallet/src/api/index.ts` (`ESPLORA_BASES` + the
    `esplora*` helpers). `getL1Balance`, `getL1Utxos`, `broadcastTransaction`,
    and `getRawTransaction` are network-aware (third arg `network: L1Network =
    "signet"`) and return the SAME `ChainBalance` / `UtxosResult` /
@@ -206,7 +241,7 @@ must be green before commit.
    `getWalletBalance` still hit the adapter client (they're sidechain/L2, not
    L1) and will fail until the adapter returns.
 11. **ECX market price comes from eCash Farm, not SupaQt.** `getMarketPrice`
-   (`packages/wallet/src/api/index.ts`) fetches `https://ecashfarm.com/v1/markets`
+   (`apps/wallet/src/api/index.ts`) fetches `https://ecashfarm.com/v1/markets`
    and reads `projected.ecxUsd` (a forward-looking fair-value projection, not
    a last-trade print). It returns the SAME `MarketPrice` shape (`asset`,
    `name`, `price_usd`, `source`, `as_of`) so the Dashboard consumes it
@@ -217,7 +252,7 @@ must be green before commit.
    on the price line). The `ECASHFARM_BASE_URL` constant lives next to
    `SUPAQT_BASE_URL`.
 12. **`satsToBtc` always shows at least 2 decimal places.**
-   `packages/wallet/src/api/index.ts` `satsToBtc(sats: bigint): string`
+   `apps/wallet/src/api/index.ts` `satsToBtc(sats: bigint): string`
    formats satoshis as a decimal coin string. It strips trailing zeros from
    the 8-digit fraction but **pads to a minimum of 2 decimal places** — so
    `4` renders as `"4.00"`, `4.1` as `"4.10"`, `0` as `"0.00"`. Values with

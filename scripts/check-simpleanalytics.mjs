@@ -18,15 +18,15 @@ const REQUIRED_SNIPPETS = [
 const PORTALS = [
   {
     name: "sidecoin.app",
-    file: "packages/web/src/layouts/BaseLayout.astro",
+    file: "apps/web/src/layouts/BaseLayout.astro",
   },
   {
     name: "wallet.sidecoin.app",
-    file: "packages/wallet/index.html",
+    file: "apps/wallet/index.html",
   },
   {
     name: "explorer.sidecoin.app",
-    file: "packages/explorer/index.html",
+    file: "apps/explorer/index.html",
   },
 ];
 

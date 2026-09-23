@@ -1,0 +1,49 @@
+---
+// apps/web/src/pages/pro.astro
+//
+// Sidecoin Pro — Founding Member conversion page.
+// Served from: sidecoin.app/pro
+
+import BaseLayout from "../layouts/BaseLayout.astro";
+import ProHero from "../components/pro/ProHero.astro";
+import ValueProps from "../components/pro/ValueProps.astro";
+import PricingSection from "../components/pro/PricingSection.astro";
+import FoundingMember from "../components/pro/FoundingMember.astro";
+import AlphaCircle from "../components/pro/AlphaCircle.astro";
+import UrgencyBanner from "../components/pro/UrgencyBanner.astro";
+import PaymentFlow from "../components/pro/PaymentFlow.vue";
+import FAQ from "../components/pro/FAQ.astro";
+import ProFooterCTA from "../components/pro/ProFooterCTA.astro";
+---
+
+<BaseLayout
+  title="Sidecoin Pro — Founding Member Access"
+  description="Upgrade to Sidecoin Pro. Reduce fees, unlock advanced features, and become a Founding Member of the Bitcoin Drivechain Financial Hub. Crypto payments only."
+>
+  <!-- Hero -->
+  <ProHero />
+
+  <!-- Value Propositions -->
+  <ValueProps />
+
+  <!-- Pricing Plans -->
+  <PricingSection />
+
+  <!-- Full-page Checkout (Vue, client-only) -->
+  <PaymentFlow client:only="vue" />
+
+  <!-- What is a Founding Member -->
+  <FoundingMember />
+
+  <!-- Alpha Circle -->
+  <AlphaCircle />
+
+  <!-- Urgency / Countdown -->
+  <UrgencyBanner />
+
+  <!-- FAQ -->
+  <FAQ />
+
+  <!-- Final CTA -->
+  <ProFooterCTA />
+</BaseLayout>
