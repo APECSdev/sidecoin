@@ -74,22 +74,47 @@ and **fails on the old navigator**.
 
 ---
 
-## NEXT SESSION — test/verify Send & Receive on Betanet, then Signet
+## NEXT SESSION — test/verify Send & Receive on Signet
 
-Operator's plan for the next session (in this order):
+### Betanet round-trip: DONE ✅ (2026-09-23)
 
-1. **Betanet** — send + receive
-2. **Signet** — send + receive
+Betanet send + receive was verified end-to-end on the Pixel 5 release
+build (`app.sidecoin` versionCode `26050030`, F-Droid flavor) against
+`https://esplora.beta.ecash.ninja`.
 
-> **Alphanet has been REMOVED from the product.** Its chain produced no
-> block for ~70 h (tip frozen at 997253, last block 2026-09-20 09:31:17Z)
-> while ~171k txs queued in the mempool, so deposits sent to it could not
-> confirm. The `alphanet` member was dropped from `NetworkId`, its
-> `ECASH_ALPHANET` chain config was deleted, and every network selector now
-> offers **Betanet (default) + Signet** only. Betanet and Alphanet were both
-> mainnet forks using coin type 0 + HRP `bc`, so **Betanet derive the same
-> addresses Alphanet did** — coins previously sent to an Alphanet receive
-> address are visible on Betanet at that same address.
+**Receive** — deposit to the index-0 address
+`bc1qrn5agtchfyr97c64pgxsgm5dwvttr29x3yp2rq` (path
+`m/84'/0'/0'/0/0`):
+
+- txid `ed12fd99e8d170da060577caf7058f64cd2dc7494b0fc662f2bc9c742f0d0392`,
+  10 inputs, 2 outputs, 1554 vB, fee 1505 sat (0.97 sat/vB).
+- 133,700,000 sat to index 0. Seen in the mempool first, then confirmed
+  **block 970090** (`block_time` 1790154586).
+- App Dashboard updated from `0.00 eCash` to **`1.337 eCash`** on Betanet.
+
+**Send** — 0.1 eCash from index 0 to the index-1 address
+`bc1q8tz0te8f2gwpwvwvnpcy2tn2gc9xaxmxkgrm8j` (derived in-app via
+Receive → "Generate New Address"):
+
+- Built + signed locally in the app; review screen showed amount 0.10,
+  fee 0.00000141, change 1.23699859, size 141 vB.
+- txid `7dc33729fc1353403be6ebbed12a491574ab44541cbf4b150a1468a54e8c9a2d`,
+  1 input, 2 outputs (10,000,000 sat to index 1; 123,699,859 sat change
+  back to index 0), fee 141 sat (1.007 sat/vB).
+- App showed **"Broadcast accepted"**; confirmed **block 970091**
+  (`block_time` 1790155275).
+- Dashboard then showed **`1.23699859 eCash`**, matching on-chain
+  (funded 257,399,859 − spent 133,700,000 sat).
+
+Both transactions are visible through the app's Esplora base URL, which
+is the same endpoint the wallet reads from. No app-side discrepancy was
+observed at any step.
+
+### Signet — still to test
+
+Operator's remaining plan:
+
+1. **Signet** — send + receive
 
 ### Verified starting facts (checked this session)
 
