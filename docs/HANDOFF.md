@@ -4,22 +4,28 @@ State of work and next steps for the `sidecoin` monorepo. Maintained as a
 rolling log — update it when you finish a chunk of work so the next agent can
 pick up exactly where you left off.
 
-## Current state (last updated: post-mobile Phase 4c + import/icon fixes)
+## Current state (last updated: post-mobile Phase 4d — PlatformDetail port)
 
 The monorepo now ships a **React Native Android wallet** (`apps/mobile`) that
-is feature-complete against the Vue wallet except for `platform-detail` and
-`hardware` (the latter is permanently out of scope — WebUSB/WebHID). It is
-installed and running on the operator's Pixel 5.
+is feature-complete against the Vue wallet except for `hardware` (permanently
+out of scope — WebUSB/WebHID). It is installed and running on the operator's
+Pixel 5.
 
 ### Latest commit
 
-- `d38ee85 fix(mobile): register all stack routes and bundle icon fonts` on
-  `master`, pushed to BOTH `origin` (GitHub) and `gitlab`.
+- `626151a feat(mobile): Phase 4d — port PlatformDetailView to React Native`
+  on `master`, pushed to BOTH `origin` (GitHub) and `gitlab`.
 
 ### Mobile milestone history (newest first)
 
 | Commit | What landed |
 | --- | --- |
+| `626151a` | Phase 4d — `PlatformDetail` + `BitMessagesPreview` (last placeholder gone) |
+| `066c8a5` | F-Droid changelog refresh for 26.5.30 |
+| `f6cd3f0` | Signet send+receive round-trip recorded |
+| `c12320e` | Default L1 fee rate → 2 szats/vB, "szats" UI display |
+| `da2db1f` | Betanet send+receive round-trip recorded |
+| `38f870a` | Alphanet removed (chain stalled); Betanet default |
 | `d38ee85` | Import no-op + missing tab-icon fixes (see below) |
 | `7bd2723` | Phase 4c — Settings, Dashboard, Send, Coin News, QR scanner |
 | `3f627c2` | Phase 4b — Sidechains, Receive, Toolbox, AssetSwap |
@@ -61,11 +67,56 @@ and **fails on the old navigator**.
 | Device | installed, launches clean, no FATAL; tab icons occupy real glyph bounds |
 | Workspace `pnpm -r test` | shared 262 (+1 skip), wallet 382, web 118, desktop 76, explorer 43, mobile 143, api-client 12, smarthub 5 |
 
+### Phase 4d — `PlatformDetail` ported (`626151a`)
+
+The last sizeable screen landed. `platform-detail` is no longer a placeholder:
+`apps/mobile/src/screens/PlatformDetailScreen.tsx` ports
+`apps/wallet/src/views/PlatformDetailView.vue` 1:1, together with
+`apps/mobile/src/components/bitnames/BitMessagesPreview.tsx` (ported from the
+Vue component of the same name).
+
+Every tab kind the Vue view defines is present: overview (including the
+Thunder-specific action grid), thunder-payments, thunder-channels,
+thunder-liquidity, parent-chain, activity, contacts, messages, and the generic
+`workflow` fallback. The hero (slot/status/use-case), the metric grid, and the
+PRO gate for locked platforms all carry over, as do the action/field label
+helpers (`actionLabel`, `primaryFieldLabel`, …).
+
+Platform substitutions, no logic loss:
+
+| Vue | RN |
+| --- | --- |
+| `route.params.platformId` | same param on the `platform-detail` route |
+| `watchEffect` tab reconciliation | `useEffect` + derived `selectedTab` |
+| `v-model:selected-contact-name` | `selectedContactName` + `onSelectContact` |
+| `<input disabled>` | `TextInput` with `editable={false}` |
+| `<router-link to="/platforms">` | `Pressable` → `navigation.goBack()` |
+| `xl:` two-column layout | stacked (a phone is always < `xl`) |
+
+Every data array in the Vue source is a constant `[]` (live platform data is
+not indexed yet), so the empty branches are what render today — the non-empty
+branches are kept for parity. The mobile copy therefore reads the same empty
+states the Vue tests assert (`"No live Thunder payments are indexed yet."`,
+`"No live BitNames contacts are indexed yet."`, …).
+
+Each tab `Pressable` carries `testID={\`platform-tab-${tab.id}\`}` so the
+regression test selects the tab button deterministically — the tab label also
+appears in the hero use-case pill and in the metric captions.
+
+Verification at `626151a`:
+
+| Check | Result |
+| --- | --- |
+| `apps/mobile` `tsc --noEmit` | clean |
+| `apps/mobile` `jest` | **159 passed / 10 suites** (+12 new) |
+| Workspace `pnpm -r type-check` | clean (7 packages) |
+| Workspace `pnpm -r test` | shared 254 (+1 skip), wallet 382, web 118, desktop 76, explorer 43, mobile 159, api-client 12, smarthub 5 |
+| Remaining placeholders | `hardware` only (permanent — WebUSB/WebHID) |
+
 ### Remaining mobile work
 
-- **Port `PlatformDetailView.vue`** (1249 lines + `bitnames/` ≈1006 lines) —
-  the last sizeable screen; `platform-detail` is still a placeholder.
-- `hardware` stays a placeholder permanently (WebUSB/WebHID).
+- All 12 wallet views are now ported. `hardware` stays a placeholder
+  permanently (WebUSB/WebHID — no RN equivalent of the browser APIs).
 - Optionally add an ESLint config for `apps/mobile` (pre-existing gap; the
   `lint` script currently has nothing to read).
 - APK size is ~148 MB — ABI splits / dependency trimming is an open item.
@@ -618,11 +669,14 @@ clean.
 
 ## In-flight
 
-- **NEXT SESSION: test/verify Send & Receive on Betanet → Signet.**
-  See the "NEXT SESSION" section near the top for the verified endpoints,
-  faucet availability, and the per-network procedure.
-- **Mobile: port `PlatformDetailView.vue`** — the last remaining placeholder
-  screen. `hardware` stays a placeholder permanently (WebUSB/WebHID).
+- **Send & Receive verified on BOTH networks.** Betanet round-trip in
+  `da2db1f`, Signet round-trip in `f6cd3f0`. See the "NEXT SESSION" section
+  near the top for the endpoints, faucet availability, and per-network
+  procedure.
+- **Mobile: all 12 wallet views ported.** `platform-detail` landed in
+  `626151a` (`PlatformDetailScreen` + `BitMessagesPreview`, 12 regression
+  tests). `hardware` stays a placeholder permanently (WebUSB/WebHID — no RN
+  equivalent of the browser APIs).
 - Open mobile items: ESLint config for `apps/mobile` (none exists — the `lint`
   script fails, pre-existing), APK size (~148 MB; ABI splits / dep trimming not
   yet investigated), `DOM` in the mobile tsconfig `lib` (needed for

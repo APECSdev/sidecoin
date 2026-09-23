@@ -69,19 +69,27 @@ The RN wallet is a port of the Vue browser wallet (`apps/wallet`). It builds
 in place — do **not** create a separate package for it. Android/F-Droid is the
 current priority; iOS is deferred.
 
-### What is ported (as of `d38ee85`)
+### What is ported (as of `626151a`)
 
-Every route in `apps/wallet/src/router/index.ts` is wired, except the two
-placeholders below. `apps/mobile/src/screens/index.tsx` `SCREEN_SOURCES` is the
-authoritative route → Vue-file map; keep it current as screens land.
+Every route in `apps/wallet/src/router/index.ts` is wired, except the one
+permanent placeholder below. `apps/mobile/src/screens/index.tsx`
+`SCREEN_SOURCES` is the authoritative route → Vue-file map; keep it current as
+screens land.
 
 | Ported | Module |
 | --- | --- |
 | Shell + keystore | `App.tsx`, `navigation/RootNavigator.tsx`, `keystore.ts` |
 | Logic layer | `api/index.ts`, `send.ts`, `entitlements.ts`, `data/platforms.ts`, `hardware/network.ts`, `theme/`, `demo.ts`, `polyfills.ts` |
-| Screens | onboarding, dashboard, send, receive, platforms (Sidechains), swap, markets, toolbox, pro, settings |
-| Components | `components/ui.tsx`, `components/pro/*`, `components/QrScanner.tsx`, `components/paymenturi.ts`, `components/bitnames/*` |
-| **Still placeholders** | `platform-detail`, `hardware` |
+| Screens | onboarding, dashboard, send, receive, platforms (Sidechains), swap, markets, toolbox, pro, settings, platform-detail |
+| Components | `components/ui.tsx`, `components/pro/*`, `components/QrScanner.tsx`, `components/paymenturi.ts`, `components/bitnames/*` (CoinNewsComposer, CoinNewsPreview, BitMessagesPreview) |
+| **Still placeholder** | `hardware` |
+
+`platform-detail` (`screens/PlatformDetailScreen.tsx`, ported from
+`PlatformDetailView.vue` in `626151a`) renders the hero, metric grid, PRO gate,
+and every tab kind: overview, thunder-payments, thunder-channels,
+thunder-liquidity, parent-chain, activity, contacts, messages, and the generic
+workflow fallback. Each tab `Pressable` has `testID={\`platform-tab-${id}\`}`
+for deterministic selection in tests.
 
 `hardware` is a permanent placeholder — Ledger/Trezor/OneKey use WebUSB/WebHID
 in the browser build, which is not portable to React Native.
@@ -170,7 +178,7 @@ pnpm --filter @sidecoin/wallet type-check        # vue-tsc --noEmit
 pnpm --filter @sidecoin/shared test              # 262 passed / 1 skipped
 pnpm --filter @sidecoin/shared type-check        # tsc --noEmit
 pnpm --filter @sidecoin/api-client test          # 12 passed
-pnpm --filter @sidecoin/mobile test              # 143 passed (8 suites, jest)
+pnpm --filter @sidecoin/mobile test              # 159 passed (10 suites, jest)
 pnpm --filter @sidecoin/mobile type-check        # tsc --noEmit
 
 # Android (from apps/mobile/android — see the React Native section above):
@@ -198,7 +206,7 @@ must be green before commit.
 | `@sidecoin/explorer` | 43 passed (7 files) |
 | `@sidecoin/desktop` | 76 passed (6 files) |
 | `@sidecoin/smarthub` | 5 passed (1 file) |
-| `@sidecoin/mobile` | 143 passed (8 suites) |
+| `@sidecoin/mobile` | 159 passed (10 suites) |
 | `@sidecoin/api-client` | 12 passed (1 file) |
 
 (Counts from `pnpm --filter <pkg> test`; verify before citing in a PR.)
