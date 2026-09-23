@@ -34,7 +34,7 @@ export function parseCoinsToSats(input: string): bigint {
   if (frac.length > 8) {
     throw new Error(
       `Amount "${input}" has more than 8 decimal places ` +
-        `(the smallest unit is 1 sat).`,
+        `(the smallest unit is 1 szat).`,
     );
   }
   return BigInt(whole) * SATS_PER_COIN + BigInt(frac.padEnd(8, "0"));

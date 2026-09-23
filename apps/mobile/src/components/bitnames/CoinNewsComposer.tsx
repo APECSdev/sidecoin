@@ -39,7 +39,7 @@ import {
 import { ECASH, GRAY } from "../../theme/colors";
 import { Button, Card, SectionTitle } from "../ui";
 
-const FEE_RATE_SAT_PER_VB = 1;
+const FEE_RATE_SAT_PER_VB = 2;
 const MAX_COIN_NEWS_FIELD_BYTES = 255;
 const textEncoder = new TextEncoder();
 

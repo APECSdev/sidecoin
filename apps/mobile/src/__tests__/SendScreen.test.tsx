@@ -223,7 +223,7 @@ describe("SendScreen", () => {
   it("should render fee policy and send safety copy", () => {
     render(<SendScreen />);
     expect(screen.getByText("Fee policy")).toBeTruthy();
-    expect(screen.getByText("1 sat/vB")).toBeTruthy();
+    expect(screen.getByText("2 szats/vB")).toBeTruthy();
     expect(screen.getByText("Send safety")).toBeTruthy();
     expect(
       screen.getByText("Broadcast happens only after review."),

@@ -66,8 +66,8 @@ import { Alert, Badge, Button, Card, Muted } from "../components/ui";
 // (react-native-vision-camera) is never imported during normal render or in
 // unit tests.
 //
-// Flat fee rate for signet (an empty mempool confirms at 1 sat/vB).
-const FEE_RATE_SAT_PER_VB = 1;
+// Flat fee rate for signet (an empty mempool confirms at 2 szats/vB).
+const FEE_RATE_SAT_PER_VB = 2;
 
 type SendTab = "simple" | "advanced" | "review";
 
@@ -388,8 +388,8 @@ export function SendScreen(): React.JSX.Element {
 
               <Card tone="inset" style={styles.feeCard}>
                 <Text style={styles.smallLabel}>Fee policy</Text>
-                <Text style={styles.feeValue}>{FEE_RATE_SAT_PER_VB} sat/vB</Text>
-                <Badge label="Signet default" tone="neutral" />
+                <Text style={styles.feeValue}>{FEE_RATE_SAT_PER_VB} szats/vB</Text>
+                <Badge label="Flat fee" tone="neutral" />
               </Card>
 
               <Button

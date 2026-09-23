@@ -114,7 +114,7 @@ function formatFee(value: unknown): string {
 
 function formatFeeRate(value: unknown): string {
   const n = num(value);
-  return n == null ? "—" : `${n.toFixed(1)} sats/vB`;
+  return n == null ? "—" : `${n.toFixed(1)} szats/vB`;
 }
 
 function numericDisplay(value: unknown): string {

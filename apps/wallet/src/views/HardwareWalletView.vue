@@ -58,7 +58,7 @@ async function fetchAddress() {
   finally { busy.value = false; }
 }
 
-const FEE_RATE_SAT_PER_VB = 1;
+const FEE_RATE_SAT_PER_VB = 2;
 const sendAddress = ref("");
 const sendAmount = ref("");
 const signing = ref(false);

@@ -232,7 +232,7 @@ describe("explorer API", () => {
     const transaction = await getTransaction("l1", txid);
     expect(transaction.txid).toBe(txid);
     expect(transaction.fee).toBe("3018 sats");
-    expect(transaction.feeRate).toBe("21.4 sats/vB");
+    expect(transaction.feeRate).toBe("21.4 szats/vB");
     expect(transaction.inputs[0].amount).toBe("7.10662240 BTC");
     expect(transaction.outputs[0]).toMatchObject({
       index: 0,

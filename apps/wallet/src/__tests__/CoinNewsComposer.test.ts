@@ -229,7 +229,7 @@ describe("CoinNewsComposer.vue", () => {
         }),
       ]),
       opReturnScriptLength: OP_RETURN_SCRIPT.length,
-      feeRateSatPerVb: 1,
+      feeRateSatPerVb: 2,
     });
     expect(buildAndSignOpReturnTransaction).toHaveBeenCalledWith({
       network: "signet",

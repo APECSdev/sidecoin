@@ -31,8 +31,8 @@ const QrScanner = defineAsyncComponent(
   () => import("../components/QrScanner.vue"),
 );
 
-// Flat fee rate for signet (an empty mempool confirms at 1 sat/vB).
-const FEE_RATE_SAT_PER_VB = 1;
+// Flat fee rate for signet (an empty mempool confirms at 2 szats/vB).
+const FEE_RATE_SAT_PER_VB = 2;
 
 type SendTab = "simple" | "advanced" | "review";
 
@@ -328,11 +328,11 @@ function cancel() {
                     Fee policy
                   </p>
                   <p class="mt-1 text-sm font-semibold text-white">
-                    {{ FEE_RATE_SAT_PER_VB }} sat/vB
+                    {{ FEE_RATE_SAT_PER_VB }} szats/vB
                   </p>
                 </div>
                 <span class="rounded-full bg-gray-800 px-3 py-1 text-xs font-semibold text-gray-300">
-                  Signet default
+                  Flat fee
                 </span>
               </div>
             </div>

@@ -211,7 +211,7 @@ describe("SendView.vue", () => {
   it("should render fee policy and send safety copy", () => {
     const wrapper = mountSend();
     expect(wrapper.text()).toContain("Fee policy");
-    expect(wrapper.text()).toContain("1 sat/vB");
+    expect(wrapper.text()).toContain("2 szats/vB");
     expect(wrapper.text()).toContain("Send safety");
     expect(wrapper.text()).toContain("Broadcast happens only after review.");
   });
