@@ -14,9 +14,10 @@
 //    4     bitassets    6004
 //    9     thunder      6009
 //    13    truthcoin    6013
-//    88    snowside     (requested — BIP-300 slot not yet assigned)
+//    88    snowside     (assigned; not yet submitted to betanet)
 //    98    zside        6098
 //    99    photon       6099
+//    130   freebank     6130
 //    255   coinshift    6255
 //    TBD   elementsplus (announced — no assigned slot yet)
 //
@@ -41,7 +42,7 @@ export const SIDECHAIN_THUNDER: SidechainDescriptor = {
   status: "active",
   keyHash: "",  // CONFIRM PRE-FORK: populate from sidechain proposal TX
   supportsBmm: true,
-  infoUrl: "https://ecash.com",
+  infoUrl: "https://github.com/LayerTwo-Labs/thunder-rust",
 };
 
 export const SIDECHAIN_ZSIDE: SidechainDescriptor = {
@@ -126,39 +127,58 @@ export const SIDECHAIN_COINSHIFT: SidechainDescriptor = {
 // deriveEvmAddress(). BMM payouts / fee distribution go to that same EVM
 // address — there is no separate payout derivation path.
 //
-// BIP-300 slot 88 has been REQUESTED but is NOT YET OFFICIALLY ASSIGNED.
-// The slot is reserved here so address generation can target it, but the
-// status stays "proposed" and no deposits/withdrawals flow until the slot
-// assignment is confirmed. Update the slot + status when assigned.
+// BIP-300 slot 88 was assigned on ALPHANET but has NOT YET BEEN SUBMITTED
+// to betanet. The slot is reserved here so address generation can target it.
 export const SIDECHAIN_SNOWSIDE: SidechainDescriptor = {
-  slot: 88,  // REQUESTED — not yet officially assigned. Confirm pre-fork.
+  slot: 88,
   id: "snowside",
   displayName: "Snowside",
   shortName: "Snowside",
   description: "Avalanche L1 EVM sidechain with native BTC gas via Blind Merged Mining. Full EVM compatibility (Solidity, Hardhat, Foundry) secured by Bitcoin hashrate.",
-  status: "proposed",
-  keyHash: "",  // CONFIRM PRE-FORK: populate from sidechain proposal TX once slot is assigned
+  status: "active",
+  keyHash: "",  // CONFIRM PRE-FORK: populate from sidechain proposal TX
   supportsBmm: true,
   infoUrl: "https://snowside.network",
 };
 
 //
-// RISCy — a PROPOSED drivechain at slot 3.
+// RISCy — an active drivechain at slot 3.
 //
-// Listed in the live indexer registry as status "proposed", enabled:false,
-// with no RPC port until activation, and NOT yet ingested. Reserved here
-// so slot 3 resolves to a known descriptor rather than undefined.
+// Slot 3 was assigned on ALPHANET. Reserved here so slot 3 resolves to a
+// known descriptor rather than undefined.
 //
 export const SIDECHAIN_RISCY: SidechainDescriptor = {
   slot: 3,
   id: "riscy",
   displayName: "RISCy",
   shortName: "RISCy",
-  description: "Proposed RISC-V-based sidechain. Reserved at slot 3; not yet activated and not accepting deposits.",
-  status: "proposed",
+  description: "RISC-V-based sidechain. Reserved at slot 3.",
+  status: "active",
   keyHash: "",
   supportsBmm: true,
   infoUrl: "https://ecash.com",
+};
+
+//
+// FreeBank — a BitWindow / drivechain sidechain at slot 130.
+//
+// FreeBank (https://github.com/mbdrivechains/freebank) is a Bitcoin drivechain
+// sidechain (BIP 300/301, via the CUSF enforcer). Slot 130 and the RPC port
+// 6130 (6000 + slot convention) are stated in its own repository README
+// ("Identity (fixed at genesis)"). Its Rust build is a fresh-genesis,
+// peg-only MVP for the eCash beta network; the credit layer lands as later
+// append-only, activation-gated 0.3.x upgrades on the same chain.
+//
+export const SIDECHAIN_FREEBANK: SidechainDescriptor = {
+  slot: 130,
+  id: "freebank",
+  displayName: "FreeBank",
+  shortName: "FreeBank",
+  description: "Bitcoin drivechain sidechain (BIP 300/301 via the CUSF enforcer). Peg-only MVP with blind-merge-mining; the FreeBank credit layer lands as later activation-gated upgrades on the same chain.",
+  status: "active",
+  keyHash: "",  // CONFIRM PRE-FORK
+  supportsBmm: true,
+  infoUrl: "https://github.com/mbdrivechains/freebank",
 };
 
 //
@@ -187,12 +207,12 @@ export const SIDECHAIN_ELEMENTS_PLUS: SidechainDescriptor = {
 /**
  * Complete list of all known drivechain sidechains.
  *
- * Contains the 7 ACTIVE drivechains plus proposed / coming-soon chains.
- * Use getActiveSidechains() for the 7 that are live at launch.
+ * Contains the 10 ACTIVE drivechains plus coming-soon chains.
+ * Use getActiveSidechains() for the 10 that are live at launch.
  *
  * NOTE: ordered by launch prominence, NOT by slot. Slots are sparse
- * (9, 98, 2, 4, 99, 13, 255, 3) and future announced chains can have
- * null slots until assignment — never use array index as a slot.
+ * (9, 98, 2, 4, 99, 13, 255, 3, 88, 130) and future announced chains can
+ * have null slots until assignment — never use array index as a slot.
  *
  * Usage:
  *   import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
@@ -208,6 +228,7 @@ export const LAUNCH_SIDECHAINS: readonly SidechainDescriptor[] = [
   SIDECHAIN_COINSHIFT,
   SIDECHAIN_SNOWSIDE,
   SIDECHAIN_RISCY,
+  SIDECHAIN_FREEBANK,
   SIDECHAIN_ELEMENTS_PLUS,
 ] as const;
 
@@ -260,6 +281,13 @@ export function getSidechainBySlotOrThrow(slot: SidechainSlot): SidechainDescrip
  */
 export function getActiveSidechains(): readonly SidechainDescriptor[] {
   return LAUNCH_SIDECHAINS.filter((sc) => sc.status === "active");
+}
+
+/**
+ * Returns the number of BIP-300 slots currently assigned to active chains.
+ */
+export function getActiveSidechainCount(): number {
+  return getActiveSidechains().length;
 }
 
 /**

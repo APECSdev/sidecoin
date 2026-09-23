@@ -15,11 +15,13 @@ import {
   SIDECHAIN_COINSHIFT,
   SIDECHAIN_SNOWSIDE,
   SIDECHAIN_RISCY,
+  SIDECHAIN_FREEBANK,
   SIDECHAIN_ELEMENTS_PLUS,
   getSidechainBySlot,
   getSidechainById,
   getSidechainBySlotOrThrow,
   getActiveSidechains,
+  getActiveSidechainCount,
   getSidechainCount,
 } from "../sidechains/registry";
 
@@ -28,8 +30,8 @@ import {
 // ---------------------------------------------------------------------------
 
 describe("Sidechain Registry", () => {
-  it("has 10 known sidechains (7 active drivechains + Snowside + proposed / coming-soon chains)", () => {
-    expect(LAUNCH_SIDECHAINS).toHaveLength(10);
+  it("has 11 known sidechains (10 active drivechains + Elements Plus, coming soon)", () => {
+    expect(LAUNCH_SIDECHAINS).toHaveLength(11);
   });
 
   it("slots are unique and match the authoritative BIP-300 assignments", () => {
@@ -38,10 +40,9 @@ describe("Sidechain Registry", () => {
       .filter((slot): slot is number => slot != null);
     const uniqueSlots = new Set(slots);
     expect(uniqueSlots.size).toBe(slots.length);
-    // Authoritative assigned slots (dev.txt ports table) + the requested
-    // Snowside slot 88, sorted ascending. Update slot 88 once officially
-    // assigned.
-    expect([...slots].sort((a, b) => a - b)).toEqual([2, 3, 4, 9, 13, 88, 98, 99, 255]);
+    // Authoritative assigned slots (dev.txt ports table) + Snowside slot 88
+    // and FreeBank slot 130, sorted ascending.
+    expect([...slots].sort((a, b) => a - b)).toEqual([2, 3, 4, 9, 13, 88, 98, 99, 130, 255]);
   });
 
   it("slots are NOT sequential (sparse BIP-300 assignment)", () => {
@@ -73,8 +74,8 @@ describe("Sidechain Registry", () => {
     });
   });
 
-  it("getSidechainCount returns 10", () => {
-    expect(getSidechainCount()).toBe(10);
+  it("getSidechainCount returns 11", () => {
+    expect(getSidechainCount()).toBe(11);
   });
 });
 
@@ -118,16 +119,23 @@ describe("Individual Sidechains", () => {
     expect(SIDECHAIN_COINSHIFT.id).toBe("coinshift");
   });
 
-  it("Snowside is slot 88 (requested) and proposed", () => {
+  it("Snowside is slot 88 and active", () => {
     expect(SIDECHAIN_SNOWSIDE.slot).toBe(88);
     expect(SIDECHAIN_SNOWSIDE.id).toBe("snowside");
-    expect(SIDECHAIN_SNOWSIDE.status).toBe("proposed");
+    expect(SIDECHAIN_SNOWSIDE.status).toBe("active");
   });
 
-  it("RISCy is slot 3 and proposed", () => {
+  it("RISCy is slot 3 and active", () => {
     expect(SIDECHAIN_RISCY.slot).toBe(3);
     expect(SIDECHAIN_RISCY.id).toBe("riscy");
-    expect(SIDECHAIN_RISCY.status).toBe("proposed");
+    expect(SIDECHAIN_RISCY.status).toBe("active");
+  });
+
+  it("FreeBank is slot 130 and active", () => {
+    expect(SIDECHAIN_FREEBANK.slot).toBe(130);
+    expect(SIDECHAIN_FREEBANK.id).toBe("freebank");
+    expect(SIDECHAIN_FREEBANK.status).toBe("active");
+    expect(SIDECHAIN_FREEBANK.infoUrl).toBe("https://github.com/mbdrivechains/freebank");
   });
 
   it("Elements Plus has no assigned slot yet and is coming soon", () => {
@@ -148,6 +156,8 @@ describe("Sidechain Lookups", () => {
     expect(getSidechainBySlot(13)).toBe(SIDECHAIN_TRUTHCOIN);
     expect(getSidechainBySlot(255)).toBe(SIDECHAIN_COINSHIFT);
     expect(getSidechainBySlot(3)).toBe(SIDECHAIN_RISCY);
+    expect(getSidechainBySlot(88)).toBe(SIDECHAIN_SNOWSIDE);
+    expect(getSidechainBySlot(130)).toBe(SIDECHAIN_FREEBANK);
   });
 
   it("getSidechainBySlot returns undefined for unregistered slots", () => {
@@ -176,18 +186,25 @@ describe("Sidechain Lookups", () => {
     expect(() => getSidechainBySlotOrThrow(0)).toThrow("Unknown sidechain slot 0");
   });
 
-  it("getActiveSidechains returns 7 active sidechains (riscy is proposed, elements plus is coming soon)", () => {
+  it("getActiveSidechains returns 10 active sidechains (only elementsplus is coming soon)", () => {
     const active = getActiveSidechains();
-    expect(active).toHaveLength(7);
+    expect(active).toHaveLength(10);
     active.forEach((sc) => {
       expect(sc.status).toBe("active");
     });
   });
 
-  it("getActiveSidechains does not include the proposed or coming-soon chains", () => {
+  it("getActiveSidechainCount matches getActiveSidechains().length", () => {
+    expect(getActiveSidechainCount()).toBe(getActiveSidechains().length);
+    expect(getActiveSidechainCount()).toBe(10);
+  });
+
+  it("getActiveSidechains does not include the coming-soon chain", () => {
     const active = getActiveSidechains();
     const ids = active.map((sc) => sc.id);
-    expect(ids).not.toContain("riscy");
+    expect(ids).toContain("riscy");
+    expect(ids).toContain("snowside");
+    expect(ids).toContain("freebank");
     expect(ids).not.toContain("elementsplus");
   });
 });
