@@ -241,15 +241,27 @@ jest.mock("@react-navigation/bottom-tabs", () => {
 });
 
 // @react-navigation/native-stack — same rationale as bottom-tabs above.
+//
+// REGRESSION NOTE: the mock also records every registered route name into
+// `registeredStackRoutes`. React Navigation silently drops a navigation
+// action that targets a route which is not registered, which is exactly how
+// the "Import does nothing" bug presented on device: when no wallet was
+// stored only the "onboarding" route existed, so OnboardingScreen's
+// navigation.replace("main") was a no-op. Asserting the registration set
+// keeps every route mounted regardless of the keystore gate.
 jest.mock("@react-navigation/native-stack", () => {
   const React = require("react");
   const View = require("react-native").View;
+  const routes: string[] = (globalThis as any).__stackRoutes ?? [];
+  (globalThis as any).__stackRoutes = routes;
   return {
     createNativeStackNavigator: () => {
       const Navigator = ({ children }: any) =>
         React.createElement(View, null, children);
-      const Screen = ({ component: Component }: any) =>
-        React.createElement(Component);
+      const Screen = ({ name, component: Component }: any) => {
+        if (!routes.includes(name)) routes.push(name);
+        return React.createElement(Component);
+      };
       return { Navigator, Screen };
     },
   };
@@ -304,6 +316,31 @@ describe("App", () => {
     await waitFor(() => {
       expect(screen.getByText("Set up your wallet")).toBeTruthy();
     });
+  });
+
+  // REGRESSION: importing a seed phrase did nothing on device because the
+  // navigator only registered "onboarding" while no wallet was stored, so
+  // OnboardingScreen's navigation.replace("main") had no route to land on.
+  // React Navigation drops such an action silently. Every route must stay
+  // registered; the keystore gate only chooses the initial route.
+  it("should register every route while gated on onboarding", async () => {
+    render(<App />);
+    await waitFor(() => {
+      expect(screen.getByText("Set up your wallet")).toBeTruthy();
+    });
+    const routes: string[] = (globalThis as any).__stackRoutes ?? [];
+    for (const name of [
+      "onboarding",
+      "main",
+      "swap",
+      "markets",
+      "platform-detail",
+      "hardware",
+      "toolbox",
+      "pro",
+    ]) {
+      expect(routes).toContain(name);
+    }
   });
 
   it("should render the main tab shell when a wallet is stored", async () => {

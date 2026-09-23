@@ -1,4 +1,4 @@
-// packages/mobile/android/app/build.gradle
+// apps/mobile/android/app/build.gradle
 
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
@@ -10,6 +10,24 @@ apply plugin: "com.facebook.react"
 react {
     autolinkLibrariesWithApp()
 }
+
+/**
+ * react-native-vector-icons font assets.
+ *
+ * WITHOUT THIS the tab bar renders every glyph as a missing-glyph box
+ * (the "X" the user saw): react-native-vector-icons ships the icon
+ * typefaces as .ttf assets and relies on this Gradle script to copy them
+ * into the APK. Autolinking wires up the native module but NOT the fonts.
+ *
+ * Only the sets this app actually imports are bundled — MaterialIcons is
+ * used by the bottom tab bar in src/navigation/RootNavigator.tsx, and
+ * Ionicons is declared by the shell tests. Adding every *.ttf would cost
+ * ~1 MB of APK for unused glyph sets.
+ */
+project.ext.vectoricons = [
+    iconFontNames: [ "MaterialIcons.ttf", "Ionicons.ttf" ]
+]
+apply from: file("../../node_modules/react-native-vector-icons/fonts.gradle")
 
 /**
  * Set this to true to run Proguard on Release builds to minify the Java bytecode.

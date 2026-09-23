@@ -154,43 +154,38 @@ export function RootNavigator(): React.JSX.Element {
       }}
       initialRouteName={walletPresent ? "main" : "onboarding"}
     >
-      {walletPresent ? (
-        <>
-          <Stack.Screen
-            name="main"
-            component={MainTabs}
-            options={{ headerShown: false }}
-          />
-          <Stack.Screen name="swap" component={SwapScreen} options={{ title: "Swap" }} />
-          <Stack.Screen
-            name="markets"
-            component={MarketsScreen}
-            options={{ title: "Markets" }}
-          />
-          <Stack.Screen
-            name="platform-detail"
-            component={PlatformDetailScreen}
-            options={{ title: "Platform" }}
-          />
-          <Stack.Screen
-            name="hardware"
-            component={HardwareScreen}
-            options={{ title: "Hardware Wallet" }}
-          />
-          <Stack.Screen
-            name="toolbox"
-            component={ToolboxScreen}
-            options={{ title: "Toolbox" }}
-          />
-          <Stack.Screen name="pro" component={ProBenefitsScreen} options={{ title: "Pro" }} />
-        </>
-      ) : (
-        <Stack.Screen
-          name="onboarding"
-          component={OnboardingScreen}
-          options={{ headerShown: false }}
-        />
-      )}
+      <Stack.Screen
+        name="main"
+        component={MainTabs}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen name="swap" component={SwapScreen} options={{ title: "Swap" }} />
+      <Stack.Screen
+        name="markets"
+        component={MarketsScreen}
+        options={{ title: "Markets" }}
+      />
+      <Stack.Screen
+        name="platform-detail"
+        component={PlatformDetailScreen}
+        options={{ title: "Platform" }}
+      />
+      <Stack.Screen
+        name="hardware"
+        component={HardwareScreen}
+        options={{ title: "Hardware Wallet" }}
+      />
+      <Stack.Screen
+        name="toolbox"
+        component={ToolboxScreen}
+        options={{ title: "Toolbox" }}
+      />
+      <Stack.Screen name="pro" component={ProBenefitsScreen} options={{ title: "Pro" }} />
+      <Stack.Screen
+        name="onboarding"
+        component={OnboardingScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
