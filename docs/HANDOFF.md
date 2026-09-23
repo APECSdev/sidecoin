@@ -74,7 +74,37 @@ and **fails on the old navigator**.
 
 ---
 
-## NEXT SESSION — test/verify Send & Receive on Signet
+## NEXT SESSION — send/receive matrix COMPLETE ✅
+
+### Signet round-trip: DONE ✅ (2026-09-23)
+
+Signet send + receive was verified end-to-end on the same Pixel 5
+F-Droid release build, against `https://esplora.signet.drivechain.info`.
+This run also exercised the **2 szat/vB** fee-rate change (`c12320e`).
+
+**Receive** — the index-0 address
+`tb1quwvyn529kjsvy5l5hztmletyea4dtue4acdc0j` (path `m/84'/1'/0'/0/0`,
+coin type 1) was already funded by the earlier session's faucet deposit:
+txid `763a60b6a1a20eddff6e7ea04bcb08043961e3d1ab2fd73381b636617ef2147b`,
+133,690,000 sat, confirmed block 15267. Dashboard showed
+**`1.3369 eCash`** on the Signet badge with no faucet request needed this
+session.
+
+**Send** — 0.1 eCash from index 0 to the index-1 Signet address
+`tb1qh40p5uj3rz5z6v5ev0st2ee52qyakafwscrh2d` (derived in-app via
+Receive → "Generate New Address"):
+
+- Fee policy card rendered **`2 szats/vB`** with the **`FLAT FEE`** badge
+  (the old "Signet default" badge is gone).
+- Review screen: amount 0.10, fee 0.00000282, change 1.23689718, 141 vB.
+  Rounded: 141 vB × 2 = 282 szat, exactly what was charged.
+- txid `0abdfce79aa494d8c97ddd144804b89604ab7b9298c043d7a687c36ccb2e2791`,
+  1 input, 2 outputs (10,000,000 sat to index 1; 123,689,718 sat change
+  back to index 0), fee 282 sat, vsize 140 vB ⇒ **2.014 szat/vB**.
+- App showed **"Broadcast accepted"**; confirmed **block 15282**
+  (`block_time` 1790157662).
+- Dashboard then showed **`1.23689718 eCash`**, matching the on-chain
+  123,689,718 szat change output exactly.
 
 ### Betanet round-trip: DONE ✅ (2026-09-23)
 
