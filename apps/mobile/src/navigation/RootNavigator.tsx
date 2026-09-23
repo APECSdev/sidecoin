@@ -35,7 +35,17 @@ import type { RootStackParamList, TabParamList } from "./types";
 import { SC, ECASH, GRAY } from "../theme/colors";
 import { hasWallet } from "../keystore";
 
-import { DashboardScreen, MarketsScreen, OnboardingScreen, ProBenefitsScreen, makePlaceholder } from "../screens";
+import {
+  AssetSwapScreen,
+  DashboardScreen,
+  MarketsScreen,
+  OnboardingScreen,
+  ProBenefitsScreen,
+  ReceiveScreen,
+  SidechainsScreen,
+  ToolboxScreen,
+  makePlaceholder,
+} from "../screens";
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const Tab = createBottomTabNavigator<TabParamList>();
@@ -44,18 +54,12 @@ const Tab = createBottomTabNavigator<TabParamList>();
 // Tab screens
 // ──────────────────────────────────────────────────────
 const SendScreen = makePlaceholder("send", "Send", "Transaction composer.");
-const ReceiveScreen = makePlaceholder("receive", "Receive", "Address + QR display.");
-const PlatformsScreen = makePlaceholder(
-  "platforms",
-  "Platforms",
-  "Sidechain cards (Snowside featured).",
-);
 const SettingsScreen = makePlaceholder("settings", "Settings", "Network + theme toggles.");
 
 // ──────────────────────────────────────────────────────
 // Stack screens pushed above the tab shell
 // ──────────────────────────────────────────────────────
-const SwapScreen = makePlaceholder("swap", "Swap", "Asset swap interface.");
+const SwapScreen = AssetSwapScreen;
 const PlatformDetailScreen = makePlaceholder(
   "platform-detail",
   "Platform detail",
@@ -66,7 +70,6 @@ const HardwareScreen = makePlaceholder(
   "Hardware wallet",
   "Ledger / Trezor / OneKey (WebUSB in the web build — out of scope for the RN port).",
 );
-const ToolboxScreen = makePlaceholder("toolbox", "Toolbox", "Coin control + splitter.");
 
 // ──────────────────────────────────────────────────────
 // Tab icon map — MaterialIcons names.
@@ -106,7 +109,7 @@ function MainTabs(): React.JSX.Element {
       <Tab.Screen name="receive" component={ReceiveScreen} />
       <Tab.Screen
         name="platforms"
-        component={PlatformsScreen}
+        component={SidechainsScreen}
         options={{ tabBarLabel: "Platforms" }}
       />
       <Tab.Screen name="settings" component={SettingsScreen} />

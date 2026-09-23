@@ -7,17 +7,21 @@
 // so the port progress is greppable:
 //
 //   Phase 4 (view port) replaces the staging placeholders one batch at a time.
-//   Ported so far: dashboard, onboarding, markets, pro.
-//   Still staged:  send, receive, swap, platforms, platform-detail, hardware,
-//                  toolbox, settings.
+//   Ported so far: dashboard, onboarding, markets, pro, platforms (4b),
+//                  receive (4b), swap (4b), toolbox (4b).
+//   Still staged:  send, platform-detail, hardware, settings.
 
 import React from "react";
 
+import { AssetSwapScreen } from "./AssetSwapScreen";
 import { DashboardScreen } from "./DashboardScreen";
 import { MarketsScreen } from "./MarketsScreen";
 import { OnboardingScreen } from "./OnboardingScreen";
 import { PlaceholderScreen } from "./PlaceholderScreen";
 import { ProBenefitsScreen } from "./ProBenefitsScreen";
+import { ReceiveScreen } from "./ReceiveScreen";
+import { SidechainsScreen } from "./SidechainsScreen";
+import { ToolboxScreen } from "./ToolboxScreen";
 
 /**
  * Every route name in the Vue router (`apps/wallet/src/router/index.ts`),
@@ -41,11 +45,15 @@ export const SCREEN_SOURCES = {
 
 export type ScreenKey = keyof typeof SCREEN_SOURCES;
 
+export { AssetSwapScreen } from "./AssetSwapScreen";
 export { DashboardScreen } from "./DashboardScreen";
 export { MarketsScreen } from "./MarketsScreen";
 export { OnboardingScreen } from "./OnboardingScreen";
 export { PlaceholderScreen } from "./PlaceholderScreen";
 export { ProBenefitsScreen } from "./ProBenefitsScreen";
+export { ReceiveScreen } from "./ReceiveScreen";
+export { SidechainsScreen } from "./SidechainsScreen";
+export { ToolboxScreen } from "./ToolboxScreen";
 
 /**
  * Build a placeholder screen component for a given route. Kept as a factory so

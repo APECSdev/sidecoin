@@ -156,6 +156,18 @@ jest.mock("@react-navigation/native", () => {
 jest.mock("react-native-vector-icons/MaterialIcons", () => "Icon");
 jest.mock("react-native-vector-icons/Ionicons", () => "Icon");
 
+// @react-native-clipboard/clipboard — resolves a native TurboModule that does
+// not exist under Jest; the ported Receive/Sidechains/Toolbox screens import it
+// at module scope, so it must be stubbed for the shell to mount.
+jest.mock("@react-native-clipboard/clipboard", () => ({
+  __esModule: true,
+  default: { setString: jest.fn(), getString: jest.fn(async () => "") },
+}));
+
+// react-native-qrcode-svg — renders an SVG tree via react-native-svg; the
+// Receive screen mounts it, so stub it to a plain host element.
+jest.mock("react-native-qrcode-svg", () => "QRCode");
+
 // @react-navigation/bottom-tabs — the real implementation needs the full
 // native navigator tree; render the tab screens inline for assertions.
 jest.mock("@react-navigation/bottom-tabs", () => {
