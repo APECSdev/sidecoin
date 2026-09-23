@@ -1,14 +1,35 @@
 // packages/mobile/src/__tests__/App.test.tsx
 //
-// Tests for the root App component.
-// Verifies that the app renders without crashing, displays
-// correct branding, fork countdown info, chain info,
-// sidechain list, and workspace validation.
+// Tests for the root App component and the navigation shell.
+//
+// PHASE 2 NOTE: App.tsx used to render the fork-countdown demo directly.
+// It is now a provider shell around ./navigation/RootNavigator.tsx, and the
+// old placeholder content moved verbatim into ./screens/DashboardScreen.tsx
+// (covered by ./DashboardScreen.test.tsx). These tests therefore assert the
+// shell wiring and the keystore gate: with no wallet in keychain the app must
+// land on "onboarding" (parity with the Vue router beforeEach redirect in
+// packages/wallet/src/router/index.ts).
 
 import React from "react";
-import { render, screen } from "@testing-library/react-native";
-import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
+import { render, screen, waitFor } from "@testing-library/react-native";
 import App from "../App";
+
+// ---------------------------------------------------------------------------
+// Keystore — the gate the shell reads at startup.
+//
+// jest.mock() factories are hoisted above all imports, so this mock is
+// declared before `../App` is required and controls what hasWallet() returns.
+// Individual tests override the resolved value to exercise both branches.
+// ---------------------------------------------------------------------------
+jest.mock("../keystore", () => ({
+  hasWallet: jest.fn(async () => false),
+  loadWallet: jest.fn(async () => null),
+  saveWallet: jest.fn(async () => undefined),
+  setWalletNetwork: jest.fn(async () => undefined),
+  clearWallet: jest.fn(async () => undefined),
+}));
+
+import { hasWallet } from "../keystore";
 
 // ---------------------------------------------------------------------------
 // Mock native modules that crash in a Jest environment
@@ -135,6 +156,37 @@ jest.mock("@react-navigation/native", () => {
 jest.mock("react-native-vector-icons/MaterialIcons", () => "Icon");
 jest.mock("react-native-vector-icons/Ionicons", () => "Icon");
 
+// @react-navigation/bottom-tabs — the real implementation needs the full
+// native navigator tree; render the tab screens inline for assertions.
+jest.mock("@react-navigation/bottom-tabs", () => {
+  const React = require("react");
+  const View = require("react-native").View;
+  return {
+    createBottomTabNavigator: () => {
+      const Navigator = ({ children }: any) =>
+        React.createElement(View, null, children);
+      const Screen = ({ component: Component }: any) =>
+        React.createElement(Component);
+      return { Navigator, Screen };
+    },
+  };
+});
+
+// @react-navigation/native-stack — same rationale as bottom-tabs above.
+jest.mock("@react-navigation/native-stack", () => {
+  const React = require("react");
+  const View = require("react-native").View;
+  return {
+    createNativeStackNavigator: () => {
+      const Navigator = ({ children }: any) =>
+        React.createElement(View, null, children);
+      const Screen = ({ component: Component }: any) =>
+        React.createElement(Component);
+      return { Navigator, Screen };
+    },
+  };
+});
+
 // @shopify/react-native-skia
 jest.mock("@shopify/react-native-skia", () => ({
   Canvas: "Canvas",
@@ -160,110 +212,38 @@ jest.mock("victory-native", () => ({
 // ---------------------------------------------------------------------------
 
 describe("App", () => {
-  it("should render without crashing", () => {
+  it("should render without crashing", async () => {
     const { toJSON } = render(<App />);
     expect(toJSON()).not.toBeNull();
+    // Flush the keystore effect so its state updates are act()-wrapped.
+    await waitFor(() => {
+      expect(hasWallet).toHaveBeenCalled();
+    });
   });
 
-  it("should display the app title 'SidΞcoin'", () => {
+  it("should gate on the keystore at startup", async () => {
     render(<App />);
-    expect(screen.getByText("SidΞcoin")).toBeTruthy();
+    // hasWallet() runs in an effect; flush it so the setBooting/setWalletPresent
+    // state updates are wrapped in act() and do not warn.
+    await waitFor(() => {
+      expect(hasWallet).toHaveBeenCalled();
+    });
   });
 
-  it("should display the subtitle 'eCash Drivechain Wallet'", () => {
+  it("should land on onboarding when no wallet is stored", async () => {
     render(<App />);
-    expect(screen.getByText("eCash Drivechain Wallet")).toBeTruthy();
+    // The splash is replaced once hasWallet() resolves.
+    await waitFor(() => {
+      expect(screen.getByText("Set up your wallet")).toBeTruthy();
+    });
   });
 
-  it("should display 'Fork Countdown' section", () => {
+  it("should render the main tab shell when a wallet is stored", async () => {
+    (hasWallet as jest.Mock).mockResolvedValueOnce(true);
     render(<App />);
-    expect(screen.getByText("Fork Countdown")).toBeTruthy();
-  });
-
-  it("should display the fork activation timestamp", () => {
-    render(<App />);
-    expect(screen.getByText("2026-10-31T15:00:00Z")).toBeTruthy();
-  });
-
-  it("should display 'Chain' section", () => {
-    render(<App />);
-    expect(screen.getByText("Chain")).toBeTruthy();
-  });
-
-  it("should display PoW algorithm as sha256d", () => {
-    render(<App />);
-    expect(screen.getByText("PoW: sha256d")).toBeTruthy();
-  });
-
-  it("should display BIP-300 status", () => {
-    render(<App />);
-    expect(screen.getByText("BIP-300: Active")).toBeTruthy();
-  });
-
-  it("should display BIP-301 status", () => {
-    render(<App />);
-    expect(screen.getByText("BIP-301: Active")).toBeTruthy();
-  });
-
-  it("should display the Sidechains section with count", () => {
-    render(<App />);
-    expect(screen.getByText(`Sidechains (${LAUNCH_SIDECHAINS.length})`)).toBeTruthy();
-  });
-
-  it("should display Thunder Network sidechain", () => {
-    render(<App />);
-    expect(screen.getByText(/#9 Thunder Network/)).toBeTruthy();
-  });
-
-  it("should display zSide sidechain", () => {
-    render(<App />);
-    expect(screen.getByText(/#98 zSide/)).toBeTruthy();
-  });
-
-  it("should display BitNames sidechain", () => {
-    render(<App />);
-    expect(screen.getByText(/#2 BitNames/)).toBeTruthy();
-  });
-
-  it("should display BitAssets sidechain", () => {
-    render(<App />);
-    expect(screen.getByText(/#4 BitAssets/)).toBeTruthy();
-  });
-
-  it("should display Photon sidechain", () => {
-    render(<App />);
-    expect(screen.getByText(/#99 Photon/)).toBeTruthy();
-  });
-
-  it("should display Truthcoin sidechain", () => {
-    render(<App />);
-    expect(screen.getByText(/#13 Truthcoin/)).toBeTruthy();
-  });
-
-  it("should display CoinShift sidechain", () => {
-    render(<App />);
-    expect(screen.getByText(/#255 CoinShift/)).toBeTruthy();
-  });
-
-  it("should display the proposed RISCy sidechain slot", () => {
-    render(<App />);
-    expect(screen.getByText(/#3 RISCy/)).toBeTruthy();
-  });
-
-  it("should display the coming-soon Elements Plus sidechain without a fake slot", () => {
-    render(<App />);
-    expect(screen.getByText(/Slot TBD Elements Plus/)).toBeTruthy();
-  });
-
-  it("should display workspace validation success", () => {
-    render(<App />);
-    expect(screen.getByText("Workspace")).toBeTruthy();
-    expect(screen.getByText("✅ @sidecoin/shared linked and working")).toBeTruthy();
-  });
-
-  it("should display the block height estimate", () => {
-    render(<App />);
-    // Block ~973,728 formatted with toLocaleString
-    expect(screen.getByText(/973/)).toBeTruthy();
+    // DashboardScreen (the Home tab) is the landing surface for a stored wallet.
+    await waitFor(() => {
+      expect(screen.getByText("SidΞcoin")).toBeTruthy();
+    });
   });
 });

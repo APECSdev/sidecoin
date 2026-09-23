@@ -2,21 +2,25 @@
 //
 // Root application component for the Sidecoin wallet.
 //
-// This component sets up the global providers that every
-// screen needs access to:
+// This component sets up the global providers that every screen needs:
 //
 //   1. SafeAreaProvider — insets for notches/status bars
 //   2. GestureHandlerRootView — required by react-native-gesture-handler
 //   3. NavigationContainer — React Navigation context
 //   4. QueryClientProvider — TanStack Query for async state
 //
-// The actual tab/stack navigation structure will be added
-// in Phase 1 Step 1.2 (Navigation Shell).
+// The navigator itself (bottom tabs + native stack) lives in
+// ./navigation/RootNavigator.tsx.
+//
+// PORT NOTE: the Vue app mounted a persistent sidebar (desktop) plus a
+// scrolling footer link bar (mobile) around <RouterView/>. RN uses the
+// idiomatic bottom tab bar + native stack instead; that shell is the
+// equivalent surface.
 
 import React from "react";
-import { StatusBar, StyleSheet, Text, View } from "react-native";
+import { StatusBar } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer } from "@react-navigation/native";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -26,11 +30,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { initSentry } from "./lib/sentry";
 
 // ──────────────────────────────────────────────────────
-// Shared package — validate workspace linking works
+// Navigation shell
 // ──────────────────────────────────────────────────────
-import { ECASH_MAINNET } from "@sidecoin/shared/chain";
-import { LAUNCH_SIDECHAINS } from "@sidecoin/shared/sidechains";
-import { getForkCountdown } from "@sidecoin/shared/chain";
+import { RootNavigator } from "./navigation/RootNavigator";
+import { SC } from "./theme/colors";
 
 // ──────────────────────────────────────────────────────
 // Initialize Sentry as early as possible.
@@ -54,165 +57,23 @@ const queryClient = new QueryClient({
   },
 });
 
-function formatSidechainSlot(slot: number | null): string {
-  return slot == null ? "Slot TBD" : `#${slot}`;
-}
-
-// ──────────────────────────────────────────────────────
-// Placeholder home screen.
-// This will be replaced by the navigation shell in the
-// next scaffolding step.
-// ──────────────────────────────────────────────────────
-function PlaceholderHome(): React.JSX.Element {
-  const countdown = getForkCountdown(ECASH_MAINNET);
-  const insets = useSafeAreaInsets();
-
-  return (
-    <View style={[styles.container, { paddingTop: insets.top, paddingBottom: insets.bottom, paddingLeft: insets.left, paddingRight: insets.right }]}>
-      <View style={styles.content}>
-
-        {/* ── App Title ── */}
-        <Text style={styles.title} accessibilityLabel="Sidecoin">SidΞcoin</Text>
-        <Text style={styles.subtitle}>eCash Drivechain Wallet</Text>
-
-        {/* ── Fork Countdown ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Fork Countdown</Text>
-          {countdown.isPast ? (
-            <Text style={styles.countdownText}>Fork is ACTIVE 🟢</Text>
-          ) : (
-            <Text style={styles.countdownText}>
-              {countdown.days}d {countdown.hours}h {countdown.minutes}m {countdown.seconds}s
-            </Text>
-          )}
-          <Text style={styles.detail}>
-            Block ~{ECASH_MAINNET.fork.activationBlockHeight.toLocaleString()}
-          </Text>
-          <Text style={styles.detail}>
-            {ECASH_MAINNET.fork.activationTimestampUtc}
-          </Text>
-        </View>
-
-        {/* ── Chain Info ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Chain</Text>
-          <Text style={styles.detail}>
-            PoW: {ECASH_MAINNET.consensus.powAlgorithm}
-          </Text>
-          <Text style={styles.detail}>
-            BIP-300: {ECASH_MAINNET.fork.bip300Active ? "Active" : "Inactive"}
-          </Text>
-          <Text style={styles.detail}>
-            BIP-301: {ECASH_MAINNET.fork.bip301Active ? "Active" : "Inactive"}
-          </Text>
-        </View>
-
-        {/* ── Sidechains ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            Sidechains ({LAUNCH_SIDECHAINS.length})
-          </Text>
-          {LAUNCH_SIDECHAINS.map((sc) => (
-            <Text key={sc.id} style={styles.detail}>
-              {formatSidechainSlot(sc.slot)} {sc.displayName} — {sc.status}
-            </Text>
-          ))}
-        </View>
-
-        {/* ── Workspace Validation ── */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Workspace</Text>
-          <Text style={styles.successText}>
-            ✅ @sidecoin/shared linked and working
-          </Text>
-        </View>
-
-      </View>
-    </View>
-  );
-}
-
-// ──────────────────────────────────────────────────────
-// Root App component
-// ──────────────────────────────────────────────────────
 function App(): React.JSX.Element {
   return (
-    <GestureHandlerRootView style={styles.root}>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <NavigationContainer>
             <StatusBar
               barStyle="light-content"
-              backgroundColor="#0D1117"
+              backgroundColor={SC.bg}
               translucent={false}
             />
-            <PlaceholderHome />
+            <RootNavigator />
           </NavigationContainer>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }
-
-// ──────────────────────────────────────────────────────
-// Styles — inline for the placeholder.
-// Will be replaced by NativeWind className usage once
-// the navigation shell is in place.
-// ──────────────────────────────────────────────────────
-const styles = StyleSheet.create({
-  root: {
-    flex: 1,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: "#0D1117",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    paddingTop: 16,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: "700",
-    color: "#F7931A",
-    textAlign: "center",
-  },
-  subtitle: {
-    fontSize: 14,
-    color: "#8B949E",
-    textAlign: "center",
-    marginTop: 4,
-    marginBottom: 24,
-  },
-  section: {
-    marginBottom: 20,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    backgroundColor: "#161B22",
-    borderRadius: 12,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#E6EDF3",
-    marginBottom: 8,
-  },
-  detail: {
-    fontSize: 13,
-    color: "#8B949E",
-    marginBottom: 2,
-  },
-  countdownText: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#F7931A",
-    marginBottom: 4,
-  },
-  successText: {
-    fontSize: 13,
-    color: "#3FB950",
-  },
-});
 
 export default App;
