@@ -254,13 +254,13 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textTransform: "uppercase",
     letterSpacing: 2,
-    color: "#4ade80",
+    color: "#fb923c",
   },
   livePill: {
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: "rgba(34,197,94,0.4)",
-    backgroundColor: "rgba(5,46,22,0.6)",
+    borderColor: "rgba(247,147,26,0.4)",
+    backgroundColor: "rgba(67,20,7,0.6)",
     paddingHorizontal: 10,
     paddingVertical: 4,
   },
@@ -269,7 +269,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     textTransform: "uppercase",
     letterSpacing: 1,
-    color: "#86efac",
+    color: "#fdba74",
   },
   heroTitle: {
     fontSize: 28,
@@ -308,7 +308,7 @@ const styles = StyleSheet.create({
   statValueEcash: {
     fontSize: 18,
     fontWeight: "900",
-    color: "#4ade80",
+    color: "#fb923c",
   },
   statLabel: {
     fontSize: 10,
@@ -352,14 +352,14 @@ const styles = StyleSheet.create({
   },
   resolvedPill: {
     borderRadius: 999,
-    backgroundColor: "#052e16",
+    backgroundColor: "#431407",
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
   resolvedPillText: {
     fontSize: 12,
     fontWeight: "900",
-    color: "#86efac",
+    color: "#fdba74",
   },
   detailList: {
     marginTop: 20,
@@ -429,8 +429,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   contactButtonSelected: {
-    borderColor: "#16a34a",
-    backgroundColor: "rgba(5,46,22,0.3)",
+    borderColor: "#ea580c",
+    backgroundColor: "rgba(67,20,7,0.3)",
   },
   contactName: {
     fontSize: 14,

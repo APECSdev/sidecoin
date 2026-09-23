@@ -207,6 +207,27 @@ jest.mock("@react-navigation/native", () => {
     border: "#1f2937",
     notification: "#F85149",
   };
+  // Minimal ref stub: ../navigation/ref.ts calls
+  // createNavigationContainerRef() at module scope, and RootNavigator
+  // subscribes via addListener("state") and reads getRootState().
+  // Models the exact tab-focused state that triggered the double-FAB bug:
+  //
+  //   • getRootState()     -> "main"       (the root stack screen)
+  //   • getCurrentRoute()  -> "platforms"  (the DEEPEST focused route)
+  //
+  // RootNavigator must gate the stack-level FAB on the ROOT route. Reading the
+  // deepest route made `stackRoute` become "platforms", which is absent from
+  // FAB_HIDDEN_ROUTES, so a SECOND FAB rendered over the tab shell and covered
+  // the Platforms tab. With this stub the fixed code yields one FAB; reverting
+  // to getCurrentRoute yields two and fails the regression test below.
+  const navRefStub = {
+    getRootState: () => ({
+      routes: [{ name: "main" }],
+      index: 0,
+    }),
+    getCurrentRoute: () => ({ name: "platforms" }),
+    addListener: jest.fn(() => jest.fn()),
+  };
   return {
     NavigationContainer: ({ children, theme, ...props }: any) => {
       // Record the theme for assertions without rendering it.
@@ -215,6 +236,7 @@ jest.mock("@react-navigation/native", () => {
     },
     DefaultTheme: { dark: false, colors, fonts: {} },
     DarkTheme: { dark: true, colors, fonts: {} },
+    createNavigationContainerRef: () => navRefStub,
     useNavigation: () => ({
       navigate: jest.fn(),
       goBack: jest.fn(),
@@ -242,6 +264,18 @@ jest.mock("@react-native-clipboard/clipboard", () => ({
 // react-native-qrcode-svg — renders an SVG tree via react-native-svg; the
 // Receive screen mounts it, so stub it to a plain host element.
 jest.mock("react-native-qrcode-svg", () => "QRCode");
+
+// react-native-webview — ExploreScreen (an always-registered tab) imports it
+// at module scope, and its native RNCWebViewModule is absent under Jest.
+jest.mock("react-native-webview", () => {
+  const React = require("react");
+  const View = require("react-native").View;
+  const WebView = React.forwardRef((props: any, _ref: any) =>
+    React.createElement(View, props),
+  );
+  WebView.displayName = "WebView";
+  return { __esModule: true, WebView, default: WebView };
+});
 
 // @react-navigation/bottom-tabs — the real implementation needs the full
 // native navigator tree; render the tab screens inline for assertions.
@@ -380,6 +414,7 @@ describe("App", () => {
       "hardware",
       "toolbox",
       "pro",
+      "profile",
     ]) {
       expect(routes).toContain(name);
     }
@@ -411,5 +446,24 @@ describe("App", () => {
         screen.getAllByText("Drivechains Financial Hub").length,
       ).toBeGreaterThan(0);
     });
+  });
+
+  // REGRESSION (double FAB / blocked tab): RootNavigator read the DEEPEST
+  // focused route via navigationRef.getCurrentRoute(). While a tab was
+  // focused that returned the tab's own name (e.g. "platforms"), which is not
+  // in FAB_HIDDEN_ROUTES, so the stack-level FAB rendered a SECOND floating
+  // button over the tab shell. Positioned at the bottom inset, that duplicate
+  // sat on the rightmost tab and made Platforms untappable. Reading the ROOT
+  // stack route (getRootState → "main") keeps the second FAB hidden. Exactly
+  // one FAB must exist on the tab shell.
+  it("should render exactly one FAB on the tab shell", async () => {
+    (hasWallet as jest.Mock).mockResolvedValueOnce(true);
+    render(<App />);
+    await waitFor(() => {
+      expect(
+        screen.getAllByText("Drivechains Financial Hub").length,
+      ).toBeGreaterThan(0);
+    });
+    expect(screen.getAllByTestId("fab-container")).toHaveLength(1);
   });
 });

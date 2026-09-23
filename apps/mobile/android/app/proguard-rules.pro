@@ -31,6 +31,18 @@
 # SQLite
 -keep class net.nicholasgasior.** { *; }
 
+# react-native-webview
+#
+# The library ships NO consumer ProGuard rules (verified: no
+# consumer-rules.pro / proguard-rules.pro in the published package, and
+# android/build.gradle declares no consumerProguardFiles). With
+# minifyEnabled + shrinkResources true in release, R8 can strip or rename the
+# WebView module and its codegen'd spec classes, which surfaces only in
+# release builds as a null-module crash when <WebView> mounts. Keep the whole
+# package explicitly.
+-keep class com.reactnativecommunity.webview.** { *; }
+-dontwarn com.reactnativecommunity.webview.**
+
 # OkHttp (used by RN networking)
 -dontwarn okhttp3.**
 -dontwarn okio.**

@@ -93,6 +93,10 @@ const config: Config = {
       + "|react-native-vector-icons"
       + "|react-native-svg"
       + "|react-native-qrcode-svg"
+      // react-native-webview ships untranspiled ESM (index.js uses `import`),
+      // and ExploreScreen imports it at module scope, so the tab shell pulls
+      // it in transitively.
+      + "|react-native-webview"
       + "|react-native-css-interop"
       + "|nativewind"
       + "|@shopify/react-native-skia"

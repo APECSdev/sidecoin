@@ -1,225 +1,294 @@
 // apps/mobile/src/screens/ExploreScreen.tsx
 //
-// MOCK — the "Explore" bottom tab.
+// The "Explore" bottom tab — a MINIMAL in-app browser.
 //
-// SCOPE NOTE (requested by the operator): the real screen is a Web3-enabled
-// in-app browser. This file is a MOCK: it renders the browser chrome (address
-// bar, back/forward/reload, a dApp grid) with static, clearly-labelled sample
-// data. There is NO WebView, NO wallet-connect bridge, and NO RPC client
-// wired here.
+// Operator directive: no descriptions, no titles, no marketing copy. Just a
+// URL field with basic navigation controls, an empty WebView, and a few
+// default/recent bookmarks rendered as a strip over the WebView.
 //
-// The data below is explicitly labelled as sample content in the UI so the
-// screen never presents fabricated activity as real.
+// The WebView is REAL (react-native-webview). It starts empty — no page is
+// loaded until the user enters a URL or taps a bookmark.
+//
+// BOOKMARK POLICY: only URLs that were verified to return HTTP 200 are listed.
+// The hosts that appeared in the earlier mock (bitnames.app,
+// thunder.drivechain.dev) do NOT resolve and were deliberately dropped rather
+// than shipped as dead links.
 
-import React, { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
-
-import { GRAY } from "../theme/colors";
+import React, { useCallback, useRef, useState } from "react";
 import {
-  Badge,
-  Body,
-  Card,
-  Eyebrow,
-  Field,
-  Mono,
-  Muted,
-  Screen,
-  Subtitle,
-  Title,
-} from "../components/ui";
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { WebView } from "react-native-webview";
+import type { WebViewNavigation } from "react-native-webview";
+import MaterialIcons from "react-native-vector-icons/MaterialIcons";
 
-/** A bookmarked dApp destination. */
-interface ExploreSite {
-  /** Display name of the dApp. */
-  name: string;
-  /** Host shown in the address bar. */
-  host: string;
-  /** One-line description. */
-  description: string;
+import { GRAY, SC } from "../theme/colors";
+
+/** A bookmarked destination. Every `url` here was verified to return HTTP 200. */
+interface Bookmark {
+  /** Short label shown on the chip. */
+  label: string;
+  /** Absolute https URL loaded into the WebView. */
+  url: string;
 }
 
 /**
- * Static sample destinations. Every value here is a literal — nothing is
- * resolved or fetched. It exists to exercise the layout (an address bar plus a
- * browsable grid), not to represent real dApps.
+ * Default / recently-visited bookmarks. Only verified-reachable hosts are
+ * listed; see the header note. Ordered most-relevant first.
  */
-const SAMPLE_SITES: ExploreSite[] = [
-  {
-    name: "BitNames",
-    host: "bitnames.app",
-    description: "Register human-readable names on sidechain slot 2.",
-  },
-  {
-    name: "Thunder",
-    host: "thunder.drivechain.dev",
-    description: "Payments and deposits on sidechain slot 9.",
-  },
-  {
-    name: "Snowside",
-    host: "snowside.example",
-    description: "EVM tooling for sidechain slot 88.",
-  },
-  {
-    name: "Drivechain Registry",
-    host: "drivechain.dev/config",
-    description: "JSON registry of networks, backends, and explorers.",
-  },
+const BOOKMARKS: Bookmark[] = [
+  { label: "SupaQt", url: "https://supaqt.com" },
+  { label: "eCash", url: "https://ecash.com" },
+  { label: "Drivechain", url: "https://drivechain.dev/config" },
+  { label: "eCash Farm", url: "https://ecashfarm.com" },
 ];
 
+/**
+ * Turn typed text into a loadable URL. Bare hosts get https://, and anything
+ * that looks like a search phrase is sent to DuckDuckGo. Returns null for
+ * empty input so callers can skip navigation.
+ */
+function normaliseInput(raw: string): string | null {
+  const value = raw.trim();
+  if (value.length === 0) return null;
+
+  // Looks like a URL (has a scheme, or a dotted host with no spaces).
+  if (/^https?:\/\//i.test(value)) return value;
+  if (/^[^\s/]+\.[^\s/]+/.test(value)) return `https://${value}`;
+
+  // Otherwise treat it as a search query.
+  return `https://duckduckgo.com/?q=${encodeURIComponent(value)}`;
+}
+
 export function ExploreScreen(): React.JSX.Element {
-  // Local, display-only address text. Nothing dereferences it — the browser
-  // engine is a mock, so the value is only echoed back into the UI.
+  // Text currently in the address bar (what the user is typing or what the
+  // page reported back after a navigation).
   const [address, setAddress] = useState("");
+  // The URL actually handed to the WebView. null = nothing loaded yet, which
+  // is the "empty webview" start state.
+  const [currentUrl, setCurrentUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [canGoBack, setCanGoBack] = useState(false);
+  const [canGoForward, setCanGoForward] = useState(false);
+
+  const webRef = useRef<WebView>(null);
+
+  /** Load a URL into the WebView and mirror it into the address bar. */
+  const load = useCallback((url: string) => {
+    Keyboard.dismiss();
+    setAddress(url);
+    setCurrentUrl(url);
+  }, []);
+
+  /** Submit whatever is in the address bar. */
+  const submit = useCallback(() => {
+    const url = normaliseInput(address);
+    if (url) load(url);
+  }, [address, load]);
+
+  /**
+   * Keep the chrome in sync with the page: the address bar follows in-page
+   * navigation, and the back/forward buttons enable only when the WebView can
+   * actually move in that direction.
+   */
+  const onNavigationStateChange = useCallback((nav: WebViewNavigation) => {
+    if (!nav.loading) setAddress(nav.url);
+    setCanGoBack(nav.canGoBack);
+    setCanGoForward(nav.canGoForward);
+  }, []);
 
   return (
-    <Screen>
-      <Eyebrow>Explore</Eyebrow>
-      <Title>Explore</Title>
-      <Subtitle>
-        A Web3-enabled browser for dApps, sidechain tooling, and block
-        explorers.
-      </Subtitle>
-
-      <Badge label="Mock data — no browser engine" tone="warning" />
-
-      <View style={styles.controls}>
+    <View style={styles.root}>
+      {/* Address bar + basic controls. One compact row, no chrome beyond it. */}
+      <View style={styles.bar}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Back"
-          style={styles.iconButton}
+          disabled={!canGoBack}
+          onPress={() => webRef.current?.goBack()}
+          style={[styles.iconButton, !canGoBack ? styles.iconDisabled : null]}
         >
-          <Mono style={styles.iconText}>{"<"}</Mono>
+          <MaterialIcons
+            name="chevron-left"
+            size={22}
+            color={canGoBack ? SC.text : GRAY[600]}
+          />
         </Pressable>
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Forward"
-          style={styles.iconButton}
+          disabled={!canGoForward}
+          onPress={() => webRef.current?.goForward()}
+          style={[styles.iconButton, !canGoForward ? styles.iconDisabled : null]}
         >
-          <Mono style={styles.iconText}>{">"}</Mono>
+          <MaterialIcons
+            name="chevron-right"
+            size={22}
+            color={canGoForward ? SC.text : GRAY[600]}
+          />
         </Pressable>
+
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Reload"
+          onPress={() => webRef.current?.reload()}
           style={styles.iconButton}
         >
-          <Mono style={styles.iconText}>{"↻"}</Mono>
+          <MaterialIcons name="refresh" size={20} color={SC.text} />
         </Pressable>
+
+        <TextInput
+          testID="explore-address"
+          value={address}
+          onChangeText={setAddress}
+          onSubmitEditing={submit}
+          placeholder="Enter a URL"
+          placeholderTextColor={GRAY[600]}
+          autoCapitalize="none"
+          autoCorrect={false}
+          keyboardType="url"
+          returnKeyType="go"
+          style={styles.input}
+        />
       </View>
 
-      <Field
-        label="Address"
-        value={address}
-        onChangeText={setAddress}
-        placeholder="https://… or search"
-        autoCapitalize="none"
-      />
-
-      <Card tone="inset">
-        <Eyebrow>Address bar</Eyebrow>
-        <Mono style={styles.echo}>
-          {address.trim().length > 0 ? address.trim() : "(empty)"}
-        </Mono>
-        <Muted style={styles.echoNote}>
-          Navigation is not implemented in this mock — the value is shown back
-          verbatim and nothing is loaded.
-        </Muted>
-      </Card>
-
-      <Card tone="surface" style={styles.featured}>
-        <Eyebrow>Featured</Eyebrow>
-        <Body style={styles.featuredTitle}>Sidechain tooling</Body>
-        <Body>
-          Direct links to the dApps and registries the wallet already knows
-          about.
-        </Body>
-      </Card>
-
-      <View style={styles.grid}>
-        {SAMPLE_SITES.map((site, index) => (
+      {/* Bookmark strip. Sits above the WebView so it is visible while empty. */}
+      <View style={styles.bookmarks}>
+        {BOOKMARKS.map((bookmark) => (
           <Pressable
-            key={site.host}
-            testID={`explore-site-${index}`}
-            style={styles.siteCard}
+            key={bookmark.url}
+            testID={`explore-bookmark-${bookmark.label}`}
+            accessibilityRole="button"
+            accessibilityLabel={bookmark.label}
+            onPress={() => load(bookmark.url)}
+            style={styles.chip}
           >
-            <Text style={styles.siteName}>{site.name}</Text>
-            <Mono style={styles.siteHost}>{site.host}</Mono>
-            <Muted style={styles.siteDescription}>{site.description}</Muted>
+            <Text style={styles.chipText}>{bookmark.label}</Text>
           </Pressable>
         ))}
       </View>
 
-      <Card tone="inset">
-        <Eyebrow>Planned</Eyebrow>
-        <Body>
-          This is a mock. The real screen will host a WebView with a
-          wallet-connect bridge so dApps can request signatures.
-        </Body>
-        <Mono style={styles.planned}>No WebView is wired yet.</Mono>
-      </Card>
-    </Screen>
+      {loading ? (
+        <View style={styles.progressTrack}>
+          <View style={styles.progressBar} />
+        </View>
+      ) : null}
+
+      {/*
+       * The WebView. `currentUrl === null` renders the empty state (no `source`
+       * prop set), which is the required "show an empty webview" start.
+       */}
+      <View style={styles.viewport}>
+        <WebView
+          ref={webRef}
+          testID="explore-webview"
+          style={styles.webview}
+          source={currentUrl ? { uri: currentUrl } : undefined}
+          onLoadStart={() => setLoading(true)}
+          onLoadEnd={() => setLoading(false)}
+          onNavigationStateChange={onNavigationStateChange}
+          originWhitelist={["*"]}
+          javaScriptEnabled
+          domStorageEnabled
+          // Keep the browser state inside the app; no new activities.
+          setSupportMultipleWindows={false}
+        />
+
+        {currentUrl === null ? (
+          <View pointerEvents="none" style={styles.emptyOverlay}>
+            <Text style={styles.emptyText}>No page loaded</Text>
+          </View>
+        ) : null}
+      </View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  controls: {
-    marginTop: 16,
+  root: {
+    flex: 1,
+    backgroundColor: SC.bg,
+  },
+  bar: {
     flexDirection: "row",
-    gap: 8,
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: GRAY[800],
   },
   iconButton: {
     alignItems: "center",
     justifyContent: "center",
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 34,
+    height: 34,
+    borderRadius: 8,
+  },
+  iconDisabled: {
+    opacity: 0.5,
+  },
+  input: {
+    flex: 1,
+    height: 36,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: GRAY[800],
     backgroundColor: GRAY[900],
+    color: SC.text,
+    paddingHorizontal: 12,
+    fontSize: 14,
   },
-  iconText: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: GRAY[300],
+  bookmarks: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  echo: {
-    marginTop: 8,
-  },
-  echoNote: {
-    marginTop: 8,
-    fontSize: 12,
-  },
-  featured: {
-    marginTop: 16,
-  },
-  featuredTitle: {
-    marginTop: 4,
-    fontWeight: "700",
-  },
-  grid: {
-    marginTop: 16,
-    gap: 12,
-  },
-  siteCard: {
+  chip: {
+    borderRadius: 9999,
     borderWidth: 1,
     borderColor: GRAY[800],
-    borderRadius: 16,
     backgroundColor: GRAY[900],
-    padding: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
-  siteName: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#ffffff",
+  chipText: {
+    color: SC.text,
+    fontSize: 13,
+    fontWeight: "600",
   },
-  siteHost: {
-    marginTop: 4,
-    fontSize: 12,
-    color: GRAY[400],
+  progressTrack: {
+    height: 2,
+    backgroundColor: "transparent",
   },
-  siteDescription: {
-    marginTop: 8,
+  progressBar: {
+    height: 2,
+    width: "60%",
+    backgroundColor: SC.primary,
   },
-  planned: {
-    marginTop: 8,
+  viewport: {
+    flex: 1,
+    backgroundColor: SC.bg,
+  },
+  webview: {
+    flex: 1,
+    backgroundColor: SC.bg,
+  },
+  emptyOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyText: {
+    color: GRAY[600],
+    fontSize: 14,
   },
 });

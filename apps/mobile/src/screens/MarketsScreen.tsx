@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
     color: "#ffffff",
   },
   price: {
-    color: "#4ade80",
+    color: "#fb923c",
   },
   tileMono: {
     marginTop: 8,

@@ -33,6 +33,7 @@ import { initSentry } from "./lib/sentry";
 // Navigation shell
 // ──────────────────────────────────────────────────────
 import { RootNavigator } from "./navigation/RootNavigator";
+import { navigationRef } from "./navigation/ref";
 import { navigationTheme } from "./navigation/theme";
 import { SC } from "./theme/colors";
 
@@ -68,7 +69,7 @@ function App(): React.JSX.Element {
            * applies its light DefaultTheme (background rgb(242,242,242)),
            * which paints the navigator gutter white around dark screens.
            */}
-          <NavigationContainer theme={navigationTheme}>
+          <NavigationContainer ref={navigationRef} theme={navigationTheme}>
             <StatusBar
               barStyle="light-content"
               backgroundColor={SC.bg}

@@ -91,7 +91,7 @@ const CARD_TONE: Record<CardTone, ViewStyle> = {
   surface: { backgroundColor: GRAY[900], borderColor: GRAY[800] },
   inset: { backgroundColor: GRAY[950], borderColor: GRAY[800] },
   pro: { backgroundColor: "#1a1206", borderColor: "#f59e0b66" },
-  accent: { backgroundColor: "#052e16", borderColor: ECASH[800] },
+  accent: { backgroundColor: "#431407", borderColor: ECASH[800] },
 };
 
 export function Card({ children, tone = "surface", style, testID }: CardProps): React.JSX.Element {
@@ -322,7 +322,7 @@ const ALERT_TONE: Record<AlertTone, { bg: string; border: string; fg: string }> 
   info: { bg: "#0c1a2b", border: "#1e40af66", fg: "#93c5fd" },
   warning: { bg: "#1a1206", border: "#92400e66", fg: "#fcd34d" },
   error: { bg: "#2a0d0d", border: "#991b1b66", fg: "#fca5a5" },
-  success: { bg: "#052e16", border: "#16653466", fg: ECASH[400] },
+  success: { bg: "#431407", border: "#9a341266", fg: ECASH[400] },
 };
 
 export function Alert({

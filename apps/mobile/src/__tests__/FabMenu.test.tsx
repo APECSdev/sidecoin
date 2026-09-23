@@ -32,11 +32,11 @@ describe("FabMenu", () => {
     expect(screen.queryByTestId("fab-action-send")).toBeNull();
   });
 
-  it("exposes Send, Receive, Settings and Scan QR once opened", () => {
+  it("exposes Send, Receive, Profile, Settings and Scan QR once opened", () => {
     render(<FabMenu bottomOffset={100} />);
     fireEvent.press(screen.getByTestId("fab-toggle"));
 
-    for (const id of ["send", "receive", "settings", "scan"]) {
+    for (const id of ["send", "receive", "profile", "settings", "scan"]) {
       expect(screen.getByTestId(`fab-action-${id}`)).toBeTruthy();
     }
   });
@@ -44,6 +44,7 @@ describe("FabMenu", () => {
   it.each([
     ["send", "send"],
     ["receive", "receive"],
+    ["profile", "profile"],
     ["settings", "settings"],
     ["scan", "qr-scan"],
   ])("navigates to %s when the %s action is pressed", (id, route) => {

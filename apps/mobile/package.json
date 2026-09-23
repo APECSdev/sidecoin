@@ -1,6 +1,6 @@
 {
   "name": "@sidecoin/mobile",
-  "version": "26.5.30",
+  "version": "26.9.23",
   "license": "MIT",
   "scripts": {
     "android": "react-native run-android",

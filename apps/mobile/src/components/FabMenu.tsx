@@ -5,7 +5,8 @@
 // The wallet used to carry Send, Receive, and Settings in the bottom tab bar,
 // which made five tabs and buried the secondary destinations. They now live
 // behind this FAB, and the tab bar keeps only the four primary destinations
-// (Home, Platforms, Feed, Explore). The FAB also exposes a QR scan action.
+// (Home, Feed, Explore, Platforms — Platforms is deliberately last). The FAB
+// also exposes Profile and QR scan actions.
 //
 // Behaviour:
 //   • collapsed  — a single round "+" button floating above the tab bar
@@ -36,8 +37,13 @@ interface FabAction {
   label: string;
   /** Stack route to push. */
   route: keyof RootStackParamList;
-  /** Unique testID suffix. */
-  testID: string;
+  /**
+   * Stable identifier for this action. Serves triple duty: React list key,
+   * accessibility-free discriminator, and the suffix of the rendered testID
+   * (see the `fab-action-*` testID below). Named for what it identifies, not
+   * for the test that queries it.
+   */
+  actionId: string;
 }
 
 /**
@@ -45,10 +51,11 @@ interface FabAction {
  * destinations removed from the tab bar; Scan QR is the added scanner entry.
  */
 const FAB_ACTIONS: FabAction[] = [
-  { icon: "send", label: "Send", route: "send", testID: "send" },
-  { icon: "qr-code", label: "Receive", route: "receive", testID: "receive" },
-  { icon: "settings", label: "Settings", route: "settings", testID: "settings" },
-  { icon: "qr-code-scanner", label: "Scan QR", route: "qr-scan", testID: "scan" },
+  { icon: "send", label: "Send", route: "send", actionId: "send" },
+  { icon: "qr-code", label: "Receive", route: "receive", actionId: "receive" },
+  { icon: "person", label: "Profile", route: "profile", actionId: "profile" },
+  { icon: "settings", label: "Settings", route: "settings", actionId: "settings" },
+  { icon: "qr-code-scanner", label: "Scan QR", route: "qr-scan", actionId: "scan" },
 ];
 
 export interface FabMenuProps {
@@ -90,10 +97,10 @@ export function FabMenu({ bottomOffset }: FabMenuProps): React.JSX.Element {
           <View style={styles.actions}>
             {FAB_ACTIONS.map((action) => (
               <Pressable
-                key={action.testID}
+                key={action.actionId}
                 accessibilityRole="button"
                 accessibilityLabel={action.label}
-                testID={`fab-action-${action.testID}`}
+                testID={`fab-action-${action.actionId}`}
                 onPress={() => go(action.route)}
                 style={styles.action}
               >

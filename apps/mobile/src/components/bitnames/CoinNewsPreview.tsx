@@ -432,8 +432,8 @@ const styles = StyleSheet.create({
   },
   livePill: {
     borderWidth: 1,
-    borderColor: "#16a34a66",
-    backgroundColor: "#052e1699",
+    borderColor: "#ea580c66",
+    backgroundColor: "#43140799",
     borderRadius: 999,
     paddingHorizontal: 10,
     paddingVertical: 4,

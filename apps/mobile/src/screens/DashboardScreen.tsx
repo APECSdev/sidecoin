@@ -828,7 +828,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ECASH[800],
     borderRadius: 8,
-    backgroundColor: ECASH[950] ?? "#052e16",
+    backgroundColor: ECASH[950] ?? "#431407",
     padding: 16,
   },
   forkBannerTitle: {

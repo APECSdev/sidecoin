@@ -7,12 +7,12 @@
 // 12 routes; the RN app splits these across a bottom tab bar (primary) and a
 // native stack (secondary/detail screens plus onboarding).
 //
-// Tab routes (always reachable from the tab bar):
-//   dashboard, platforms, feed, explore
+// Tab routes (always reachable from the tab bar), in tab-bar order:
+//   dashboard, feed, explore, platforms
 //
 // Stack routes pushed on top of the tab shell:
 //   send, receive, settings, qr-scan, swap, markets, platform-detail,
-//   hardware, toolbox, pro
+//   hardware, toolbox, pro, profile
 //
 // Onboarding is a stack route rendered INSTEAD of the tab shell when no
 // wallet is stored (the Vue router's beforeEach gate).
@@ -48,6 +48,7 @@ export type RootStackParamList = {
   hardware: undefined;
   toolbox: undefined;
   pro: undefined;
+  profile: undefined;
 };
 
 export type RootStackScreenProps<T extends keyof RootStackParamList> =

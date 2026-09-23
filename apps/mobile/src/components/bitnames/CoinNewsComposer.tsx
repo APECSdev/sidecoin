@@ -459,8 +459,8 @@ const styles = StyleSheet.create({
   },
   networkPill: {
     borderWidth: 1,
-    borderColor: "#16a34a4d",
-    backgroundColor: "#052e1666",
+    borderColor: "#ea580c4d",
+    backgroundColor: "#43140766",
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 4,
@@ -651,7 +651,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: ECASH[800],
     borderRadius: 12,
-    backgroundColor: "#052e164d",
+    backgroundColor: "#4314074d",
     padding: 16,
   },
   receiptTitle: {

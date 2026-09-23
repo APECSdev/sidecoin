@@ -12,19 +12,31 @@
 // as CSS overrides of these same utility classes. React Native has no CSS
 // cascade, so theme support is deferred to a later phase; the DEFAULT palette
 // below is the source of truth until then.
-
+//
+// ─── ECASH SCALE = BITCOIN ORANGE (operator directive) ───
+// The scale below is Tailwind's `orange` ramp, whose hue (~33°) is the same as
+// Bitcoin orange #F7931A. It replaces the green ramp the Vue wallet shipped
+// (Tailwind `green`), so the whole app reads as Bitcoin orange rather than
+// green. Every consumer indexes this object by shade (ECASH[400], ECASH[600],
+// …), so redefining the ramp here recolors all 70+ call sites at once and
+// keeps them 1:1 with the original shade selection.
+//
+// Shade-anchoring: the previous ramp's 400 (#4ade80, L 56%) and 500 (#22c55e,
+// L 47%) were the accent pair. The matching orange shades are 400 (#fb923c,
+// L 61%) and 500 (#f97316, L 53%), which bracket Bitcoin orange's own L 53.5%
+// so the existing foreground/background pairings keep their contrast ratio.
 export const ECASH = {
-  50: "#f0fdf4",
-  100: "#dcfce7",
-  200: "#bbf7d0",
-  300: "#86efac",
-  400: "#4ade80",
-  500: "#22c55e",
-  600: "#16a34a",
-  700: "#15803d",
-  800: "#166534",
-  900: "#14532d",
-  950: "#052e16",
+  50: "#fff7ed",
+  100: "#ffedd5",
+  200: "#fed7aa",
+  300: "#fdba74",
+  400: "#fb923c",
+  500: "#f97316",
+  600: "#ea580c",
+  700: "#c2410c",
+  800: "#9a3412",
+  900: "#7c2d12",
+  950: "#431407",
 } as const;
 
 // Tailwind default gray — the wizard's neutral scale.

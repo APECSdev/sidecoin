@@ -58,16 +58,24 @@ platform-detail, swap, markets, toolbox, pro, settings); components
 (`components/ui.tsx`, `components/pro/*`, `components/QrScanner.tsx`,
 `components/paymenturi.ts`, `components/bitnames/*`).
 
-**Tabs are `dashboard` (Home), `platforms`, `feed`, `explore`.** Send,
-Receive, and Settings moved off the tab bar behind the floating action button
-(`components/FabMenu.tsx`, which also adds a "Scan QR" action) and are stack
+**Tab order is `dashboard` (Home) | `feed` | `explore` | `platforms`** —
+Platforms is deliberately LAST. Send, Receive, Settings, Profile, and Scan QR
+live behind the floating action button (`components/FabMenu.tsx`) and are stack
 routes; `qr-scan` (`screens/QrScanScreen.tsx`) wraps the shared `QrScanner`.
 All other non-tab routes are stack routes.
 
-**Feed and Explore are MOCKED** (`screens/FeedScreen.tsx`,
-`screens/ExploreScreen.tsx`): static sample data, no relays, no browser
-engine. Each renders a visible "Mock data" badge, and `MockScreens.test.tsx`
-asserts that disclosure so the UI never implies live activity.
+**The FAB is on EVERY screen except `qr-scan` and `onboarding`.**
+`MainTabs` draws the tab-shell FAB (so it clears the measured tab bar);
+`RootNavigator` draws a second one outside `Stack.Navigator` for every other
+stack screen, gated by `FAB_HIDDEN_ROUTES`. Profile is also `headerAvatar`-
+reachable from each stack header (`components/HeaderAvatar.tsx`).
+
+**Feed is half-real, half-mock** (`screens/FeedScreen.tsx`): it mounts the same
+`components/bitnames/CoinNewsPreview.tsx` the dashboard uses (live Coin News),
+then a clearly-badged mock Nostr/DM stream. **Explore is a real, minimal
+WebView** (`screens/ExploreScreen.tsx`): address bar + back/forward/reload, an
+empty `<WebView>` at start, and verified-200 bookmarks. `MockScreens.test.tsx`
+asserts the mock disclosure and the real WebView wiring.
 
 **`NavigationContainer` must receive `theme={navigationTheme}`**
 (`navigation/theme.ts`). Without it React Navigation applies its light
@@ -90,12 +98,12 @@ screens. `App.test.tsx` guards this.
 
 ```
 cd apps/mobile
-npx tsc --noEmit && npx jest      # 180 tests, 12 suites
+npx tsc --noEmit && npx jest      # 183 tests, 12 suites
 cd android && ./gradlew assembleFdroidRelease
 adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
 
-- `applicationId app.sidecoin`, `versionCode 26050030`, `versionName 26.5.30`,
+- `applicationId app.sidecoin`, `versionCode 20260923`, `versionName 26.9.23`,
   minSdk 24, compileSdk/targetSdk 35, RN 0.81.1 / React 19.1.0, NDK
   `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~148 MB (large —
   ABI splits / dep trimming is an open item).
@@ -134,7 +142,10 @@ adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-relea
    `react-native-safe-area-context`.
 7. **Jest transforms ESM-only crypto deps**: `@noble`, `@scure`,
    `micro-key-producer`, `micro-packed` are allowlisted in `jest.config.ts`
-   `transformIgnorePatterns`.
+   `transformIgnorePatterns`. `react-native-webview` is allowlisted too (it
+   ships untranspiled ESM and Explore mounts it) and its native
+   `RNCWebViewModule` must be `jest.mock`ed in any suite that pulls in the
+   navigator.
 8. **Mobile tests use Jest globals** — do NOT import `@jest/globals` (types
    unavailable in the mobile tsconfig).
 9. **Any screen whose content can exceed the viewport must render in a
@@ -150,6 +161,19 @@ adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-relea
     render prop + `onLayout`) and passes the height down as `bottomOffset`.
     Jest's `@react-navigation/bottom-tabs` mock must therefore export
     `BottomTabBar` and invoke the `tabBar` render prop.
+13. **`react-native-webview` has NO consumer ProGuard rules and R8 is on.**
+    `react-native-webview@13.16.0` ships no `consumer-rules.pro` and declares
+    no `consumerProguardFiles`, while the release build sets
+    `minifyEnabled true` + `shrinkResources true`. R8 can then strip/rename the
+    module and the release APK crashes only when a `<WebView>` mounts. This is
+    patched by an explicit keep in `android/app/proguard-rules.pro`:
+    `-keep class com.reactnativecommunity.webview.** { *; }`. If a WebView
+    screen ever crashes **in release only**, check that keep first.
+14. **`onStateChange` belongs to `NavigationContainer`, not a navigator.**
+    The root FAB lives *outside* `Stack.Navigator` and needs the focused
+    route, so the container ref is shared through
+    `src/navigation/ref.ts` (`createNavigationContainerRef`); `RootNavigator`
+    subscribes via `navigationRef.addListener("state", …)`.
 
 ## Commands
 
@@ -171,7 +195,7 @@ must be green before commit.
 
 **Test baselines** (`pnpm --filter <pkg> test`; verify before citing in a PR):
 shared 254 (+1 skip) · wallet 382 · web 118 · explorer 43 · desktop 76 ·
-smarthub 5 · mobile 180 (12 suites) · api-client 12.
+smarthub 5 · mobile 183 (12 suites) · api-client 12.
 
 ## CI (`.github/workflows/`)
 
@@ -286,6 +310,28 @@ smarthub 5 · mobile 180 (12 suites) · api-client 12.
     wire fields (`fee_sats`, `valueSats`, `totalSats`), or shared
     Bitcoin-standard identifiers (`amountSatoshis`, `feeSatoshis`,
     `feeRateSatPerVb`).
+
+## Versioning (apps/mobile)
+
+**The Android version is DATE-BASED and `versionCode` is EIGHT digits
+(`YYYYMMDD`).** This is a hard rule — not a suggestion.
+
+- `versionCode = 20260923` for 2026-09-23 (the release date), NOT `260923`
+  and NOT an arbitrary build counter.
+- `versionName = "26.9.23"` — the short `YY.M.D` form of the SAME date.
+- Change **all three together**:
+  1. `apps/mobile/android/app/build.gradle` (`versionCode` + `versionName`)
+  2. `apps/mobile/package.json` (`"version"`)
+  3. `apps/mobile/fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`
+     — `git mv` the file so its name matches the new `versionCode`.
+- Derive the date from the **release date**, not the commit date.
+
+> **Monotonic-install caveat.** F-Droid and Play require a strictly
+> increasing `versionCode`. An eight-digit date code is larger than any
+> earlier six- or eight-digit code from the same series
+> (`20260923 > 26050030`), so date-based codes only move forward. If a code is
+> ever *decreased*, the APK cannot install as an update over the installed
+> build — the device must uninstall first, and `adb install -r` fails.
 
 ## Committing
 

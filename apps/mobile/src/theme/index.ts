@@ -33,7 +33,7 @@ export const WALLET_THEMES: WalletThemeOption[] = [
   {
     id: "default",
     label: "Default",
-    description: "Sidecoin green for the Drivechains Financial Hub.",
+    description: "Bitcoin orange for the Drivechains Financial Hub.",
   },
   {
     id: "rose",
