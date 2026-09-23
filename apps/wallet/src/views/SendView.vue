@@ -155,7 +155,7 @@ async function handleSend() {
 
     // Spendable set for this one address (the only coins we hold a key for).
     // Reads from the public Esplora endpoint for the wallet's current
-    // network (signet or alphanet).
+    // network (signet or betanet).
     const utxoSet = await getL1Utxos(key.address, {}, wallet.network);
     if (utxoSet.truncated) {
       error.value =
@@ -192,7 +192,7 @@ async function handleSend() {
 }
 
 /** Relay the already-signed tx to the L1 node via the public Esplora
- * endpoint for the wallet's current network (signet or alphanet). */
+ * endpoint for the wallet's current network (signet or betanet). */
 async function broadcast() {
   if (!built.value) return;
   broadcasting.value = true;

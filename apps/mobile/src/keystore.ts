@@ -15,8 +15,8 @@
 //   The public API is async because both backends are async. `hasWallet()`
 //   is therefore async, which matters for the navigation gate in the router.
 //
-// ⚠️  The network is limited to non-production networks (signet, alphanet,
-//     betanet). Encryption-at-rest is in place, but a real-funds mnemonic
+// ⚠️  The network is limited to non-production networks (betanet,
+//     signet). Encryption-at-rest is in place, but a real-funds mnemonic
 //     still warrants hardware signing before mainnet support.
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -30,17 +30,16 @@ const STORAGE_KEY = "sidecoin.wallet.v1";
 /** Keychain service name under which the mnemonic is stored. */
 const KEYCHAIN_SERVICE = "app.sidecoin.wallet";
 
-/** The L1 networks a user can toggle between in Settings. All are
- *  non-production: signet = the live L2L signet; alphanet = the ECX alpha
- *  practice network; betanet = the ECX beta practice network (the default).
- *  Both alphanet and betanet are mainnet forks, from drivechain.dev/config. */
-export type WalletNetwork = "signet" | "alphanet" | "betanet";
+/** The L1 networks a user can toggle between in Settings. Both are
+ *  non-production: betanet = the ECX beta practice network (the default);
+ *  signet = the live L2L signet. Betanet is a mainnet fork, from
+ *  drivechain.dev/config. */
+export type WalletNetwork = "signet" | "betanet";
 
 /** Runtime allowlist for WalletNetwork. Persisted values are validated
  *  against this set; anything else falls back to DEFAULT_WALLET_NETWORK. */
 const WALLET_NETWORKS: readonly WalletNetwork[] = [
   "signet",
-  "alphanet",
   "betanet",
 ];
 
@@ -187,7 +186,7 @@ export async function saveWallet(mnemonic: string): Promise<StoredWallet> {
 }
 
 /**
- * Persist a new network choice (signet, alphanet, or betanet) onto the stored
+ * Persist a new network choice (signet or betanet) onto the stored
  * wallet. The mnemonic is untouched; only the envelope's `network` changes.
  *
  * PORT NOTE: the Vue original emitted a `window` CustomEvent here so live

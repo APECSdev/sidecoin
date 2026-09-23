@@ -16,7 +16,7 @@
 //     equivalent of the Vue "network changed elsewhere" listener.
 //   • `navigator.clipboard.writeText` -> Clipboard.setString.
 //   • <QrcodeVue> -> react-native-qrcode-svg (already a mobile dependency).
-//   • RECEIVE_NETWORKS is signet + alphanet exactly as in the Vue view. Note
+//   • RECEIVE_NETWORKS is betanet + signet exactly as in the Vue view. Note
 //     the wallet default is betanet (see apps/mobile/src/keystore.ts); a
 //     betanet wallet opens this page with neither chip selected and shows the
 //     signet chip preview until the user picks one. That matches the Vue
@@ -45,13 +45,12 @@ import {
 
 type ReceiveTab = "address" | "payment-code" | "history";
 
-// The two networks a user can receive to from this page. Signet is the
-// live signet ("signet" on drivechain.dev/config); Alphanet is the ECX alpha
-// practice network (a mainnet fork — see https://drivechain.dev/config).
-// The choice IS persisted to the keystore via setWalletNetwork.
+// The two networks a user can receive to from this page. Betanet is the
+// live ECX practice network ("betanet" on drivechain.dev/config); Signet is
+// the L2L signet. The choice IS persisted to the keystore via setWalletNetwork.
 const RECEIVE_NETWORKS: { id: WalletNetwork; label: string }[] = [
+  { id: "betanet", label: "Betanet" },
   { id: "signet", label: "Signet" },
-  { id: "alphanet", label: "Alphanet" },
 ];
 
 const RECEIVE_TABS: { id: ReceiveTab; label: string }[] = [
@@ -61,13 +60,13 @@ const RECEIVE_TABS: { id: ReceiveTab; label: string }[] = [
 ];
 
 function toLabel(network: WalletNetwork): string {
-  return network === "alphanet" ? "Alphanet" : "Signet";
+  return network === "betanet" ? "Betanet" : "Signet";
 }
 
 export function ReceiveScreen(): React.JSX.Element {
   const [mnemonic, setMnemonic] = useState("");
   const [hasKey, setHasKey] = useState(false);
-  const [selectedNetwork, setSelectedNetwork] = useState<WalletNetwork>("signet");
+  const [selectedNetwork, setSelectedNetwork] = useState<WalletNetwork>("betanet");
   const [addressIndex, setAddressIndex] = useState(0);
   const [address, setAddress] = useState("");
   const [copied, setCopied] = useState(false);
@@ -75,10 +74,10 @@ export function ReceiveScreen(): React.JSX.Element {
   const [error, setError] = useState("");
   const [selectedTab, setSelectedTab] = useState<ReceiveTab>("address");
 
-  // BIP-44 coin type: 0 for mainnet + mainnet forks (alphanet), 1 for test
+  // BIP-44 coin type: 0 for mainnet + mainnet forks (betanet), 1 for test
   // networks. Mirrors the coinTypeFor logic in @sidecoin/shared/wallet/derivation.
-  // Here selectedNetwork is signet (coin type 1) or alphanet (coin type 0).
-  const coinType = selectedNetwork === "alphanet" ? 0 : 1;
+  // Here selectedNetwork is signet (coin type 1) or betanet (coin type 0).
+  const coinType = selectedNetwork === "betanet" ? 0 : 1;
 
   const derivationPath = `m/84'/${coinType}'/0'/0/${addressIndex}`;
 

@@ -3,9 +3,9 @@
 import type { NetworkId } from "@sidecoin/shared";
 
 export function coinTypeFor(network: NetworkId): number {
-  // Alphanet and betanet are mainnet forks (shared UTXO set)
+  // Betanet is a mainnet fork (shared UTXO set)
   // → same coin type as mainnet.
-  return network === "mainnet" || network === "alphanet" || network === "betanet"
+  return network === "mainnet" || network === "betanet"
     ? 0
     : 1;
 }
@@ -17,7 +17,6 @@ export function defaultDerivationPath(network: NetworkId, index = 0): string {
 export function coinIdFor(network: NetworkId): string {
   switch (network) {
     case "mainnet":
-    case "alphanet":
     case "betanet":
       return "btc";
     case "testnet":

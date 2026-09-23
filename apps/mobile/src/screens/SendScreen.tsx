@@ -212,7 +212,7 @@ export function SendScreen(): React.JSX.Element {
 
       // Spendable set for this one address (the only coins we hold a key for).
       // Reads from the public Esplora endpoint for the wallet's current
-      // network (betanet, signet or alphanet).
+      // network (betanet or signet).
       const utxoSet = await getL1Utxos(key.address, {}, wallet.network);
       if (utxoSet.truncated) {
         setError(
@@ -250,7 +250,7 @@ export function SendScreen(): React.JSX.Element {
   }
 
   /** Relay the already-signed tx to the L1 node via the public Esplora
-   * endpoint for the wallet's current network (betanet, signet or alphanet). */
+   * endpoint for the wallet's current network (betanet or signet). */
   async function broadcast(): Promise<void> {
     if (!built) return;
     setBroadcasting(true);
@@ -281,9 +281,7 @@ export function SendScreen(): React.JSX.Element {
   const networkLabel =
     walletNetwork === "signet"
       ? "Signet"
-      : walletNetwork === "alphanet"
-        ? "Alphanet"
-        : "Betanet";
+      : "Betanet";
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>

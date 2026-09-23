@@ -110,16 +110,14 @@ export function DashboardScreen(): React.JSX.Element {
   const [l1Loading, setL1Loading] = useState(true);
   const [l1Error, setL1Error] = useState<string | null>(null);
 
-  // The wallet's persisted L1 network (signet or alphanet). Reactive so a
+  // The wallet's persisted L1 network (signet or betanet). Reactive so a
   // Settings toggle re-derives the address + re-fetches the balance live.
-  const [walletNetwork, setWalletNetworkState] = useState<"signet" | "alphanet" | "betanet">("betanet");
+  const [walletNetwork, setWalletNetworkState] = useState<"signet" | "betanet">("betanet");
 
   const networkLabel =
-    walletNetwork === "alphanet"
-      ? "Alphanet"
-      : walletNetwork === "betanet"
-        ? "Betanet"
-        : "Signet";
+    walletNetwork === "betanet"
+      ? "Betanet"
+      : "Signet";
 
   const [marketPrice, setMarketPrice] = useState<MarketPrice | null>(null);
   const [marketLoading, setMarketLoading] = useState(true);
@@ -236,7 +234,7 @@ export function DashboardScreen(): React.JSX.Element {
       setL1Address(address);
       setWalletNetworkState(wallet.network);
       // Indexed balance for the wallet's current L1 network (signet or
-      // alphanet). Reads from the public Esplora endpoint so balances work
+      // betanet). Reads from the public Esplora endpoint so balances work
       // even while the sidecoin.app/v1 adapter is offline. An unseen address
       // is not an error: it comes back totalSats 0n with seen=false.
       setL1Balance(await getL1Balance(address, wallet.network));

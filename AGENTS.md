@@ -88,17 +88,16 @@ in the browser build, which is not portable to React Native.
 
 ### Network model (differs from the Vue wallet)
 
-- `WalletNetwork = "signet" | "alphanet" | "betanet"` in
+- `WalletNetwork = "signet" | "betanet"` in
   `apps/mobile/src/keystore.ts`. **Default is `betanet`.**
-- Settings offers all three (Betanet / Alphanet / Signet, in that order).
-- Receive offers Signet + Alphanet only, matching the Vue view.
+- Settings offers both (Betanet / Signet, in that order).
+- Receive offers Betanet + Signet only, matching the Vue view.
 - L1 reads go to Esplora; the `ESPLORA_BASES` map in `apps/mobile/src/api/index.ts`
-  covers all three: signet → `https://esplora.signet.drivechain.info`,
-  alphanet → `https://esplora.alpha.ecash.ninja`, betanet →
-  `https://esplora.beta.ecash.ninja`.
+  covers both: signet → `https://esplora.signet.drivechain.info`,
+  betanet → `https://esplora.beta.ecash.ninja`.
 - **Only signet publishes a faucet** (`https://node.signet.drivechain.info/api`,
   3 coins / 3600 s — from [drivechain.dev/config](https://drivechain.dev/config)).
-  Alphanet and betanet have NO faucet, so funding a test wallet there requires
+  Betanet has NO faucet, so funding a test wallet there requires
   an external source.
 
 ### Build & deploy (Android)
@@ -233,7 +232,7 @@ must be green before commit.
    `packages/shared/src/wallet/derivation.ts`:
    - `deriveReceiveAddress(mnemonic, network, index=0)` — BIP-84 P2WPKH
      (`bc1q…`/`tb1q…`), path `m/84'/{coinType}'/0'/0/{index}`. Used for L1
-     (signet today). `coinTypeFor` returns 0 for mainnet + alphanet (a
+     (signet today). `coinTypeFor` returns 0 for mainnet + betanet (a
      mainnet fork — shared UTXO set, same addresses) and 1 for all test
      networks. Consumed by `ReceiveView.vue` and `DashboardView.vue`.
    - `deriveDrivechainAddress(mnemonic, index=1)` — SLIP-0010 ed25519 +
@@ -262,7 +261,7 @@ must be green before commit.
    `apps/wallet/src/keystore.ts` stores the mnemonic in `localStorage`
    under `sidecoin.wallet.v1`. This is acceptable only for throwaway test
    funds; encryption-at-rest must land before any mainnet support.
-   `StoredWallet.network` is typed as `WalletNetwork` = `"signet" | "alphanet"
+   `StoredWallet.network` is typed as `WalletNetwork` = `"signet"
    | "betanet"` (NOT the full `NetworkId` union). The active network is
    toggled in Settings (and on the Receive page) via `setWalletNetwork()`,
    which persists to the keystore and dispatches `WALLET_NETWORK_EVENT` so
@@ -273,22 +272,18 @@ must be green before commit.
    `apps/mobile/src/keystore.ts` instead keeps the mnemonic in the platform
    keychain (`react-native-keychain`, service `app.sidecoin.wallet`) with
    only a non-secret envelope in AsyncStorage, and exposes an async API.
-5. **`NetworkId` has 7 members** (`packages/shared/src/types/network.ts`):
-   `mainnet`, `testnet`, `signet`, `regtest`, `l2l-signet`, `alphanet`,
+5. **`NetworkId` has 6 members** (`packages/shared/src/types/network.ts`):
+   `mainnet`, `testnet`, `signet`, `regtest`, `l2l-signet`,
    `betanet`.
-   - `alphanet` is the ECX alpha practice network (a fork of mainnet with a
-     PoW difficulty reset — authoritative config at
-     `https://drivechain.dev/config`). Fork activated at block 963,648 on
-     2026-08-23.
-   - `betanet` is the ECX beta practice network — a second mainnet fork
+   - `betanet` is the ECX beta practice network — a mainnet fork
      with a PoW difficulty reset to 1e9 (magic `eca5b104`, fork height
      967,680, activated 2026-09-19). It is the **default** network.
-   Both are mainnet forks: `coinTypeFor` returns 0 and `bech32.hrp` is
+   Betanet is a mainnet fork: `coinTypeFor` returns 0 and `bech32.hrp` is
    `"bc"`, so the same mnemonic produces the same addresses as mainnet.
-   Neither is production (`isProduction: false`).
+   It is not production (`isProduction: false`).
    The Receive page (`ReceiveView.vue`) exposes a session-only
-   Signet/Alphanet selector that re-derives the L1 address on switch — it
-   is NOT persisted to the keystore. `DEFAULT_NETWORK_ID` is now `"betanet"`.
+   Betanet/Signet selector that re-derives the L1 address on switch — it
+   is NOT persisted to the keystore. `DEFAULT_NETWORK_ID` is `"betanet"`.
 6. **Fork activation is block ~973,728 on 2026-10-31 15:00 UTC** (pushed back
    from the earlier Aug 21 / block ~964,000 target). Authoritative source:
    [ecash.com](https://ecash.com) (live page title + bundled JS
@@ -296,7 +291,7 @@ must be green before commit.
    (`packages/shared/src/chain/config.ts`) plus the countdown components in
    `apps/web`, `apps/wallet`, `apps/desktop`, and the Rust node
    log in `apps/desktop/src-tauri/src/lib.rs`. Regtest is the exception
-   (fork at block 0); alphanet forks at height 963,648 (from drivechain.dev).
+   (fork at block 0).
    When the fork date changes again, grep for `2026-10-31` and `973_728` /
    `973,728` and update every hit.
 7. **Primary external sources for eCash/ECX facts** (consult before changing
@@ -313,7 +308,7 @@ must be green before commit.
      Bitcoin.
    - [drivechain.dev/config](https://drivechain.dev/config) — JSON network
      + sidechain registry (backends, explorers, services, ports, magic).
-     Source for `alphanet`.
+     Source for `betanet`.
    - [drivechain.info/dev.txt](https://drivechain.info/dev.txt) — canonical
      fast-info file, updated frequently.
    - [BIP-300](https://github.com/bitcoin/bips/blob/master/bip-0300.mediawiki),
@@ -332,7 +327,7 @@ must be green before commit.
    to the public Esplora (mempool-electrs) endpoints published at
    [drivechain.dev/config](https://drivechain.dev/config):
    - signet → `https://esplora.signet.drivechain.info`
-   - alphanet → `https://esplora.alpha.ecash.ninja`
+   - betanet → `https://esplora.beta.ecash.ninja`
    These live in `apps/wallet/src/api/index.ts` (`ESPLORA_BASES` + the
    `esplora*` helpers). `getL1Balance`, `getL1Utxos`, `broadcastTransaction`,
    and `getRawTransaction` are network-aware (third arg `network: L1Network =

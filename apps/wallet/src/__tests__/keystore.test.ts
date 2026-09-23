@@ -57,14 +57,14 @@ describe("keystore", () => {
   // setWalletNetwork — persist + dispatch the network-change event
   // -------------------------------------------------------------------------
 
-  it("persists a network change to alphanet and reloads it", () => {
+  it("persists a network change to signet and reloads it", () => {
     saveWallet(VALID_12);
     expect(loadWallet()?.network).toBe("betanet");
 
-    const updated = setWalletNetwork("alphanet");
-    expect(updated.network).toBe("alphanet");
+    const updated = setWalletNetwork("signet");
+    expect(updated.network).toBe("signet");
     expect(updated.mnemonic).toBe(VALID_12); // mnemonic preserved
-    expect(loadWallet()?.network).toBe("alphanet");
+    expect(loadWallet()?.network).toBe("signet");
   });
 
   it("persists a network change to betanet and reloads it", () => {
@@ -74,13 +74,13 @@ describe("keystore", () => {
     expect(loadWallet()?.network).toBe("betanet");
   });
 
-  it("round-trips back to signet from alphanet", () => {
+  it("round-trips back to betanet from signet", () => {
     saveWallet(VALID_12);
-    setWalletNetwork("alphanet");
-    expect(loadWallet()?.network).toBe("alphanet");
-
     setWalletNetwork("signet");
     expect(loadWallet()?.network).toBe("signet");
+
+    setWalletNetwork("betanet");
+    expect(loadWallet()?.network).toBe("betanet");
   });
 
   it("dispatches the WALLET_NETWORK_EVENT on change", () => {
@@ -88,17 +88,17 @@ describe("keystore", () => {
     const handler = vi.fn();
     window.addEventListener(WALLET_NETWORK_EVENT, handler);
 
-    setWalletNetwork("alphanet");
+    setWalletNetwork("signet");
 
     expect(handler).toHaveBeenCalledTimes(1);
     const event = handler.mock.calls[0][0] as CustomEvent;
-    expect(event.detail).toEqual({ network: "alphanet" });
+    expect(event.detail).toEqual({ network: "signet" });
 
     window.removeEventListener(WALLET_NETWORK_EVENT, handler);
   });
 
   it("throws when there is no stored wallet", () => {
-    expect(() => setWalletNetwork("alphanet")).toThrow(/no wallet/i);
+    expect(() => setWalletNetwork("signet")).toThrow(/no wallet/i);
   });
 
   it("coerces an unknown network field back to the default on load", () => {

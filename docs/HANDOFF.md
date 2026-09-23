@@ -74,24 +74,31 @@ and **fails on the old navigator**.
 
 ---
 
-## NEXT SESSION — test/verify Send & Receive on Signet, then Alphanet, then Betanet
+## NEXT SESSION — test/verify Send & Receive on Betanet, then Signet
 
 Operator's plan for the next session (in this order):
 
-1. **Signet** — send + receive
-2. **Alphanet** — send + receive
-3. **Betanet** — send + receive
+1. **Betanet** — send + receive
+2. **Signet** — send + receive
+
+> **Alphanet has been REMOVED from the product.** Its chain produced no
+> block for ~70 h (tip frozen at 997253, last block 2026-09-20 09:31:17Z)
+> while ~171k txs queued in the mempool, so deposits sent to it could not
+> confirm. The `alphanet` member was dropped from `NetworkId`, its
+> `ECASH_ALPHANET` chain config was deleted, and every network selector now
+> offers **Betanet (default) + Signet** only. Betanet and Alphanet were both
+> mainnet forks using coin type 0 + HRP `bc`, so **Betanet derive the same
+> addresses Alphanet did** — coins previously sent to an Alphanet receive
+> address are visible on Betanet at that same address.
 
 ### Verified starting facts (checked this session)
 
 - **Esplora tip heights at probe time** (`GET /blocks/tip/height`):
-  signet **15264**, alphanet **997253**, betanet **970082**. All three
-  endpoints responded.
+  signet **15267**, betanet **970085**. Both endpoints responded.
 - **Faucet availability** (from [drivechain.dev/config](https://drivechain.dev/config)):
   | Network | Esplora | Faucet |
   | --- | --- | --- |
   | signet | `https://esplora.signet.drivechain.info` | ✅ `https://node.signet.drivechain.info/api` — 3 coins, 3600 s cooldown |
-  | alphanet | `https://esplora.alpha.ecash.ninja` | ❌ none published |
   | betanet | `https://esplora.beta.ecash.ninja` | ❌ none published |
 - **`GET https://node.signet.drivechain.info/api` returned 404** for a bare
   GET (it is a Next.js faucet web app, not a plain JSON endpoint) — the UI at
@@ -105,9 +112,9 @@ Operator's plan for the next session (in this order):
 
 ### Test procedure (per network)
 
-1. In the app, Settings → select the network (Betanet / Alphanet / Signet).
+1. In the app, Settings → select the network (Betanet / Signet).
 2. Receive tab → confirm the derived address and copy it.
-3. **Fund it.** Signet: use the faucet UI. Alphanet/Betanet: there is no
+3. **Fund it.** Signet: use the faucet UI. Betanet: there is no
    faucet, so find an external source first — this may need operator input.
 4. Confirm the Dashboard L1 balance updates for that address.
 5. Send a small amount back (or to a second derived address) and confirm the
@@ -246,69 +253,66 @@ gated by `ADDRESS_DERIVATION_SLOTS = {9, 4, 88}` with `EVM_ADDRESS_SLOTS =
 {88}` routing to the EVM derivation. Canonical test vectors are in
 `packages/shared/src/__tests__/derivation.test.ts`.
 
-## Next work item — Alphanet network + Receive page address selection
+## Next work item — Betanet network (Alphanet removed) + Receive page address selection
 
 ### STATUS: DONE ✅
 
-Added the **Alphanet** practice network and a **network + address selector**
-to the Receive page. Commit: `feat(wallet): Alphanet network + Receive page
-address selector`.
+Added the **Betanet** practice network as the wallet default, and
+subsequently **removed Alphanet entirely**. The Receive page carries a
+**network + address selector**. Commit: `feat(wallet): Betanet network +
+Receive page address selector`; Alphanet removal: `refactor: remove the
+Alphanet network`.
 
 ### What was implemented
 
-1. **`alphanet` added to `NetworkId`**
-   (`packages/shared/src/types/network.ts`) — now 6 members: `mainnet`,
-   `testnet`, `signet`, `regtest`, `l2l-signet`, `alphanet`. Alphanet is the
-   ECX alpha practice network (a fork of mainnet with a PoW difficulty
+1. **`NetworkId` membership** (`packages/shared/src/types/network.ts`):
+   `alphanet` was added and then **removed again** when its chain stalled.
+   The union has 6 members: `mainnet`,
+   `testnet`, `signet`, `regtest`, `l2l-signet`, `betanet`. Betanet is the
+   ECX beta practice network (a fork of mainnet with a PoW difficulty
    reset). Authoritative config: `https://drivechain.dev/config` (id
-   `alphanet`, family `ecash`).
-2. **`ECASH_ALPHANET` config** added to `packages/shared/src/chain/config.ts`.
-   Because alphanet forks the mainnet UTXO set, it inherits mainnet's address
+   `betanet`, family `ecash`).
+2. **`ECASH_BETANET` config** in `packages/shared/src/chain/config.ts`.
+   Because betanet forks the mainnet UTXO set, it inherits mainnet's address
    format verbatim: coin type 0, bech32 HRP `"bc"`, P2PKH/P2SH version bytes
-   `0x00`/`0x05`. Network params from drivechain.dev: magic `"eca5a104"`,
-   fork height `963648`, P2P port `8533`, seed `seed.alpha.ecash.ninja`.
-   `isProduction: false`; `sidechainsAtLaunch: 0`.
+   `0x00`/`0x05`. Network params from drivechain.dev: magic `"eca5b104"`,
+   fork height `967680`, P2P port `8533`, seed `seed.beta.ecash.ninja`.
+   `isProduction: false`; `sidechainsAtLaunch: 1`.
 3. **Registered in `NETWORKS` + `NETWORK_IDS`**
-   (`packages/shared/src/chain/networks.ts`). `DEFAULT_NETWORK_ID` is still
-   `"signet"`.
+   (`packages/shared/src/chain/networks.ts`). `DEFAULT_NETWORK_ID` is
+   `"betanet"`.
 4. **`coinTypeFor` updated** in `derivation.ts` + `signing.ts` (shared) and
-   `hardware/network.ts` (wallet): returns 0 for `mainnet` + `alphanet`
-   (mainnet fork), 1 for test networks.
-5. **`coinIdFor`** (wallet hardware) returns `"btc"` for alphanet.
-   **`btcNetworkFor`** (ledger) maps alphanet → `networks.bitcoin`.
-6. **Receive page network selector** (`ReceiveView.vue`): a session-only
-   Signet/Alphanet segmented control that re-derives the L1 address on
-   switch. Switching networks resets the address index to 0. The selection is
-   NOT persisted to the keystore — the wallet still targets signet by
-   default.
+   `hardware/network.ts` (wallet + mobile): returns 0 for `mainnet` +
+   `betanet` (mainnet fork), 1 for test networks.
+5. **`coinIdFor`** (wallet + mobile hardware) returns `"btc"` for betanet.
+6. **Receive page network selector** (`ReceiveView.vue`): a
+   Betanet/Signet segmented control that re-derives the L1 address on
+   switch. Switching networks resets the address index to 0. The selection
+   IS persisted to the keystore.
 7. **"Generate New Address" enabled** (`ReceiveView.vue`): the previously
    disabled button now cycles the address index (0 → 1 → 2 …), deriving a
    fresh address within the selected network. Session-only.
 8. **Derivation path display is dynamic**: `m/84'/{coinType}'/0'/0/{index}`
    updates to reflect the selected network (coin type) and index. An
    "Address index" row was added to the address details.
-9. **Tests**: shared +6 (alphanet config assertions, network registry
-   counts 5→6, getTestNetworks 4→5, isValidNetworkId alphanet); wallet
-   +5 (ReceiveView network selector renders, defaults to signet, alphanet
+9. **Tests**: shared (betanet config assertions, network registry
+   counts, getTestNetworks, isValidNetworkId betanet); wallet
+   +5 (ReceiveView network selector renders, defaults to betanet, betanet
    re-derives with coin type 0, Generate New Address cycles index, switching
-   networks resets index) + 2 (hardware/network alphanet coinType/coinId).
+   networks resets index) + 2 (hardware/network betanet coinType/coinId).
    Full monorepo green.
 
 ### Key decisions
 
-- **Alphanet is a mainnet fork** — same addresses as mainnet (coin type 0,
+- **Betanet is a mainnet fork** — same addresses as mainnet (coin type 0,
   `bc` HRP). Confirmed by the drivechain.dev config (`"chain": "main"`) and
   the "fork of mainnet" description. The same mnemonic produces the same
   addresses on both chains.
-- **Receive selector is session-only** — the operator confirmed it does NOT
-  need to persist; it only needs to display in the UI. The keystore still
-  hardcodes `network: "signet"`.
-- **Only Signet + Alphanet are offered** on the Receive page (per the
-  operator's request to switch between those two). The other 4 networks
-  remain in `NETWORK_IDS` for completeness but are not surfaced in the UI.
-- **rpcPort 8332** for alphanet is inherited from mainnet (not published in
-  the drivechain.dev config) — update if the node software publishes a
-  distinct port.
+- **Receive selector persists** — the operator confirmed it SHOULD persist,
+  so it saves through `setWalletNetwork`.
+- **Only Betanet + Signet are offered** on the Receive page (per the
+  operator's request). The other 4 networks remain in `NETWORK_IDS` for
+  completeness but are not surfaced in the UI.
 - **Platforms page sidechain switching** is out of scope for this session
   (operator's instruction #3) — it will be a follow-up.
 
@@ -329,8 +333,9 @@ addresses on API failure + Snowside ordering + Go PRO!`,
    (`/assets/index-*.js`) hard-codes `2026-10-31T15:00:00Z`. The previous
    target was Aug 21, 2026 / block ~964,000. Updated everywhere it appeared:
    - `packages/shared/src/chain/config.ts` — every `ChainConfig.fork`
-     (mainnet, testnet, signet, l2l-signet). Regtest (block 0) and alphanet
-     (963,648 from drivechain.dev) are unchanged.
+     (mainnet, testnet, signet, l2l-signet, betanet). Regtest (block 0) is
+     unchanged; the alphanet block has since been **deleted entirely** (see
+     the Alphanet-removal entry above).
    - `packages/shared/src/types/network.ts` doc comments.
    - `packages/shared/src/chain/utils.ts` subsidy comment.
    - `packages/web` — `ForkCountdown.vue`, `UrgencyBanner.astro`,
@@ -369,14 +374,19 @@ site is authoritative for the fork date; fast-facts remains useful for
 stable facts (network magic/ports, replay protection, node software,
 address-format parity with Bitcoin).
 
-## Next work item — Public Esplora fallback + Signet/Alphanet network toggle
+## Next work item — Public Esplora fallback + Signet/Betanet network toggle
 
-### STATUS: DONE ✅
+> **SUPERSEDED — the network toggle now offers Betanet + Signet.** This entry
+> is the historical log of the toggle as first built (when the second network
+> was Alphanet). Alphanet was subsequently removed from the product; read
+> `"alphanet"` below as a historical name, not current code.
+
+### STATUS: DONE ✅ (then amended)
 
 Restored L1 wallet balance display (the sidecoin.app/v1 adapter is offline)
 by routing L1 reads + broadcast through the public Esplora endpoints from
 [drivechain.dev/config](https://drivechain.dev/config), and added a
-definitive, persisted Signet/Alphanet network toggle (Settings + Sidebar).
+definitive, persisted network toggle (Settings + Sidebar).
 
 ### What was implemented
 
@@ -404,16 +414,17 @@ definitive, persisted Signet/Alphanet network toggle (Settings + Sidebar).
 2. **`scriptPubKeyFromAddress`** (`packages/shared/src/wallet/derivation.ts`):
    decodes a bech32 SegWit address → `OP_<ver> <push len> <program>` hex.
    Exported from `@sidecoin/shared`. +4 derivation tests.
-3. **Persistent Signet/Alphanet network toggle**
+3. **Persistent network toggle**
    (`packages/wallet/src/keystore.ts`):
    - `StoredWallet.network` broadened from literal `"signet"` to
-     `WalletNetwork = "signet" | "alphanet"`.
+     `WalletNetwork = "signet" | "betanet"` (the second member was
+     `"alphanet"` at the time of this entry).
    - `setWalletNetwork(network)` persists the change + dispatches
      `WALLET_NETWORK_EVENT` (a `CustomEvent`) so live views re-fetch.
    - `loadWallet()` coerces any unknown network field back to `"signet"`
      (forward-compat with pre-toggle wallets). +6 keystore tests.
 4. **Settings toggle** (`packages/wallet/src/views/SettingsView.vue`): a
-   prominent "L1 Network" card at the top of Settings with Signet/Alphanet
+   prominent "L1 Network" card at the top of Settings with Betanet/Signet
    option buttons; persists via `setWalletNetwork` and shows "Saved ✓".
    +6 SettingsView tests.
 5. **Sidebar + mobile-header badge** (`packages/wallet/src/App.vue`): the
@@ -422,7 +433,7 @@ definitive, persisted Signet/Alphanet network toggle (Settings + Sidebar).
    to `WALLET_NETWORK_EVENT`. Also fixed a stale `2026·08·21` date in the
    mobile header → `2026·10·31`. +4 App tests.
 6. **Receive page now persists** (`packages/wallet/src/views/ReceiveView.vue`):
-   the Signet/Alphanet selector on Receive now saves to the keystore (was
+   the Betanet/Signet selector on Receive now saves to the keystore (was
    session-only) and listens for `WALLET_NETWORK_EVENT` so it stays in sync
    with Settings. Tests updated.
 7. **Views pass `wallet.network`** to the L1 calls: `DashboardView.vue`
@@ -439,8 +450,7 @@ definitive, persisted Signet/Alphanet network toggle (Settings + Sidebar).
   body on failure (broadcast works — verified with an empty-body POST that
   returned a TX-decode RPC error, proving the endpoint accepts txs).
 - `GET /tx/:txid/hex` → raw hex.
-- `GET /blocks/tip/height` → tip height (signet 10808, alphanet 987875 at
-  probe time).
+- `GET /blocks/tip/height` → tip height (signet 10808 at probe time).
 
 ### Test baselines
 
@@ -454,7 +464,7 @@ mobile 21 · explorer 43 · api-client 12 · smarthub 5. All type-checks clean.
 Replaced the offline SupaQt market-price source with the eCash Farm
 `projected.ecxUsd` projection, polished the Coin News stats box layout,
 and added breathing room below the sidebar Settings link. Commit:
-`feat(wallet): Esplora balance fallback + Signet/Alphanet toggle + eCash
+`feat(wallet): Esplora balance fallback + Signet/Betanet toggle + eCash
 Farm price + UI fixes` (`528265e`, pushed) + the follow-up label/time edits
 in this commit.
 
@@ -553,7 +563,7 @@ clean.
 
 ## In-flight
 
-- **NEXT SESSION: test/verify Send & Receive on Signet → Alphanet → Betanet.**
+- **NEXT SESSION: test/verify Send & Receive on Betanet → Signet.**
   See the "NEXT SESSION" section near the top for the verified endpoints,
   faucet availability, and the per-network procedure.
 - **Mobile: port `PlatformDetailView.vue`** — the last remaining placeholder
@@ -562,7 +572,7 @@ clean.
   script fails, pre-existing), APK size (~148 MB; ABI splits / dep trimming not
   yet investigated), `DOM` in the mobile tsconfig `lib` (needed for
   `@types/node@25` `URL` types), FreeBank `platforms.ts` scaffold + slot 130 in
-  `ADDRESS_DERIVATION_SLOTS`, `sidechainsAtLaunch` betanet/alphanet counts.
+  `ADDRESS_DERIVATION_SLOTS`, `sidechainsAtLaunch` betanet/signet counts.
 - Note: `docs/HANDOFF.md` sections below the mobile history still contain the
   historical `packages/<app>` paths from before the `apps/` refactor
   (`fd9b4bf`). They are intentionally NOT rewritten — they are a log of what

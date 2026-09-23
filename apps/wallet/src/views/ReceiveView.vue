@@ -9,14 +9,14 @@ import type { WalletNetwork } from "../keystore";
 
 type ReceiveTab = "address" | "payment-code" | "history";
 
-// The two networks a user can receive to from this page. Signet is the
-// live signet ("signet" on drivechain.dev/config); Alphanet is the ECX alpha
-// practice network (a mainnet fork — see https://drivechain.dev/config).
-// The choice IS persisted to the keystore via setWalletNetwork, and a
-// WALLET_NETWORK_EVENT is dispatched so the Dashboard / Sidebar update live.
+// The two networks a user can receive to from this page. Betanet is the
+// live ECX practice network ("betanet" on drivechain.dev/config); Signet is
+// the L2L signet. The choice IS persisted to the keystore via
+// setWalletNetwork, and a WALLET_NETWORK_EVENT is dispatched so the
+// Dashboard / Sidebar update live.
 const RECEIVE_NETWORKS: { id: WalletNetwork; label: string }[] = [
+  { id: "betanet", label: "Betanet" },
   { id: "signet", label: "Signet" },
-  { id: "alphanet", label: "Alphanet" },
 ];
 
 // Address issuance is derived from the wallet key. On mount we load the
@@ -28,7 +28,7 @@ const RECEIVE_NETWORKS: { id: WalletNetwork; label: string }[] = [
 // re-derives a fresh address without touching the keystore.
 const mnemonic = ref("");
 const hasWallet = ref(false);
-const selectedNetwork = ref<WalletNetwork>("signet");
+const selectedNetwork = ref<WalletNetwork>("betanet");
 const addressIndex = ref(0);
 const address = ref("");
 const copied = ref(false);
@@ -47,11 +47,11 @@ const networkLabel = computed(() => {
   return found ? found.label : selectedNetwork.value;
 });
 
-// BIP-44 coin type: 0 for mainnet + mainnet forks (alphanet), 1 for test
+// BIP-44 coin type: 0 for mainnet + mainnet forks (betanet), 1 for test
 // networks. Mirrors the coinTypeFor logic in @sidecoin/shared/wallet/derivation.
-// Here selectedNetwork is signet (coin type 1) or alphanet (coin type 0).
+// Here selectedNetwork is signet (coin type 1) or betanet (coin type 0).
 const coinType = computed(() =>
-  selectedNetwork.value === "alphanet" ? 0 : 1,
+  selectedNetwork.value === "betanet" ? 0 : 1,
 );
 
 const derivationPath = computed(

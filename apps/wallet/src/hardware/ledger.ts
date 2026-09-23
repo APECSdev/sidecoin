@@ -50,7 +50,6 @@ import { PsbtV2, psbtIn } from "@ledgerhq/psbtv2";
 function btcNetworkFor(network: NetworkId) {
   switch (network) {
     case "mainnet":
-    case "alphanet":
       return networks.bitcoin;
     case "regtest":
       return networks.regtest;

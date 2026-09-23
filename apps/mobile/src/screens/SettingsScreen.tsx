@@ -61,16 +61,14 @@ import {
   Title,
 } from "../components/ui";
 
-// ─── Network selector (Betanet / Alphanet / Signet) ────────
-// Persists the wallet's L1 network to the keystore. All three are
+// ─── Network selector (Betanet / Signet) ────────
+// Persists the wallet's L1 network to the keystore. Both are
 // non-production (betanet = the ECX beta practice network, the wallet
-// default; alphanet = the ECX alpha practice network; signet = the live L2L
-// signet). Alphanet and betanet are mainnet forks from
+// default; signet = the live L2L signet). Betanet is a mainnet fork from
 // drivechain.dev/config. Switching emits the wallet-network listener so the
 // Dashboard and Receive re-derive / re-fetch for the new network immediately.
 const NETWORK_OPTIONS: { id: WalletNetwork; label: string; description: string }[] = [
   { id: "betanet", label: "Betanet", description: "ECX beta practice network (mainnet fork) — the default." },
-  { id: "alphanet", label: "Alphanet", description: "ECX alpha practice network (mainnet fork)." },
   { id: "signet", label: "Signet", description: "Live L2L signet — the default test network." },
 ];
 
@@ -212,7 +210,7 @@ export function SettingsScreen(): React.JSX.Element {
     >
       <Title style={styles.heading}>Settings</Title>
 
-      {/* Network selector — Signet / Alphanet. Persisted to the keystore. */}
+      {/* Network selector — Betanet / Signet. Persisted to the keystore. */}
       <Card style={styles.section} testID="network-selector-card">
         <View style={styles.rowBetween}>
           <View style={styles.growShrink}>

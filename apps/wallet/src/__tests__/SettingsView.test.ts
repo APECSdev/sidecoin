@@ -420,15 +420,15 @@ describe("SettingsView.vue", () => {
   });
 
   // -----------------------------------------------------------------------
-  // Network selector (Signet / Alphanet) — persisted to the keystore
+  // Network selector (Betanet / Signet) — persisted to the keystore
   // -----------------------------------------------------------------------
 
   it("renders the L1 Network selector card", () => {
     const wrapper = mount(SettingsView);
     expect(wrapper.find('[data-test="network-selector-card"]').exists()).toBe(true);
     expect(wrapper.text()).toContain("L1 Network");
+    expect(wrapper.text()).toContain("Betanet");
     expect(wrapper.text()).toContain("Signet");
-    expect(wrapper.text()).toContain("Alphanet");
   });
 
   it("defaults the selector to the wallet's persisted network (signet)", async () => {
@@ -445,34 +445,34 @@ describe("SettingsView.vue", () => {
     expect(active.attributes("aria-pressed")).toBe("true");
   });
 
-  it("defaults to alphanet when the wallet persists alphanet", async () => {
+  it("defaults to betanet when the wallet persists betanet", async () => {
     mockLoadWallet.mockReturnValue({
       version: 1,
-      network: "alphanet",
+      network: "betanet",
       mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
       createdAt: 0,
     });
     const wrapper = mount(SettingsView);
     await flushPromises();
 
-    const active = wrapper.find('[data-test="network-option"][data-test-id="alphanet"]');
+    const active = wrapper.find('[data-test="network-option"][data-test-id="betanet"]');
     expect(active.attributes("aria-pressed")).toBe("true");
   });
 
-  it("persists a switch to alphanet via setWalletNetwork", async () => {
+  it("persists a switch to signet via setWalletNetwork", async () => {
     mockLoadWallet.mockReturnValue({
       version: 1,
-      network: "signet",
+      network: "betanet",
       mnemonic: "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
       createdAt: 0,
     });
     const wrapper = mount(SettingsView);
     await flushPromises();
 
-    const alphanet = wrapper.find('[data-test="network-option"][data-test-id="alphanet"]');
-    await alphanet.trigger("click");
+    const signet = wrapper.find('[data-test="network-option"][data-test-id="signet"]');
+    await signet.trigger("click");
 
-    expect(mockSetWalletNetwork).toHaveBeenCalledWith("alphanet");
+    expect(mockSetWalletNetwork).toHaveBeenCalledWith("signet");
     expect(wrapper.text()).toContain("Saved");
   });
 
@@ -505,8 +505,8 @@ describe("SettingsView.vue", () => {
     const wrapper = mount(SettingsView);
     await flushPromises();
 
-    const alphanet = wrapper.find('[data-test="network-option"][data-test-id="alphanet"]');
-    await alphanet.trigger("click");
+    const betanet = wrapper.find('[data-test="network-option"][data-test-id="betanet"]');
+    await betanet.trigger("click");
 
     expect(wrapper.text()).toContain("No wallet found.");
   });

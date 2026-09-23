@@ -253,8 +253,8 @@ describe("scriptPubKeyFromAddress", () => {
     expect(spk).toMatch(/^0014[0-9a-f]{40}$/);
   });
 
-  it("matches the hash160 embedded in the address for an alphanet (bc1q) addr", () => {
-    const addr = deriveReceiveAddress(TEST_MNEMONIC, "alphanet", 0);
+  it("matches the hash160 embedded in the address for a betanet (bc1q) addr", () => {
+    const addr = deriveReceiveAddress(TEST_MNEMONIC, "betanet", 0);
     expect(addr.startsWith("bc1q")).toBe(true);
     // The address bech32 payload (after the 0 witness version) decodes to the
     // same 20 bytes that appear at the tail of the scriptPubKey.

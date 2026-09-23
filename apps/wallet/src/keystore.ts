@@ -10,17 +10,16 @@ import { validateMnemonic, normalizeMnemonic } from "@sidecoin/shared";
 
 const STORAGE_KEY = "sidecoin.wallet.v1";
 
-/** The L1 networks a user can toggle between in Settings. All are
- *  non-production: signet = the live L2L signet; alphanet = the ECX alpha
- *  practice network; betanet = the ECX beta practice network (the default).
- *  Both alphanet and betanet are mainnet forks, from drivechain.dev/config. */
-export type WalletNetwork = "signet" | "alphanet" | "betanet";
+/** The L1 networks a user can toggle between in Settings. Both are
+ *  non-production: betanet = the ECX beta practice network (the default);
+ *  signet = the live L2L signet. Betanet is a mainnet fork, from
+ *  drivechain.dev/config. */
+export type WalletNetwork = "signet" | "betanet";
 
 /** Runtime allowlist for WalletNetwork. Persisted values are validated
  *  against this set; anything else falls back to DEFAULT_WALLET_NETWORK. */
 const WALLET_NETWORKS: readonly WalletNetwork[] = [
   "signet",
-  "alphanet",
   "betanet",
 ];
 
@@ -87,7 +86,7 @@ export function saveWallet(mnemonic: string): StoredWallet {
 }
 
 /**
- * Persist a new network choice (signet, alphanet, or betanet) onto the stored
+ * Persist a new network choice (signet or betanet) onto the stored
  * wallet.
  * The mnemonic is preserved; only `network` changes. Emits the
  * WALLET_NETWORK_EVENT so live views (Dashboard, Sidebar, …) re-derive and

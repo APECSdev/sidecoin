@@ -214,7 +214,7 @@ describe("ReceiveView.vue", () => {
   // Network selector + address index cycling (persisted to the keystore)
   // -------------------------------------------------------------------------
 
-  it("should render the Signet + Alphanet network selector when a wallet exists", async () => {
+  it("should render the Betanet + Signet network selector when a wallet exists", async () => {
     vi.mocked(loadWallet).mockReturnValue({
       version: 1,
       network: "signet",
@@ -227,8 +227,8 @@ describe("ReceiveView.vue", () => {
 
     expect(wrapper.text()).toContain("Receive to network");
     expect(wrapper.text()).toContain("saved to your wallet");
+    expect(wrapper.text()).toContain("Betanet");
     expect(wrapper.text()).toContain("Signet");
-    expect(wrapper.text()).toContain("Alphanet");
   });
 
   it("should default the selector to the wallet's persisted network (signet)", async () => {
@@ -245,7 +245,7 @@ describe("ReceiveView.vue", () => {
     expect(deriveReceiveAddress).toHaveBeenCalledWith(VALID_12, "signet", 0);
   });
 
-  it("should re-derive with alphanet + coin type 0 when Alphanet is selected", async () => {
+  it("should re-derive with betanet + coin type 0 when Betanet is selected", async () => {
     vi.mocked(loadWallet).mockReturnValue({
       version: 1,
       network: "signet",
@@ -256,15 +256,15 @@ describe("ReceiveView.vue", () => {
     const wrapper = mountReceive();
     await flushPromises();
 
-    const alphanet = wrapper
+    const betanet = wrapper
       .findAll("button")
-      .find((b) => b.text() === "Alphanet");
-    expect(alphanet).toBeDefined();
-    await alphanet!.trigger("click");
+      .find((b) => b.text() === "Betanet");
+    expect(betanet).toBeDefined();
+    await betanet!.trigger("click");
 
-    expect(deriveReceiveAddress).toHaveBeenCalledWith(VALID_12, "alphanet", 0);
-    expect(setWalletNetwork).toHaveBeenCalledWith("alphanet");
-    expect(wrapper.text()).toContain("Alphanet");
+    expect(deriveReceiveAddress).toHaveBeenCalledWith(VALID_12, "betanet", 0);
+    expect(setWalletNetwork).toHaveBeenCalledWith("betanet");
+    expect(wrapper.text()).toContain("Betanet");
     expect(wrapper.text()).toContain("m/84'/0'/0'/0/0");
   });
 
@@ -307,10 +307,10 @@ describe("ReceiveView.vue", () => {
     await gen!.trigger("click");
     expect(deriveReceiveAddress).toHaveBeenLastCalledWith(VALID_12, "signet", 1);
 
-    const alphanet = wrapper
+    const betanet = wrapper
       .findAll("button")
-      .find((b) => b.text() === "Alphanet");
-    await alphanet!.trigger("click");
-    expect(deriveReceiveAddress).toHaveBeenLastCalledWith(VALID_12, "alphanet", 0);
+      .find((b) => b.text() === "Betanet");
+    await betanet!.trigger("click");
+    expect(deriveReceiveAddress).toHaveBeenLastCalledWith(VALID_12, "betanet", 0);
   });
 });

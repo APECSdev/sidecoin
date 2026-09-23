@@ -22,17 +22,17 @@ const demoMode = ref(false);
 const selectedTheme = ref<WalletTheme>("default");
 const showDemoModeExplainer = ref(false);
 
-// ─── Network selector (Signet / Alphanet) ──────────────────
+// ─── Network selector (Betanet / Signet) ──────────────────
 // Persists the wallet's L1 network to the keystore. Both are non-production
-// (signet = the live L2L signet; alphanet = the ECX alpha practice
-// network, a mainnet fork from drivechain.dev/config). Switching
+// (betanet = the live ECX practice network, the default; signet = the live
+// L2L signet, from drivechain.dev/config). Switching
 // dispatches WALLET_NETWORK_EVENT so the Dashboard, Receive, and Sidebar
 // re-derive / re-fetch for the new network immediately.
 const NETWORK_OPTIONS: { id: WalletNetwork; label: string; description: string }[] = [
+  { id: "betanet", label: "Betanet", description: "ECX beta practice network (mainnet fork) — the default." },
   { id: "signet", label: "Signet", description: "Live L2L signet — the default test network." },
-  { id: "alphanet", label: "Alphanet", description: "ECX alpha practice network (mainnet fork)." },
 ];
-const selectedNetwork = ref<WalletNetwork>("signet");
+const selectedNetwork = ref<WalletNetwork>("betanet");
 const networkSaved = ref(false);
 const networkError = ref<string | null>(null);
 
@@ -131,7 +131,7 @@ function handleNetworkChange(network: WalletNetwork) {
   <div>
     <h2 class="mb-6 text-2xl font-bold">Settings</h2>
 
-    <!-- Network selector — Signet / Alphanet. Persisted to the keystore and
+    <!-- Network selector — Betanet / Signet. Persisted to the keystore and
          surfaced in the Sidebar so the active network is always obvious. -->
     <section
       class="mb-6 max-w-3xl rounded border border-gray-800 bg-gray-900 p-4"

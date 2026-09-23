@@ -143,22 +143,22 @@ describe("App.vue", () => {
   });
 
   // -------------------------------------------------------------------------
-  // Sidebar network badge (Signet / Alphanet)
+  // Sidebar network badge (Betanet / Signet)
   // -------------------------------------------------------------------------
 
-  it("renders the sidebar network badge defaulting to Signet when no wallet", async () => {
+  it("renders the sidebar network badge defaulting to Betanet when no wallet", async () => {
     const wrapper = await mountApp();
     const badge = wrapper.find('[data-test="sidebar-network-badge"]');
     expect(badge.exists()).toBe(true);
-    expect(badge.text()).toContain("Signet");
+    expect(badge.text()).toContain("Betanet");
   });
 
-  it("shows Alphanet in the sidebar badge when the wallet persists alphanet", async () => {
+  it("shows Betanet in the sidebar badge when the wallet persists betanet", async () => {
     localStorage.setItem(
       "sidecoin.wallet.v1",
       JSON.stringify({
         version: 1,
-        network: "alphanet",
+        network: "betanet",
         mnemonic:
           "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about",
         createdAt: 0,
@@ -166,14 +166,14 @@ describe("App.vue", () => {
     );
     const wrapper = await mountApp();
     const badge = wrapper.find('[data-test="sidebar-network-badge"]');
-    expect(badge.text()).toContain("Alphanet");
+    expect(badge.text()).toContain("Betanet");
   });
 
   it("renders the mobile network badge in the top bar", async () => {
     const wrapper = await mountApp();
     const badge = wrapper.find('[data-test="mobile-network-badge"]');
     expect(badge.exists()).toBe(true);
-    expect(badge.text()).toContain("Signet");
+    expect(badge.text()).toContain("Betanet");
   });
 
   it("links to /settings from the sidebar network badge", async () => {

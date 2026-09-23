@@ -41,12 +41,12 @@ const l1Balance = ref<ChainBalance | null>(null);
 const l1Loading = ref(true);
 const l1Error = ref<string | null>(null);
 
-// The wallet's persisted L1 network (signet or alphanet). Reactive so a
+// The wallet's persisted L1 network (signet or betanet). Reactive so a
 // Settings toggle re-derives the address + re-fetches the balance live.
-const walletNetwork = ref<WalletNetwork>("signet");
+const walletNetwork = ref<WalletNetwork>("betanet");
 
 const networkLabel = computed(() =>
-  walletNetwork.value === "alphanet" ? "Alphanet" : "Signet",
+  walletNetwork.value === "betanet" ? "Betanet" : "Signet",
 );
 
 const marketPrice = ref<MarketPrice | null>(null);
@@ -166,7 +166,7 @@ async function loadL1Balance() {
     l1Address.value = address;
     walletNetwork.value = wallet.network;
     // Indexed balance for the wallet's current L1 network (signet or
-    // alphanet). Reads from the public Esplora endpoint so balances work
+    // betanet). Reads from the public Esplora endpoint so balances work
     // even while the sidecoin.app/v1 adapter is offline. An unseen address
     // is not an error: it comes back totalSats 0n with seen=false.
     l1Balance.value = await getL1Balance(address, wallet.network);

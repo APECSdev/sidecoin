@@ -13,18 +13,13 @@
  * - regtest: Local regression testing (single-node, instant blocks)
  * - l2l-signet: Layer-2-Labs signet environment for drivechain integration
  *               (the network the wallet clients target against the live indexer)
- * - alphanet: The ECX alpha practice network — a fork of mainnet with a PoW
- *             difficulty reset, used to rehearse the upcoming mainnet launch.
- *             Authoritative config: https://drivechain.dev/config
- *             Shares mainnet's address format (coin type 0, "bc" HRP) because
- *             it forks the mainnet UTXO set; it is NOT a production network.
- *             Fork activated at block 963,648 on 2026-08-23.
- * - betanet: The ECX beta practice network — a second fork of mainnet with a
- *            PoW difficulty reset (to 1e9), one stage past alphanet.
- *            Authoritative config: https://drivechain.dev/config (networks[3]).
+ * - betanet: The ECX beta practice network — a fork of mainnet with a PoW
+ *            difficulty reset (to 1e9). Authoritative config:
+ *            https://drivechain.dev/config (networks[3]).
  *            Fork activated at block 967,680 on 2026-09-19. Shares mainnet's
- *            address format (coin type 0, "bc" HRP) for the same reason as
- *            alphanet. This is the DEFAULT network; it is NOT production.
+ *            address format (coin type 0, "bc" HRP) because it forks the
+ *            mainnet UTXO set. This is the DEFAULT network; it is NOT
+ *            production.
  */
 export type NetworkId =
   | "mainnet"
@@ -32,7 +27,6 @@ export type NetworkId =
   | "signet"
   | "regtest"
   | "l2l-signet"
-  | "alphanet"
   | "betanet";
 
 /**

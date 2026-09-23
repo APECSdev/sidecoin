@@ -21,12 +21,12 @@ const deviceLabel = computed(() => deviceLabels[deviceKind.value]);
 const stored = loadWallet();
 const isMainnet = (stored?.network as string | undefined) === "mainnet";
 const coinType = isMainnet ? 0 : 1;
-const walletNetwork: NetworkId = (stored?.network as NetworkId) ?? "signet";
-// L1Network for API calls (signet or alphanet). The keystore only persists
-// signet/alphanet, but walletNetwork is typed as the broader NetworkId for
+const walletNetwork: NetworkId = (stored?.network as NetworkId) ?? "betanet";
+// L1Network for API calls (signet or betanet). The keystore only persists
+// signet/betanet, but walletNetwork is typed as the broader NetworkId for
 // bitcoinjs-lib / hardware signing, so narrow here for the Esplora reads.
 const l1Network: L1Network =
-  walletNetwork === "alphanet" ? "alphanet" : "signet";
+  walletNetwork === "betanet" ? "betanet" : "signet";
 const status = ref<"idle" | "connecting" | "connected" | "error">("idle");
 const busy = ref(false);
 const error = ref("");

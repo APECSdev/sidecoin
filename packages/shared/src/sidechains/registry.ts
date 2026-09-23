@@ -127,7 +127,7 @@ export const SIDECHAIN_COINSHIFT: SidechainDescriptor = {
 // deriveEvmAddress(). BMM payouts / fee distribution go to that same EVM
 // address — there is no separate payout derivation path.
 //
-// BIP-300 slot 88 was assigned on ALPHANET but has NOT YET BEEN SUBMITTED
+// BIP-300 slot 88 has NOT YET BEEN SUBMITTED
 // to betanet. The slot is reserved here so address generation can target it.
 export const SIDECHAIN_SNOWSIDE: SidechainDescriptor = {
   slot: 88,
@@ -144,8 +144,8 @@ export const SIDECHAIN_SNOWSIDE: SidechainDescriptor = {
 //
 // RISCy — an active drivechain at slot 3.
 //
-// Slot 3 was assigned on ALPHANET. Reserved here so slot 3 resolves to a
-// known descriptor rather than undefined.
+// Slot 3 is reserved here so it resolves to a known descriptor rather than
+// undefined.
 //
 export const SIDECHAIN_RISCY: SidechainDescriptor = {
   slot: 3,

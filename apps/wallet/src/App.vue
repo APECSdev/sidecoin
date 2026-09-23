@@ -27,14 +27,14 @@ const links = [
 
 const demoMode = ref(isDemoModeEnabled());
 const walletTheme = ref(getWalletTheme());
-// Active L1 network (signet or alphanet). Reactive so the sidebar + mobile
+// Active L1 network (signet or betanet). Reactive so the sidebar + mobile
 // header update the instant the user toggles it in Settings or Receive.
-const walletNetwork = ref<WalletNetwork>("signet");
+const walletNetwork = ref<WalletNetwork>("betanet");
 
 const themeClass = computed(() => walletThemeClass(walletTheme.value));
 
 const networkLabel = computed(() =>
-  walletNetwork.value === "alphanet" ? "Alphanet" : "Signet",
+  walletNetwork.value === "betanet" ? "Betanet" : "Signet",
 );
 
 function refreshWalletNetwork() {
