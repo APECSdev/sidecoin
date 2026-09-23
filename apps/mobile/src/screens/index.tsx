@@ -11,16 +11,23 @@
 //                  receive (4b), swap (4b), toolbox (4b), settings (4c),
 //                  send (4c), platform-detail (4d).
 //   Still staged:  hardware.
+//
+// MOCKED (not ports): feed and explore. They are new RN-only destinations
+// with no Vue source — an integrated Nostr/direct-comms feed and a Web3
+// browser, both rendered with labelled sample data for now.
 
 import React from "react";
 
 import { AssetSwapScreen } from "./AssetSwapScreen";
 import { DashboardScreen } from "./DashboardScreen";
+import { ExploreScreen } from "./ExploreScreen";
+import { FeedScreen } from "./FeedScreen";
 import { MarketsScreen } from "./MarketsScreen";
 import { OnboardingScreen } from "./OnboardingScreen";
 import { PlaceholderScreen } from "./PlaceholderScreen";
 import { PlatformDetailScreen } from "./PlatformDetailScreen";
 import { ProBenefitsScreen } from "./ProBenefitsScreen";
+import { QrScanScreen } from "./QrScanScreen";
 import { ReceiveScreen } from "./ReceiveScreen";
 import { SendScreen } from "./SendScreen";
 import { SidechainsScreen } from "./SidechainsScreen";
@@ -37,6 +44,7 @@ export const SCREEN_SOURCES = {
   dashboard: "apps/wallet/src/views/DashboardView.vue",
   send: "apps/wallet/src/views/SendView.vue",
   receive: "apps/wallet/src/views/ReceiveView.vue",
+  settings: "apps/wallet/src/views/SettingsView.vue",
   swap: "apps/wallet/src/views/AssetSwapView.vue",
   markets: "apps/wallet/src/views/MarketsView.vue",
   platforms: "apps/wallet/src/views/SidechainsView.vue",
@@ -44,18 +52,20 @@ export const SCREEN_SOURCES = {
   hardware: "apps/wallet/src/views/HardwareWalletView.vue",
   toolbox: "apps/wallet/src/views/ToolboxView.vue",
   pro: "apps/wallet/src/views/ProBenefitsView.vue",
-  settings: "apps/wallet/src/views/SettingsView.vue",
 } as const;
 
 export type ScreenKey = keyof typeof SCREEN_SOURCES;
 
 export { AssetSwapScreen } from "./AssetSwapScreen";
 export { DashboardScreen } from "./DashboardScreen";
+export { ExploreScreen } from "./ExploreScreen";
+export { FeedScreen } from "./FeedScreen";
 export { MarketsScreen } from "./MarketsScreen";
 export { OnboardingScreen } from "./OnboardingScreen";
 export { PlaceholderScreen } from "./PlaceholderScreen";
 export { PlatformDetailScreen } from "./PlatformDetailScreen";
 export { ProBenefitsScreen } from "./ProBenefitsScreen";
+export { QrScanScreen } from "./QrScanScreen";
 export { ReceiveScreen } from "./ReceiveScreen";
 export { SendScreen } from "./SendScreen";
 export { SidechainsScreen } from "./SidechainsScreen";

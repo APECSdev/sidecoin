@@ -58,8 +58,21 @@ platform-detail, swap, markets, toolbox, pro, settings); components
 (`components/ui.tsx`, `components/pro/*`, `components/QrScanner.tsx`,
 `components/paymenturi.ts`, `components/bitnames/*`).
 
-Tabs are `dashboard`, `send`, `receive`, `platforms`, `settings`; all else is
-a stack route.
+**Tabs are `dashboard` (Home), `platforms`, `feed`, `explore`.** Send,
+Receive, and Settings moved off the tab bar behind the floating action button
+(`components/FabMenu.tsx`, which also adds a "Scan QR" action) and are stack
+routes; `qr-scan` (`screens/QrScanScreen.tsx`) wraps the shared `QrScanner`.
+All other non-tab routes are stack routes.
+
+**Feed and Explore are MOCKED** (`screens/FeedScreen.tsx`,
+`screens/ExploreScreen.tsx`): static sample data, no relays, no browser
+engine. Each renders a visible "Mock data" badge, and `MockScreens.test.tsx`
+asserts that disclosure so the UI never implies live activity.
+
+**`NavigationContainer` must receive `theme={navigationTheme}`**
+(`navigation/theme.ts`). Without it React Navigation applies its light
+`DefaultTheme` (`background #f2f2f2`) and paints a white gutter around dark
+screens. `App.test.tsx` guards this.
 
 ### Network model
 
@@ -77,7 +90,7 @@ a stack route.
 
 ```
 cd apps/mobile
-npx tsc --noEmit && npx jest      # 159 tests, 10 suites
+npx tsc --noEmit && npx jest      # 180 tests, 12 suites
 cd android && ./gradlew assembleFdroidRelease
 adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
@@ -131,6 +144,12 @@ adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-relea
     fails; not caused by any port change. Open item.
 11. **Stale Jest cache masks fixes** — if a module-resolution fix seems not to
     take, `rm -rf /tmp/jest_rs` first.
+12. **`useBottomTabBarHeight()` throws outside a tab scene.** Its context
+    wraps only the scenes, not siblings of the navigator. `FabMenu` floats
+    beside `<Tab.Navigator>`, so `MainTabs` instead measures the bar ("`tabBar`"
+    render prop + `onLayout`) and passes the height down as `bottomOffset`.
+    Jest's `@react-navigation/bottom-tabs` mock must therefore export
+    `BottomTabBar` and invoke the `tabBar` render prop.
 
 ## Commands
 
@@ -152,7 +171,7 @@ must be green before commit.
 
 **Test baselines** (`pnpm --filter <pkg> test`; verify before citing in a PR):
 shared 254 (+1 skip) · wallet 382 · web 118 · explorer 43 · desktop 76 ·
-smarthub 5 · mobile 159 (10 suites) · api-client 12.
+smarthub 5 · mobile 180 (12 suites) · api-client 12.
 
 ## CI (`.github/workflows/`)
 

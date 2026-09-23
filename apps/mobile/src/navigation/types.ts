@@ -8,13 +8,19 @@
 // native stack (secondary/detail screens plus onboarding).
 //
 // Tab routes (always reachable from the tab bar):
-//   dashboard, send, receive, platforms, settings
+//   dashboard, platforms, feed, explore
 //
-// Stack routes (pushed on top of the tab shell):
-//   swap, markets, platform-detail, hardware, toolbox, pro
+// Stack routes pushed on top of the tab shell:
+//   send, receive, settings, qr-scan, swap, markets, platform-detail,
+//   hardware, toolbox, pro
 //
 // Onboarding is a stack route rendered INSTEAD of the tab shell when no
 // wallet is stored (the Vue router's beforeEach gate).
+//
+// send/receive/settings used to be tab routes; they were moved behind the
+// floating action button (./components/FabMenu.tsx) so the tab bar carries
+// only the four primary destinations. They remain stack routes so the push
+// navigates to the same ported screens.
 
 import type { BottomTabScreenProps } from "@react-navigation/bottom-tabs";
 import type { NavigatorScreenParams } from "@react-navigation/native";
@@ -23,16 +29,19 @@ import type { NativeStackScreenProps } from "@react-navigation/native-stack";
 /** Screens inside the bottom tab shell. */
 export type TabParamList = {
   dashboard: undefined;
-  send: undefined;
-  receive: undefined;
   platforms: undefined;
-  settings: undefined;
+  feed: undefined;
+  explore: undefined;
 };
 
 /** Top-level native stack. "main" hosts the tab shell. */
 export type RootStackParamList = {
   main: NavigatorScreenParams<TabParamList> | undefined;
   onboarding: undefined;
+  send: undefined;
+  receive: undefined;
+  settings: undefined;
+  "qr-scan": undefined;
   swap: undefined;
   markets: undefined;
   "platform-detail": { platformId: string };

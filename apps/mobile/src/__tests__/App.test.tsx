@@ -190,12 +190,31 @@ jest.mock("react-native-reanimated", () => {
 });
 
 // @react-navigation/native
+//
+// DarkTheme/DefaultTheme are part of the real module's public surface and are
+// consumed by ../navigation/theme.ts. They must be present here or importing
+// the theme throws "Cannot read properties of undefined (reading 'colors')".
+// The theme object is captured so a test can assert NavigationContainer
+// actually receives it (the white-gutter dark-mode regression).
 jest.mock("@react-navigation/native", () => {
   const React = require("react");
   const View = require("react-native").View;
+  const colors = {
+    primary: "#F7931A",
+    background: "#0D1117",
+    card: "#0D1117",
+    text: "#E6EDF3",
+    border: "#1f2937",
+    notification: "#F85149",
+  };
   return {
-    NavigationContainer: ({ children, ...props }: any) =>
-      React.createElement(View, props, children),
+    NavigationContainer: ({ children, theme, ...props }: any) => {
+      // Record the theme for assertions without rendering it.
+      (globalThis as any).__navTheme = theme;
+      return React.createElement(View, props, children);
+    },
+    DefaultTheme: { dark: false, colors, fonts: {} },
+    DarkTheme: { dark: true, colors, fonts: {} },
     useNavigation: () => ({
       navigate: jest.fn(),
       goBack: jest.fn(),
@@ -226,17 +245,36 @@ jest.mock("react-native-qrcode-svg", () => "QRCode");
 
 // @react-navigation/bottom-tabs — the real implementation needs the full
 // native navigator tree; render the tab screens inline for assertions.
+// BottomTabBar is real-module API consumed by RootNavigator's tabBar render
+// prop (it measures the bar so the FAB can float above it).
 jest.mock("@react-navigation/bottom-tabs", () => {
   const React = require("react");
   const View = require("react-native").View;
+  const fakeBar = (props: any) => React.createElement(View, props);
   return {
     createBottomTabNavigator: () => {
-      const Navigator = ({ children }: any) =>
-        React.createElement(View, null, children);
+      // The real Navigator renders the tab bar via its `tabBar` prop and
+      // reports the rendered height through an onLayout callback. Mirror that
+      // contract so FabMenu receives a measured height instead of its default.
+      const Navigator = ({ children, tabBar }: any) =>
+        React.createElement(
+          View,
+          null,
+          children,
+          typeof tabBar === "function"
+            ? tabBar({
+                state: { routes: [] },
+                descriptors: {},
+                navigation: {},
+                insets: { top: 0, right: 0, bottom: 0, left: 0 },
+              })
+            : null,
+        );
       const Screen = ({ component: Component }: any) =>
         React.createElement(Component);
       return { Navigator, Screen };
     },
+    BottomTabBar: fakeBar,
   };
 });
 
@@ -332,6 +370,10 @@ describe("App", () => {
     for (const name of [
       "onboarding",
       "main",
+      "send",
+      "receive",
+      "settings",
+      "qr-scan",
       "swap",
       "markets",
       "platform-detail",
@@ -341,6 +383,23 @@ describe("App", () => {
     ]) {
       expect(routes).toContain(name);
     }
+  });
+
+  // REGRESSION (white border): NavigationContainer applies React Navigation's
+  // light DefaultTheme (colors.background = rgb(242,242,242)) unless a theme is
+  // passed. That painted the navigator gutter white in dark mode. App.tsx must
+  // pass the Sidecoin dark theme.
+  it("should give NavigationContainer a dark theme, not the light default", async () => {
+    render(<App />);
+    await waitFor(() => {
+      expect(hasWallet).toHaveBeenCalled();
+    });
+    const theme: any = (globalThis as any).__navTheme;
+    expect(theme).toBeTruthy();
+    expect(theme.dark).toBe(true);
+    // The exact value that used to leak through as a white border.
+    expect(theme.colors.background).not.toBe("rgb(242, 242, 242)");
+    expect(theme.colors.background).toBe("#0D1117");
   });
 
   it("should render the main tab shell when a wallet is stored", async () => {

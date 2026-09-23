@@ -306,7 +306,7 @@ export function DashboardScreen(): React.JSX.Element {
   }
 
   function openSettings(): void {
-    navigation.navigate("main", { screen: "settings" });
+    navigation.navigate("settings");
   }
 
   function openPlatforms(): void {
