@@ -69,9 +69,15 @@ Builds:
       - fdroid
     # Prebuild runs the React Native codegen + node module autolinking; without
     # it Gradle cannot resolve the generated native specs.
+    #
+    # CI=true is REQUIRED, not cosmetic. apps/desktop declares a postinstall
+    # that runs `cargo run --bin export_types` (a Tauri type-export) unless CI
+    # is exactly "true". Without it, a clean install spends ~13m compiling Rust
+    # and needs a toolchain the build server may not have. With it, install
+    # drops to ~30s with zero cargo invocations.
     prebuild: |
       cd ../../..
-      pnpm install --frozen-lockfile
+      CI=true pnpm install --frozen-lockfile
       cd apps/mobile/android
     ndk: 27.1.12297006
     scandelete:
