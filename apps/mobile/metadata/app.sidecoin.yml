@@ -18,9 +18,45 @@
 # Before submitting, confirm:
 #   1. `pnpm install` is up to date and pnpm-lock.yaml is committed.
 #   2. `./gradlew :app:assembleFdroidRelease` succeeds from a clean checkout.
-#   3. The release APK is signed with our own key (see android/keystore.properties).
+#   3. The `commit:` below is a FULL 40-char hash (Build_Metadata_Reference:
+#      "Don't use branch name or tag name. The full commit hash should be used.").
 #   4. fastlane/metadata/android/en-US/images/icon.png exists (512x512).
-#   5. The `commit:` tag below exists on the remote (git ls-remote --tags).
+#
+# SIGNING — whose key ends up on the shipped APK:
+#   The main F-Droid repo re-signs with its own per-app key, but that is NOT
+#   mandatory. F-Droid can publish an APK carrying the UPSTREAM developer's
+#   signature, honouring our own key. There are two supported routes (both
+#   verified against the installed fdroidserver 2.4.4 source, not from memory):
+#
+#     a) Exclusive upstream signing — add `Binaries:` (or per-build
+#        `binary:`) pointing at our hosted APK plus `AllowedAPKSigningKeys:`
+#        with our cert's SHA-256. publish.py then compares F-Droid's own build
+#        against our binary and, only on a byte match, ships OUR apk. Used by
+#        1144 recipes in fdroiddata.
+#
+#     b) Publish both — commit an extracted `signatures/<vercode>/` directory
+#        (`fdroid signatures our.apk`). publish.py implants that signature onto
+#        the F-Droid build (common.apk_implant_signatures) and ships it
+#        alongside the F-Droid-signed APK.
+#
+#   BOTH routes are gated on the same thing: F-Droid's from-source build must
+#   match our APK's contents, because a signature only validates against the
+#   exact bytes it was made over. publish.py:436 drops the developer-signed
+#   APK when `verify_apk_signature` fails.
+#
+#   Our build does NOT currently reproduce. Two clean builds of this commit
+#   produced identical size (147,398,697 B) but different SHA-256
+#   (da932f7e... vs 749991f2...), because compiled native objects record the
+#   absolute source path. An empirical apksigcopier copy of our signature onto
+#   a differing APK failed verification with:
+#     APK Signature Scheme v2 signer #1: APK integrity check failed.
+#     CHUNKED_SHA512 digest mismatch.
+#   So route (a)/(b) cannot be enabled yet. The blocking path strings live in
+#   three .so files per ABI (libQuickCrypto.so,
+#   libreact_codegen_rnscreens.so, librnskia.so) under
+#   /Workspace/apecsdev/sidecoin/apps/mobile/node_modules/... . Removing them
+#   is the prerequisite; until then the recipe submits as an F-Droid-signed
+#   app, which is the default and unblocked path.
 #
 # VERSIONING — versionCode is 8-digit YYYYMMDD (e.g. 2026-09-23 -> 20260923).
 # Android and F-Droid require versionCode to INCREASE with every release. A
@@ -61,7 +97,10 @@ Builds:
   # If this drifts, F-Droid will build a different APK than the one tested.
   - versionName: 26.9.23
     versionCode: 20260923
-    commit: v26.9.23
+    # FULL 40-char hash, not the v26.9.23 tag. Build_Metadata_Reference:
+    # "Don't use branch name or tag name. The full commit hash should be used."
+    # This is the commit the tag points at (git rev-parse v26.9.23^{commit}).
+    commit: 9b7ccb7eb569d1bae0da6b3ed8d00b68436b019c
     subdir: apps/mobile/android
     # `fdroid` is the FOSS flavor: it excludes the playstore-only Sentry
     # dependency (see android/app/build.gradle `playstoreImplementation`).
