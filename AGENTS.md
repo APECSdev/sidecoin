@@ -327,11 +327,19 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
 - Derive the date from the **release date**, not the commit date.
 
 > **Monotonic-install caveat.** F-Droid and Play require a strictly
-> increasing `versionCode`. An eight-digit date code is larger than any
-> earlier six- or eight-digit code from the same series
-> (`20260923 > 26050030`), so date-based codes only move forward. If a code is
-> ever *decreased*, the APK cannot install as an update over the installed
-> build — the device must uninstall first, and `adb install -r` fails.
+> increasing `versionCode` per published release. A date is monotonically
+> increasing across day, month, and year boundaries, so `YYYYMMDD` holds —
+> provided each release carries the date it ships on. The one way to break it
+> is **shipping twice in one day**: both builds would carry the same code and
+> the store would reject the second. Escape hatches, in order of preference:
+> bump to the next day, or append a same-day counter (`2026092301`, …). The
+> field is an int32 (`2147483647` max), so even a 10-digit value fits.
+>
+> This applies to *published* versions. Earlier in-tree values (`26050011`,
+> `26050030`) were never tagged or distributed, so `20260923` is the first
+> published code and has nothing to exceed. If a code is ever *decreased*
+> against an actually-installed build, the APK cannot install as an update —
+> the device must uninstall first and `adb install -r` fails.
 
 ## Committing
 
