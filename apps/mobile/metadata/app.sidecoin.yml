@@ -20,6 +20,20 @@
 #   2. `./gradlew :app:assembleFdroidRelease` succeeds from a clean checkout.
 #   3. The release APK is signed with our own key (see android/keystore.properties).
 #   4. fastlane/metadata/android/en-US/images/icon.png exists (512x512).
+#   5. The `commit:` tag below exists on the remote (git ls-remote --tags).
+#
+# VERSIONING — versionCode is 8-digit YYYYMMDD (e.g. 2026-09-23 -> 20260923).
+# Android and F-Droid require versionCode to INCREASE with every release. A
+# date is monotonically increasing across day, month, and year boundaries, so
+# this scheme holds — but ONLY if each release carries the date it ships on.
+# The one way to break it is shipping twice in a day: both builds would carry
+# the same versionCode and the store would reject the second. If that happens,
+# bump to the next day, or append a same-day counter (2026092301, ...). The
+# field is an int32, so a 10-digit value still fits (max 2147483647).
+#
+# This is the FIRST published release. Earlier build.gradle values
+# (26050011, 26050030) were local-only: no tag, no GitHub release, and no
+# distribution, so there is no published version for this one to exceed.
 
 Categories:
   - Money
