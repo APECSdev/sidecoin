@@ -28,16 +28,12 @@ jest.mock("@react-navigation/native", () => ({
   },
 }));
 
-// The camera overlay is only mounted while the scanner is open. Mock it so the
-// native camera module is never touched in tests.
-jest.mock("react-native-vision-camera", () => ({
-  Camera: () => null,
-  useCameraDevice: () => null,
-  useCameraPermission: () => ({
-    hasPermission: false,
-    requestPermission: async () => false,
-  }),
-  useCodeScanner: () => ({ codeTypes: ["qr"], onCodeScanned: () => {} }),
+// The camera overlay is only mounted while the scanner is open. It now routes
+// through the FOSS bridge (../lib/zxingScanner -> a native Activity), so stub
+// that bridge: the native module is absent in Jest.
+jest.mock("../lib/zxingScanner", () => ({
+  isQrScannerAvailable: () => false,
+  scanQrCode: async () => null,
 }));
 
 jest.mock("../keystore", () => ({

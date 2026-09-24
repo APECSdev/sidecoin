@@ -20,6 +20,19 @@
         android:supportsRtl="true"
         android:networkSecurityConfig="@xml/network_security_config">
 
+        <!--
+            FOSS QR scanner (CameraX + ZXing). Launched by the ZxingQrScanner
+            native module via startActivityForResult; hosted inside our own task
+            and never exported, so no other app can invoke it.
+        -->
+        <activity
+            android:name=".scanner.ZxingQrScannerActivity"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme"
+            android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:screenOrientation="portrait"
+            android:exported="false" />
+
         <activity
             android:name=".MainActivity"
             android:label="@string/app_name"

@@ -1,0 +1,82 @@
+# apps/mobile/metadata/app.sidecoin.yml
+#
+# F-Droid metadata draft for the Sidecoin mobile wallet.
+#
+# STATUS: DRAFT — not yet submitted. Kept in-repo so the recipe stays in sync
+# with the actual build (versionCode, flavor, and the FOSS-only guarantee).
+#
+# WHY NOT `fdroid/fdroiddata` YET:
+#   The recipe is only meaningful once the build has been proven to contain
+#   ZERO proprietary dependencies. That proof now exists for the `fdroid`
+#   flavor: the release APK's classes.dex carries no com.google.android.gms,
+#   com.google.mlkit, com.google.firebase, or androidx.credentials.playservices
+#   classes (verified with dexdump against the assembled APK). react-native-
+#   vision-camera (MLKit-bound) and react-native-passkey (play-services-
+#   credentials) were both removed; QR scanning is now our own CameraX + ZXing
+#   implementation.
+#
+# Before submitting, confirm:
+#   1. `pnpm install` is up to date and pnpm-lock.yaml is committed.
+#   2. `./gradlew :app:assembleFdroidRelease` succeeds from a clean checkout.
+#   3. The release APK is signed with our own key (see android/keystore.properties).
+#   4. fastlane/metadata/android/en-US/images/icon.png exists (512x512).
+
+Categories:
+  - Money
+  - Security
+
+License: MIT
+
+AuthorName: APECS contributors
+
+SourceCode: https://github.com/APECSdev/sidecoin
+
+IssueTracker: https://github.com/APECSdev/sidecoin/issues
+
+# WebSite / Donate omitted deliberately: no verified public project page yet.
+
+AutoName: Sidecoin
+
+# The app is a pnpm workspace member. F-Droid builds from the repo root so the
+# workspace symlinks (@sidecoin/shared, @sidecoin/api-client) resolve.
+RepoType: git
+Repo: https://github.com/APECSdev/sidecoin.git
+
+Builds:
+  # versionCode / versionName MUST match apps/mobile/android/app/build.gradle.
+  # If this drifts, F-Droid will build a different APK than the one tested.
+  - versionName: 26.9.23
+    versionCode: 20260923
+    commit: v26.9.23
+    subdir: apps/mobile/android
+    # `fdroid` is the FOSS flavor: it excludes the playstore-only Sentry
+    # dependency (see android/app/build.gradle `playstoreImplementation`).
+    gradle:
+      - fdroid
+    # Prebuild runs the React Native codegen + node module autolinking; without
+    # it Gradle cannot resolve the generated native specs.
+    prebuild: |
+      cd ../../..
+      pnpm install --frozen-lockfile
+      cd apps/mobile/android
+    ndk: 27.1.12297006
+    scandelete:
+      - node_modules
+    rm:
+      - node_modules
+
+AutoUpdateMode: Version
+UpdateCheckMode: Tags
+CurrentVersion: 26.9.23
+CurrentVersionCode: 20260923
+
+# NonFreeNet: the wallet talks to third-party hosted services that are not
+# free software and cannot be self-hosted by the user from within the app:
+#   • https://sidecoin.app/v1        (Sidecoin adapter)
+#   • https://esplora.beta.ecash.ninja   (Betanet block explorer / API)
+#   • https://esplora.signet.drivechain.info (Signet block explorer / API)
+#   • https://ecashfarm.com/v1       (ECX market price)
+#   • https://supaqt.com/v1          (Coin News feeds)
+# This is an anti-feature, not a blocker.
+AntiFeatures:
+  - NonFreeNet

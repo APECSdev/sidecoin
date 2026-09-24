@@ -104,7 +104,9 @@ export function ReceiveScreen(): React.JSX.Element {
   }, [hasKey, mnemonic, selectedNetwork, addressIndex]);
 
   const loadStored = useCallback(async () => {
-    const wallet = await loadWallet();
+    // Background read: served from the session cache after the first unlock,
+    // so focusing this screen never re-prompts for a fingerprint.
+    const wallet = await loadWallet({ authenticate: false });
     if (!wallet) return;
     setHasKey(true);
     setMnemonic(wallet.mnemonic);

@@ -219,10 +219,13 @@ export function DashboardScreen(): React.JSX.Element {
     setL1Loading(true);
     setL1Error(null);
 
-    const wallet = await loadWallet();
+    const wallet = await loadWallet({ authenticate: false });
     if (!wallet) {
       // No key yet — the L1 balance card shows a setup-required state,
-      // mirroring ReceiveView's pending state.
+      // mirroring ReceiveView's pending state. A biometric-gated wallet that
+      // has not been unlocked this session ALSO lands here; the card's
+      // setup-required copy and the session-unlock affordance in Settings
+      // both direct the user to authenticate.
       setL1Address("");
       setL1Balance(null);
       setL1Loading(false);

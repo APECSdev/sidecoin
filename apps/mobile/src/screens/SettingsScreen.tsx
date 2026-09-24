@@ -40,7 +40,14 @@ import { DEFAULT_BASE_URL } from "@sidecoin/api-client";
 import { deriveNostrIdentityKey } from "@sidecoin/shared";
 
 import { getApiBaseUrl, setApiBaseUrl } from "../api";
-import { loadWallet, setWalletNetwork, type WalletNetwork } from "../keystore";
+import {
+  getBiometricLabel,
+  isBiometricAvailable,
+  loadWallet,
+  setBiometricsEnabled,
+  setWalletNetwork,
+  type WalletNetwork,
+} from "../keystore";
 import { isDemoModeEnabled, setDemoMode } from "../demo";
 import {
   WALLET_THEMES,
@@ -88,6 +95,17 @@ export function SettingsScreen(): React.JSX.Element {
   const [networkSaved, setNetworkSaved] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
 
+  // ─── Biometric unlock ────────────────────────────────
+  // Opt-in and reversible. `biometricAvailable` is null while we probe the
+  // device, so the toggle stays disabled rather than flickering.
+  const [biometricAvailable, setBiometricAvailable] = useState<boolean | null>(null);
+  const [biometricLabel, setBiometricLabel] = useState<string | null>(null);
+  const [biometricsEnabled, setBiometricsEnabledState] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
+  const [biometricError, setBiometricError] = useState<string | null>(null);
+  const [biometricSaved, setBiometricSaved] = useState(false);
+  const biometricTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // ─── Founder Identity Key (NIP-06 Nostr key) ────────────────
   // Derived locally from the wallet mnemonic at m/44'/1237'/0'/0/0. This is the
   // canonical Founder identity: copy it here and paste it at sidecoin.app/pro.
@@ -105,6 +123,7 @@ export function SettingsScreen(): React.JSX.Element {
       if (copyTimer.current) clearTimeout(copyTimer.current);
       if (saveTimer.current) clearTimeout(saveTimer.current);
       if (networkTimer.current) clearTimeout(networkTimer.current);
+      if (biometricTimer.current) clearTimeout(biometricTimer.current);
     },
     [],
   );
@@ -125,13 +144,15 @@ export function SettingsScreen(): React.JSX.Element {
       if (cancelled) return;
 
       try {
-        const wallet = await loadWallet();
+        // Background read: no prompt. On a gated wallet that has not been
+        // unlocked this session this returns null, and the identity key simply
+        // stays hidden until the user authenticates (the biometrics switch
+        // below triggers that same prompt).
+        const wallet = await loadWallet({ authenticate: false });
         if (cancelled) return;
-        if (!wallet) {
-          setIdentityError("No wallet found. Create or import a wallet first.");
-          return;
-        }
+        if (!wallet) return;
         setSelectedNetwork(wallet.network);
+        setBiometricsEnabledState(wallet.biometricsEnabled);
         setIdentityKey(deriveNostrIdentityKey(wallet.mnemonic, 0).publicKeyHex);
       } catch (err) {
         console.error("[SettingsScreen] identity key derivation failed:", err);
@@ -143,6 +164,69 @@ export function SettingsScreen(): React.JSX.Element {
       cancelled = true;
     };
   }, []);
+
+  // ─── Biometric capability probe ───────────────────────
+  // Runs once on mount. Reports both availability and the modality name so
+  // the copy can say "fingerprint" rather than a generic "biometrics".
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const available = await isBiometricAvailable();
+      if (cancelled) return;
+      setBiometricAvailable(available);
+      setBiometricLabel(await getBiometricLabel());
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const handleBiometricsChange = useCallback(
+    async (next: boolean) => {
+      setBiometricError(null);
+      setBiometricBusy(true);
+
+      // The plaintext mnemonic is required because Android binds the
+      // access-control policy to the encryption cipher, so enabling or
+      // disabling means re-writing the item. Reading it here is a deliberate
+      // user action, so the biometric prompt (when already enabled) is expected.
+      const wallet = await loadWallet();
+      if (!wallet) {
+        setBiometricBusy(false);
+        setBiometricError("No wallet found. Create or import a wallet first.");
+        return;
+      }
+
+      try {
+        const applied = await setBiometricsEnabled(wallet.mnemonic, next);
+        if (!applied) {
+          setBiometricError(
+            "This device has no enrolled biometric. Add one in Android Settings, then try again.",
+          );
+          return;
+        }
+        setBiometricsEnabledState(next);
+        setBiometricSaved(true);
+        if (biometricTimer.current) clearTimeout(biometricTimer.current);
+        biometricTimer.current = setTimeout(
+          () => setBiometricSaved(false),
+          2000,
+        );
+      } catch (err) {
+        console.error("[SettingsScreen] biometric toggle failed:", err);
+        setBiometricError(
+          err instanceof Error
+            ? err.message
+            : "Could not update biometric protection.",
+        );
+      } finally {
+        setBiometricBusy(false);
+      }
+    },
+    [],
+  );
 
   const copyIdentityKey = useCallback(() => {
     if (!identityKey) return;
@@ -337,6 +421,44 @@ export function SettingsScreen(): React.JSX.Element {
               </Pressable>
             );
           })}
+        </View>
+      </Card>
+
+      {/* Security — biometric unlock. Opt-in, reversible, and only offered
+          when the device actually has an enrolled credential. */}
+      <Card style={styles.section} testID="biometric-settings-card">
+        <View style={styles.demoRow}>
+          <View style={styles.growShrink}>
+            <View style={styles.demoTitleRow}>
+              <Text style={styles.sectionTitle}>Biometric Unlock</Text>
+              {biometricSaved ? <Badge label="Saved ✓" tone="active" /> : null}
+            </View>
+            <Muted style={styles.hint}>
+              {biometricAvailable === false
+                ? "No biometric is enrolled on this device. Add a fingerprint or face in Android Settings to enable this."
+                : `Require your ${biometricLabel ?? "biometric"} to unlock the wallet. Your recovery phrase stays encrypted on this device; the passcode works as a fallback.`}
+            </Muted>
+            {biometricsEnabled ? (
+              <Text style={styles.demoActiveNote}>
+                Your wallet is protected by biometric unlock.
+              </Text>
+            ) : null}
+            {biometricBusy ? (
+              <Text style={styles.demoActiveNote}>Waiting for authentication…</Text>
+            ) : null}
+            {biometricError ? (
+              <Text style={styles.errorText}>{biometricError}</Text>
+            ) : null}
+          </View>
+
+          <Switch
+            accessibilityLabel="Biometric Unlock"
+            value={biometricsEnabled}
+            disabled={biometricAvailable !== true || biometricBusy}
+            onValueChange={(next) => void handleBiometricsChange(next)}
+            trackColor={{ false: GRAY[700], true: ECASH[600] }}
+            thumbColor="#ffffff"
+          />
         </View>
       </Card>
 

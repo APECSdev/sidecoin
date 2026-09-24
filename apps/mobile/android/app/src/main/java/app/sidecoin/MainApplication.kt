@@ -3,6 +3,7 @@
 package app.sidecoin
 
 import android.app.Application
+import app.sidecoin.scanner.ZxingQrScannerPackage
 import com.facebook.react.PackageList
 import com.facebook.react.ReactApplication
 import com.facebook.react.ReactHost
@@ -21,6 +22,13 @@ class MainApplication : Application(), ReactApplication {
                 PackageList(this).packages.apply {
                     // Packages that cannot be autolinked yet can be added here:
                     // add(MyCustomPackage())
+                    //
+                    // The FOSS ZXing QR scanner lives in this app (not in
+                    // node_modules), so autolinking cannot discover it — it is
+                    // registered explicitly. See scanner/ZxingQrScannerPackage.kt
+                    // for why the VisionCamera scanner could not be used in an
+                    // F-Droid build.
+                    add(ZxingQrScannerPackage())
                 }
 
             override fun getJSMainModuleName(): String = "index"

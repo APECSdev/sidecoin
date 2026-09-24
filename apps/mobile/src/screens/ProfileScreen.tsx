@@ -61,7 +61,10 @@ export function ProfileScreen(): React.JSX.Element {
 
     (async () => {
       try {
-        const wallet = await loadWallet();
+        // Background read: the profile only DISPLAYS an address, so it reads
+        // from the session cache and never prompts. Until the user unlocks
+        // once, this reports the no-wallet state rather than interrupting.
+        const wallet = await loadWallet({ authenticate: false });
         if (cancelled) return;
 
         if (!wallet) {

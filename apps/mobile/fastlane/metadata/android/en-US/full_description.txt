@@ -8,8 +8,8 @@ Features:
 • 10 sidechains at launch (Thunder, zSide, BitNames, BitAssets, Photon, Truthcoin, CoinShift, and more)
 • BIP-300 deposit and withdrawal management
 • QR code scanning for payments
-• Biometric authentication
-• SPV lightweight mode
+• Biometric unlock (one prompt per session)
+• Lightweight: talks to public Esplora nodes, no full chain download
 
 Sidecoin is free software released under the MIT license.
 No tracking, no ads, no data collection.

@@ -16,13 +16,13 @@
 //     platform keychain (encrypted at rest) and defaults to betanet.
 //   • The checkbox is a pressable row (RN has no <input type="checkbox">).
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { generateMnemonic, validateMnemonic } from "@sidecoin/shared";
 
-import { saveWallet } from "../keystore";
+import { getBiometricLabel, isBiometricAvailable, saveWallet } from "../keystore";
 import type { RootStackParamList } from "../navigation/types";
 import { ECASH, GRAY, SC } from "../theme/colors";
 import { Alert, Body, Button, Card, Field, Title } from "../components/ui";
@@ -50,6 +50,29 @@ export function OnboardingScreen(): React.JSX.Element {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // ─── Biometric opt-in ───────────────────────────────
+  // ON by default (the product default), and only offered when the device has
+  // an enrolled credential. The user can turn it off here; Settings exposes the
+  // same switch later, so the choice is reversible.
+  const [biometricOptIn, setBiometricOptIn] = useState(true);
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricLabel, setBiometricLabel] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const available = await isBiometricAvailable();
+      if (cancelled) return;
+      setBiometricAvailable(available);
+      setBiometricLabel(await getBiometricLabel());
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   function startGenerate(): void {
     setGenerated(generateMnemonic(128));
     setSavedConfirmed(false);
@@ -60,7 +83,7 @@ export function OnboardingScreen(): React.JSX.Element {
     if (busy) return;
     setBusy(true);
     try {
-      await saveWallet(mnemonic);
+      await saveWallet(mnemonic, biometricOptIn);
       navigation.replace("main");
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -126,6 +149,27 @@ export function OnboardingScreen(): React.JSX.Element {
             </Text>
           </Pressable>
 
+          {/* Biometric opt-in — only rendered when the device can honor it. */}
+          {biometricAvailable ? (
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: biometricOptIn }}
+              accessibilityLabel="Enable biometric unlock"
+              onPress={() => setBiometricOptIn((v) => !v)}
+              style={styles.checkRow}
+              testID="biometric-opt-in"
+            >
+              <View
+                style={[styles.checkbox, biometricOptIn ? styles.checkboxOn : null]}
+              >
+                {biometricOptIn ? <Text style={styles.checkmark}>✓</Text> : null}
+              </View>
+              <Text style={styles.checkLabel}>
+                Protect this wallet with my {biometricLabel ?? "biometric"}.
+              </Text>
+            </Pressable>
+          ) : null}
+
           <View style={styles.row}>
             <Button
               label="Back"
@@ -155,6 +199,27 @@ export function OnboardingScreen(): React.JSX.Element {
           />
           {imported && !importValid ? (
             <Text style={styles.invalid}>Not a valid BIP-39 phrase.</Text>
+          ) : null}
+
+          {/* Biometric opt-in — only rendered when the device can honor it. */}
+          {biometricAvailable ? (
+            <Pressable
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: biometricOptIn }}
+              accessibilityLabel="Enable biometric unlock"
+              onPress={() => setBiometricOptIn((v) => !v)}
+              style={styles.checkRow}
+              testID="biometric-opt-in"
+            >
+              <View
+                style={[styles.checkbox, biometricOptIn ? styles.checkboxOn : null]}
+              >
+                {biometricOptIn ? <Text style={styles.checkmark}>✓</Text> : null}
+              </View>
+              <Text style={styles.checkLabel}>
+                Protect this wallet with my {biometricLabel ?? "biometric"}.
+              </Text>
+            </Pressable>
           ) : null}
 
           <View style={styles.row}>

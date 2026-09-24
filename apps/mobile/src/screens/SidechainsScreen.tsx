@@ -173,7 +173,10 @@ export function SidechainsScreen(): React.JSX.Element {
     let cancelled = false;
 
     (async () => {
-      const wallet = await loadWallet();
+      // Background read: this screen only DISPLAYS derived addresses, so it is
+      // served from the session cache and never prompts. Addresses stay hidden
+      // until the user unlocks once, rather than prompting on every mount.
+      const wallet = await loadWallet({ authenticate: false });
       if (cancelled) return;
       if (wallet) {
         try {

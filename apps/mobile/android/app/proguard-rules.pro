@@ -43,6 +43,28 @@
 -keep class com.reactnativecommunity.webview.** { *; }
 -dontwarn com.reactnativecommunity.webview.**
 
+# ─── FOSS QR scanner (CameraX + ZXing) ──────────────────────────────────
+#
+# ZxingQrScannerModule is reached only through React Native's module registry:
+# MainApplication.getPackages() calls add(ZxingQrScannerPackage()), which
+# constructs the module by class name and then looks it up by the string
+# returned from getName() ("ZxingQrScanner"). R8 sees no direct call site and
+# can otherwise rename or strip the module and the codegen'd Package wrapper,
+# which surfaces only in a release build as a silently missing scanner.
+#
+# ZXing's decoder is pure reflection-free Java, but its DecodeHintType keys are
+# read by name from the hints map, so keep the core too.
+-keep class app.sidecoin.scanner.** { *; }
+-keep class com.google.zxing.** { *; }
+-keep class androidx.camera.** { *; }
+-dontwarn androidx.camera.**
+-dontwarn com.google.zxing.**
+
+# MainApplication is instantiated by the Android framework from the manifest
+# (android:name=".MainApplication"), not by any Kotlin call site.
+-keep class app.sidecoin.MainApplication { *; }
+-keep class app.sidecoin.MainActivity { *; }
+
 # OkHttp (used by RN networking)
 -dontwarn okhttp3.**
 -dontwarn okio.**

@@ -27,6 +27,14 @@ jest.mock("../keystore", () => ({
   saveWallet: jest.fn(async () => undefined),
   setWalletNetwork: jest.fn(async () => undefined),
   clearWallet: jest.fn(async () => undefined),
+  // Biometric API added for the opt-in unlock feature. The App shell mounts
+  // SettingsScreen and OnboardingScreen, both of which probe capability on
+  // mount, so these must exist even though the shell does not exercise them.
+  isBiometricAvailable: jest.fn(async () => false),
+  getBiometricLabel: jest.fn(async () => null),
+  setBiometricsEnabled: jest.fn(async () => true),
+  clearSession: jest.fn(),
+  isSessionUnlocked: jest.fn(() => false),
 }));
 
 import { hasWallet } from "../keystore";
@@ -83,16 +91,12 @@ jest.mock("../api", () => {
 // Instead, use require() inline inside each factory.
 // ---------------------------------------------------------------------------
 
-// react-native-vision-camera — the QR scanner module is imported (though not
-// mounted) via the Send screen, and the native module is absent in Jest.
-jest.mock("react-native-vision-camera", () => ({
-  Camera: () => null,
-  useCameraDevice: () => null,
-  useCameraPermission: () => ({
-    hasPermission: false,
-    requestPermission: async () => false,
-  }),
-  useCodeScanner: () => ({ codeTypes: ["qr"], onCodeScanned: () => {} }),
+// The QR scanner is now the FOSS bridge (../lib/zxingScanner -> a native
+// Activity). It is imported (though not launched) via the Send screen, so stub
+// it here: the native module is absent in Jest.
+jest.mock("../lib/zxingScanner", () => ({
+  isQrScannerAvailable: () => false,
+  scanQrCode: async () => null,
 }));
 
 // react-native-gesture-handler

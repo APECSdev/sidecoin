@@ -132,6 +132,24 @@ dependencies {
 
     // Sentry — playstore builds only (excluded from F-Droid)
     playstoreImplementation 'io.sentry:sentry-android:7.14.0'
+
+    // ─── FOSS QR scanner (CameraX + ZXing) ────────────────────────────────
+    // Replaces react-native-vision-camera, whose Kotlin core hard-imports
+    // Google MLKit (com.google.mlkit.vision.barcode) in CameraSession.kt and
+    // CameraView.kt — there is no GMS-free mode, so an F-Droid build cannot
+    // use it. Both of these are Apache-2.0 and ship no proprietary code.
+    //
+    // camera-core         — camera abstraction + lifecycle binding
+    // camera-camera2      — the Camera2 backend
+    // camera-lifecycle    — LifecycleOwner binding used by bindToLifecycle
+    // camera-view         — PreviewView surface
+    // zxing core          — pure-Java QR decode (no android dependency)
+    def cameraxVersion = "1.4.2"
+    implementation "androidx.camera:camera-core:$cameraxVersion"
+    implementation "androidx.camera:camera-camera2:$cameraxVersion"
+    implementation "androidx.camera:camera-lifecycle:$cameraxVersion"
+    implementation "androidx.camera:camera-view:$cameraxVersion"
+    implementation "com.google.zxing:core:3.5.3"
 }
 
 /**
