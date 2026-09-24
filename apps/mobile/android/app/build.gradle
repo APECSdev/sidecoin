@@ -110,9 +110,18 @@ android {
             signingConfig signingConfigs.debug
         }
         release {
-            // Fall back to the debug key when no keystore.properties is present
-            // (e.g. a fresh clone) so the build still succeeds.
-            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : signingConfigs.debug
+            // Attach our release signer ONLY when keystore.properties exists.
+            //
+            // F-Droid rebuilds from source and signs with ITS OWN key, so a
+            // clean checkout must build with no keystore present. Both
+            // keystore.properties and app/debug.keystore are gitignored, so a
+            // fresh clone has NEITHER — and the previous fallback to
+            // signingConfigs.debug pointed at the missing debug.keystore,
+            // failing :app:validateSigningFdroidRelease. Leaving the config
+            // null makes Gradle emit `*-unsigned.apk` instead, which is what
+            // a from-source builder wants. Our own hosts still get a signed
+            // APK because we keep keystore.properties locally.
+            signingConfig keystorePropertiesFile.exists() ? signingConfigs.release : null
             minifyEnabled enableProguardInReleaseBuilds
             shrinkResources enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
