@@ -17,6 +17,8 @@
 import React from "react";
 import {
   ActivityIndicator,
+  Animated,
+  Easing,
   ScrollView,
   StyleSheet,
   Text,
@@ -364,6 +366,158 @@ export function Loading({ label = "Loading…" }: { label?: string }): React.JSX
   );
 }
 
+// ──────────────────────────────────────────────────────
+// Skeletons — placeholder shapes for remote data.
+//
+// These replace "Loading …" text while a query is in flight. A pulsing block
+// reads as "content is coming" and keeps the layout from jumping when the data
+// lands, which matters most on the Dashboard (the first screen after unlock)
+// where three independent reads — L1 balance, market price, platform activity —
+// resolve at different times.
+//
+// The pulse is a single shared Animated.Value loop. Every Skeleton on screen
+// shares one timer rather than each driving its own, and the animation stops
+// when the component unmounts so nothing keeps ticking in the background.
+// ──────────────────────────────────────────────────────
+export interface SkeletonProps {
+  /** Block width in dp, or a percentage string. Defaults to "100%". */
+  width?: number | `${number}%`;
+  /** Block height in dp. Defaults to 16. */
+  height?: number;
+  /** Corner radius. Defaults to 8; pass 9999 for a pill. */
+  radius?: number;
+  style?: StyleProp<ViewStyle>;
+  testID?: string;
+}
+
+/**
+ * One pulsing placeholder block.
+ *
+ * The pulse is driven by React Native's Animated API with native driver
+ * enabled, so the opacity loop runs on the UI thread and does not stutter
+ * while JS is busy decoding a query result.
+ */
+export function Skeleton({
+  width = "100%",
+  height = 16,
+  radius = 8,
+  style,
+  testID,
+}: SkeletonProps): React.JSX.Element {
+  const pulse = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulse, {
+          toValue: 1,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulse, {
+          toValue: 0,
+          duration: 700,
+          easing: Easing.inOut(Easing.ease),
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [pulse]);
+
+  // 0.35 -> 0.75 opacity keeps the block visible on the dark surface without
+  // flashing as brightly as real text would.
+  const opacity = pulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 0.75],
+  });
+
+  return (
+    <Animated.View
+      testID={testID}
+      accessibilityElementsHidden
+      importantForAccessibility="no-hide-descendants"
+      style={[
+        styles.skeleton,
+        { width, height, borderRadius: radius, opacity },
+        style,
+      ]}
+    />
+  );
+}
+
+/**
+ * A stack of skeleton lines, e.g. for a loading paragraph or a list of rows.
+ *
+ * `lines` defaults to 3 and the last line is rendered at 60% width, which
+ * mimics how a real paragraph ends mid-measure rather than on a hard edge.
+ */
+export function SkeletonText({
+  lines = 3,
+  height = 12,
+  gap = 8,
+  testID,
+}: {
+  lines?: number;
+  height?: number;
+  gap?: number;
+  testID?: string;
+}): React.JSX.Element {
+  return (
+    <View testID={testID} style={{ gap }}>
+      {Array.from({ length: lines }).map((_, index) => (
+        <Skeleton
+          key={index}
+          height={height}
+          width={index === lines - 1 ? "60%" : "100%"}
+        />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * A skeleton shaped like a <StatTile>: eyebrow line, then a large value line.
+ * Used in the Dashboard's balance/market cards so the card does not resize
+ * when the real numbers arrive.
+ */
+export function SkeletonStat({
+  label = true,
+  testID,
+}: {
+  label?: boolean;
+  testID?: string;
+}): React.JSX.Element {
+  return (
+    <View testID={testID} style={styles.skeletonStat}>
+      <Skeleton width="40%" height={12} />
+      {label ? <Skeleton width="65%" height={28} radius={10} /> : null}
+    </View>
+  );
+}
+
+/**
+ * A skeleton shaped like a <Card> containing a header row and optional lines.
+ * This is the generic "list row is loading" placeholder used by Feed,
+ * Explore, Markets, and the platform grid.
+ */
+export function SkeletonCard({
+  lines = 2,
+  testID,
+}: {
+  lines?: number;
+  testID?: string;
+}): React.JSX.Element {
+  return (
+    <Card testID={testID} style={styles.skeletonCard}>
+      <Skeleton width="55%" height={14} />
+      <SkeletonText lines={lines} height={12} />
+    </Card>
+  );
+}
+
 /** A key/value row used across detail panels (`flex justify-between`). */
 export function DetailRow({
   label,
@@ -560,6 +714,18 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 10,
     paddingVertical: 12,
+  },
+  // Skeleton placeholder block. Colour is a mid-gray so it reads as a void on
+  // the near-black surface without looking like real text; the pulsing opacity
+  // is applied inline (see the Skeleton component).
+  skeleton: {
+    backgroundColor: GRAY[700],
+  },
+  skeletonStat: {
+    gap: 10,
+  },
+  skeletonCard: {
+    gap: 12,
   },
   detailRow: {
     flexDirection: "row",

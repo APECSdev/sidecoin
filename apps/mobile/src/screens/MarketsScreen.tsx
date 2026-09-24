@@ -28,8 +28,8 @@ import {
   Button,
   Card,
   Eyebrow,
-  Loading,
   Muted,
+  Skeleton,
   Title,
 } from "../components/ui";
 
@@ -91,7 +91,14 @@ export function MarketsScreen(): React.JSX.Element {
         </View>
 
         {loading ? (
-          <Loading label="Loading live market price…" />
+          // Skeleton shaped like the price block (label + big number + meta)
+          // rather than a spinner, so the card keeps its height while the
+          // eCash Farm request is in flight.
+          <View testID="markets-skeleton" style={styles.marketSkeleton}>
+            <Skeleton width="45%" height={30} radius={10} />
+            <Skeleton width="60%" height={12} />
+            <Skeleton width="35%" height={12} />
+          </View>
         ) : error ? (
           <Alert tone="warning" style={styles.errorBox}>
             <Text style={styles.errorText}>{error}</Text>
@@ -193,6 +200,10 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: "900",
     color: "#ffffff",
+  },
+  marketSkeleton: {
+    marginTop: 20,
+    gap: 10,
   },
   errorBox: {
     marginTop: 20,

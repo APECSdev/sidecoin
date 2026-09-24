@@ -43,9 +43,9 @@ import {
   Button,
   Card,
   Eyebrow,
-  Loading,
   Mono,
   Muted,
+  SkeletonCard,
   Title,
 } from "../components/ui";
 
@@ -307,7 +307,14 @@ export function SidechainsScreen(): React.JSX.Element {
       ) : null}
 
       {loading ? (
-        <Loading label="Loading platforms…" />
+        // Skeleton platform cards matching the real grid shape, so the list
+        // does not jump when the registry resolves.
+        <View testID="platforms-skeleton" style={styles.grid}>
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={3} />
+          <SkeletonCard lines={2} />
+        </View>
       ) : error ? (
         <Alert tone="error" title="Error loading platforms">
           <Text style={styles.loadErrorText}>{error}</Text>

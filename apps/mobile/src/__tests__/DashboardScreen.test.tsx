@@ -491,6 +491,53 @@ describe("DashboardScreen", () => {
     expect(screen.getAllByText("eCash").length).toBeGreaterThan(0);
   });
 
+  it("should show a balance skeleton while the L1 balance is in flight", async () => {
+    // A promise that never settles keeps the card in its loading state, which
+    // is the only way to observe the skeleton (the default mocks resolve on
+    // the next microtask).
+    mockLoadWallet.mockResolvedValue({
+      mnemonic: VALID_12,
+      network: "betanet",
+      createdAt: 1787320000000,
+      version: 1,
+    });
+    mockGetL1Balance.mockReturnValue(new Promise(() => {}));
+    render(<DashboardScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-balance-skeleton")).toBeTruthy();
+    });
+    // The old plain-text placeholder must be gone, or the skeleton is additive.
+    expect(screen.queryByText("Loading balance…")).toBeNull();
+  });
+
+  it("should replace the balance skeleton once the balance resolves", async () => {
+    mockLoadWallet.mockResolvedValue({
+      mnemonic: VALID_12,
+      network: "betanet",
+      createdAt: 1787320000000,
+      version: 1,
+    });
+    mockGetL1Balance.mockResolvedValue(chainBalance(133700000n, true));
+    render(<DashboardScreen />);
+
+    // The real balance lands and the placeholder is torn down.
+    await waitFor(() => {
+      expect(screen.getAllByText(/1\.337/).length).toBeGreaterThan(0);
+    });
+    expect(screen.queryByTestId("dashboard-balance-skeleton")).toBeNull();
+  });
+
+  it("should show a market skeleton while the price is in flight", async () => {
+    mockGetMarketPrice.mockReturnValue(new Promise(() => {}));
+    render(<DashboardScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("dashboard-market-skeleton")).toBeTruthy();
+    });
+    expect(screen.queryByText("Loading market price…")).toBeNull();
+  });
+
   it("should show a not-yet-indexed note when the address is unseen", async () => {
     mockLoadWallet.mockResolvedValue({
       mnemonic: VALID_12,

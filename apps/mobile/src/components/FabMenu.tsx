@@ -48,15 +48,25 @@ interface FabAction {
 
 /**
  * Menu order, top-to-bottom as rendered. Send/Receive/Settings were the three
- * destinations removed from the tab bar; Scan QR is the added scanner entry.
+ * destinations removed from the tab bar; Scan is the added scanner entry.
  */
 const FAB_ACTIONS: FabAction[] = [
   { icon: "send", label: "Send", route: "send", actionId: "send" },
   { icon: "qr-code", label: "Receive", route: "receive", actionId: "receive" },
   { icon: "person", label: "Profile", route: "profile", actionId: "profile" },
   { icon: "settings", label: "Settings", route: "settings", actionId: "settings" },
-  { icon: "qr-code-scanner", label: "Scan QR", route: "qr-scan", actionId: "scan" },
+  { icon: "qr-code-scanner", label: "Scan", route: "qr-scan", actionId: "scan" },
 ];
+
+/**
+ * Gap from the FAB's bottom/right edge to the screen edge, in dp.
+ *
+ * Material 3 specifies a 16dp margin for a FAB at rest, but on a tall phone
+ * that reads as "stuck in the corner" — the thumb has to reach all the way
+ * down past the tab bar. 24dp lifts it clear of the corner while staying
+ * inside the standard 16-24dp band.
+ */
+const FAB_EDGE_MARGIN = 24;
 
 export interface FabMenuProps {
   /**
@@ -142,7 +152,9 @@ const styles = StyleSheet.create({
   },
   container: {
     position: "absolute",
-    right: 16,
+    // Right edge = FAB_EDGE_MARGIN, so the button clears the corner on both
+    // the tab shell and stacked screens.
+    right: FAB_EDGE_MARGIN,
     alignItems: "flex-end",
     gap: 12,
   },

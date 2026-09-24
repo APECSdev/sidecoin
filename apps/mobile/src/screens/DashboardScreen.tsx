@@ -58,7 +58,7 @@ import { canAccessPlatform, isProPlatform } from "../entitlements";
 import { getPlatformById } from "../data/platforms";
 import { CoinNewsPreview } from "../components/bitnames/CoinNewsPreview";
 import { ECASH, GRAY } from "../theme/colors";
-import { Badge, Button, Card, Eyebrow, Muted, Title } from "../components/ui";
+import { Badge, Button, Card, Eyebrow, Muted, Skeleton, Title } from "../components/ui";
 import type { RootStackParamList, TabParamList } from "../navigation/types";
 
 interface ChainRow {
@@ -371,7 +371,13 @@ export function DashboardScreen(): React.JSX.Element {
             </View>
 
             {l1Loading ? (
-              <Text style={styles.loadingText}>Loading balance…</Text>
+              // Skeleton rather than text: the card's real content is a large
+              // balance line plus an address, so reserving that space stops
+              // the card from resizing when the balance lands.
+              <View testID="dashboard-balance-skeleton" style={styles.l1Skeleton}>
+                <Skeleton width="55%" height={30} radius={10} />
+                <Skeleton width="85%" height={12} />
+              </View>
             ) : l1Error ? (
               <View style={styles.errorBlockRed}>
                 <Text style={styles.errorTextRed}>{l1Error}</Text>
@@ -421,7 +427,10 @@ export function DashboardScreen(): React.JSX.Element {
             </View>
 
             {marketLoading ? (
-              <Text style={styles.loadingText}>Loading market price…</Text>
+              <View testID="dashboard-market-skeleton" style={styles.l1Skeleton}>
+                <Skeleton width="50%" height={30} radius={10} />
+                <Skeleton width="40%" height={12} />
+              </View>
             ) : marketError ? (
               <View style={styles.errorBlockYellow}>
                 <Text style={styles.errorTextYellow}>{marketError}</Text>
@@ -448,9 +457,16 @@ export function DashboardScreen(): React.JSX.Element {
             )}
           </Card>
 
-          {/* Loading state */}
+          {/* Loading state — platform activity is a card of numbers, so the
+              skeleton mirrors that shape instead of a bare text line. */}
           {loading ? (
-            <Text style={styles.loadingText}>Loading platform activity…</Text>
+            <Card testID="dashboard-activity-skeleton" style={styles.balanceCard}>
+              <Skeleton width="45%" height={12} />
+              <View style={styles.l1Skeleton}>
+                <Skeleton width="60%" height={30} radius={10} />
+                <Skeleton width="70%" height={12} />
+              </View>
+            </Card>
           ) : error ? (
             <View style={styles.errorBlockRed}>
               <Text style={styles.errorTitle}>Error loading dashboard</Text>
@@ -657,6 +673,12 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 8,
     color: GRAY[400],
+  },
+  // Stacked skeleton lines inside a card. `marginTop` matches the spacing the
+  // real value used so the card height does not jump on load.
+  l1Skeleton: {
+    marginTop: 8,
+    gap: 10,
   },
   errorBlockRed: {
     marginTop: 8,

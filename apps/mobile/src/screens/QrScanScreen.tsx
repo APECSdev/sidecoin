@@ -1,6 +1,6 @@
 // apps/mobile/src/screens/QrScanScreen.tsx
 //
-// Standalone QR-code scanner screen — the FAB menu's "Scan QR" action.
+// Standalone QR-code scanner screen — the FAB menu's "Scan" action.
 //
 // Before this screen existed, the only way to reach a QR scan was inline from
 // SendScreen (its own "Scan" button toggles a full-screen Modal wrapping the

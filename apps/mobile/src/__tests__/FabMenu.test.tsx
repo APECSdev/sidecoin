@@ -32,13 +32,34 @@ describe("FabMenu", () => {
     expect(screen.queryByTestId("fab-action-send")).toBeNull();
   });
 
-  it("exposes Send, Receive, Profile, Settings and Scan QR once opened", () => {
+  it("exposes Send, Receive, Profile, Settings and Scan once opened", () => {
     render(<FabMenu bottomOffset={100} />);
     fireEvent.press(screen.getByTestId("fab-toggle"));
 
     for (const id of ["send", "receive", "profile", "settings", "scan"]) {
       expect(screen.getByTestId(`fab-action-${id}`)).toBeTruthy();
     }
+  });
+
+  it("labels the scanner action \"Scan\", not \"Scan QR\"", () => {
+    render(<FabMenu bottomOffset={100} />);
+    fireEvent.press(screen.getByTestId("fab-toggle"));
+
+    // The shortened label is a deliberate UX decision; the longer one must
+    // not creep back in.
+    expect(screen.getByText("Scan")).toBeTruthy();
+    expect(screen.queryByText("Scan QR")).toBeNull();
+  });
+
+  it("insets the container 24dp from the right edge", () => {
+    render(<FabMenu bottomOffset={100} />);
+
+    // The FAB must sit off the screen corner. 24dp is the documented
+    // FAB_EDGE_MARGIN; a regression to the old 16dp, or to 0, would pin it
+    // against the edge.
+    const style = screen.getByTestId("fab-container").props.style;
+    const flat = Array.isArray(style) ? Object.assign({}, ...style) : style;
+    expect(flat.right).toBe(24);
   });
 
   it.each([

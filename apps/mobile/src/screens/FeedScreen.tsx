@@ -32,6 +32,7 @@ import {
   Mono,
   Muted,
   Screen,
+  SkeletonCard,
   Subtitle,
   Title,
 } from "../components/ui";
@@ -198,7 +199,12 @@ export function FeedScreen(): React.JSX.Element {
       </Muted>
 
       {newsLoading ? (
-        <Muted style={styles.loadingText}>Loading live Coin News posts…</Muted>
+        // Skeleton rows that mirror the feed card shape, so the list does not
+        // reflow when the Coin News posts land.
+        <View testID="feed-skeleton" style={styles.list}>
+          <SkeletonCard lines={2} />
+          <SkeletonCard lines={3} />
+        </View>
       ) : newsError ? (
         <Muted style={styles.warningText}>{newsError}</Muted>
       ) : null}
@@ -251,11 +257,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
   },
-  loadingText: {
-    marginTop: 12,
-    fontSize: 12,
-    color: GRAY[500],
-  },
+
   warningText: {
     marginTop: 12,
     fontSize: 12,

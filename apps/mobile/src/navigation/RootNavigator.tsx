@@ -171,7 +171,7 @@ function MainTabs(): React.JSX.Element {
        * `bottomOffset` accounts for the Android navigation bar inset and the
        * measured tab bar so the FAB never overlaps the four tabs.
        */}
-      <FabMenu bottomOffset={insets.bottom + tabBarHeight + 16} />
+      <FabMenu bottomOffset={insets.bottom + tabBarHeight + 24} />
     </View>
   );
 }
@@ -321,7 +321,7 @@ export function RootNavigator(): React.JSX.Element {
        * Hidden on FAB_HIDDEN_ROUTES — see the constant's doc comment.
        */}
       {!FAB_HIDDEN_ROUTES.includes(stackRoute) ? (
-        <FabMenu bottomOffset={insets.bottom + 16} />
+        <FabMenu bottomOffset={insets.bottom + 24} />
       ) : null}
     </>
   );
