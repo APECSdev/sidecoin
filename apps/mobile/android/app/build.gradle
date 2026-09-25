@@ -54,6 +54,32 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
+// ─── Reproducible builds: strip machine-specific paths from native libs ─────
+//
+// :app compiles React Native's generated codegen libraries plus appmodules, and
+// those objects embed absolute source paths through __FILE__ — either the
+// monorepo checkout path or the Gradle cache path under the build user's home.
+// Those paths differ per machine, so two builds of the same commit produce
+// different .so bytes, a different APK, and a hash F-Droid cannot match against
+// its own build. That mismatch is what blocks publishing an APK signed with our
+// own key.
+//
+// The mappings themselves are defined once in the root build.gradle as
+// ext.reproCmakeFlags (see the long comment there), together with the autolinked
+// library coverage. For :app they must be applied from finalizeDsl rather than
+// from the root script: ReactPlugin registers its own finalizeDsl callback to
+// configure the new-architecture native build, and AGP runs those callbacks
+// after the android {} block has been evaluated — so anything set earlier is
+// discarded. androidComponents {} is declared after the com.facebook.react
+// plugin is applied at the top of this file, which makes this callback run last.
+// Verified: the mappings appear 130 times in the generated build.ninja per ABI.
+androidComponents {
+    finalizeDsl { ext ->
+        ext.defaultConfig.externalNativeBuild.cmake.cppFlags(*rootProject.ext.reproCmakeFlags)
+        ext.defaultConfig.externalNativeBuild.cmake.cFlags(*rootProject.ext.reproCmakeFlags)
+    }
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion

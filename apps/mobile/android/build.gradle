@@ -1,4 +1,4 @@
-// packages/mobile/android/build.gradle
+// apps/mobile/android/build.gradle
 
 buildscript {
     ext {
@@ -22,4 +22,84 @@ buildscript {
     }
 }
 
+// ─── Reproducible builds: strip machine-specific paths from native libs ─────
+//
+// Compiled C/C++ objects embed the absolute path of each source file through
+// __FILE__ (assertions and LOG_* macros). Those paths differ per build machine,
+// so two builds of the same commit emit different .so bytes, therefore a
+// different APK, therefore a hash F-Droid cannot match against a build of its
+// own — which is the blocker for publishing an APK signed with OUR key.
+//
+// F-Droid's own guide (docs/Reproducible_Builds) prescribes -ffile-prefix-map
+// for exactly this. It must be injected into every Android subproject rather
+// than app/ alone: the offending paths come from third-party modules
+// (react-native-skia, react-native-quick-crypto, react-native-screens) and
+// from React Native's generated codegen, whose CMake invocations are driven by
+// their own build.gradle files.
+//
+// Prefixes actually observed in the release APK, and what each maps to:
+//   <repo root>/apps/mobile/node_modules/...   ->  ./
+//   <android root>/...                         ->  ./
+//   <gradle user home>/caches/.../...          ->  .gradle-home/
+//
+// ${gradle.gradleUserHomeDir} is resolved when Gradle configures this script,
+// so the third flag is correct on any machine — F-Droid builds as a different
+// user (historically `vagrant`) in a different home directory.
+//
+// The order of these flags does not affect the result: clang resolves the
+// most specific (longest) matching prefix, so an Android-root path is claimed
+// by the rootDir rule whichever order the two appear in. Verified by compiling
+// the same file with both orderings and diffing the embedded strings.
+//
+// This block MUST stay above `apply plugin: "com.facebook.react.rootproject"`
+// below. That apply eagerly evaluates the :app build script, and :app reads
+// rootProject.ext.reproCmakeFlags while it is being configured — defining the
+// property afterwards fails with "Cannot get property 'reproCmakeFlags' on
+// extra properties extension as it does not exist".
+def _repoRoot = rootDir.parentFile?.parentFile?.parentFile
+ext.reproCmakeFlags = [
+    "-ffile-prefix-map=${rootDir}=.",
+    "-ffile-prefix-map=${_repoRoot}=.",
+    "-ffile-prefix-map=${gradle.gradleUserHomeDir}=.gradle-home",
+]
+def _reproFlags = ext.reproCmakeFlags
+
 apply plugin: "com.facebook.react.rootproject"
+
+
+// plugins.withId fires while the plugin is applied, i.e. before the module's own
+// android {} block runs. The module's later cppFlags/cFlags calls APPEND (the
+// AGP DSL exposes them as additive lists), so our mappings survive and both
+// sets of flags reach CMake. Verified across every autolinked native subproject
+// that compiles C/C++ (18 of them at the time of writing).
+//
+// :app is the exception, and it is the project that matters most: it is the one
+// that compiles React Native's generated codegen libraries
+// (react_codegen_rnscreens, react_codegen_rnsvg, react_codegen_safeareacontext)
+// plus appmodules. Setting cppFlags here for :app has NO effect on the generated
+// build.ninja — verified, zero occurrences of the flag after a full reconfigure.
+//
+// ReactPlugin applies its own ApplicationAndroidComponentsExtension.finalizeDsl
+// callback (ReactPlugin.kt:73 -> configureReactNativeNdk ->
+// NdkConfiguratorUtils.kt:20-68) to set up the new-architecture native build.
+// AGP runs finalizeDsl AFTER the module's android {} block has been evaluated,
+// and that ordering is what discards anything :app set earlier. Registering a
+// second finalizeDsl from this root script does NOT run either — also verified
+// empirically, the callback was never invoked.
+//
+// app/build.gradle therefore registers its own finalizeDsl (inside
+// androidComponents {}), which runs after ReactPlugin's because the React plugin
+// is applied earlier in that file. That path is verified to work: the mappings
+// appear 130 times in the generated build.ninja for each ABI. The flag list
+// itself stays defined here once, as reproCmakeFlags, so there is a single
+// source of truth for both consumers.
+subprojects { sp ->
+    def applyReproFlags = {
+        def androidExt = sp.extensions.findByName("android")
+        if (androidExt != null) {
+            androidExt.defaultConfig.externalNativeBuild.cmake.cppFlags(*_reproFlags)
+            androidExt.defaultConfig.externalNativeBuild.cmake.cFlags(*_reproFlags)
+        }
+    }
+    sp.plugins.withId("com.android.library") { applyReproFlags() }
+}
