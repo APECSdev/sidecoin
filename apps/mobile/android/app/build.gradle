@@ -73,10 +73,21 @@ if (keystorePropertiesFile.exists()) {
 // discarded. androidComponents {} is declared after the com.facebook.react
 // plugin is applied at the top of this file, which makes this callback run last.
 // Verified: the mappings appear 130 times in the generated build.ninja per ABI.
+//
+// The linker arguments carry the second half of the fix. -ffile-prefix-map only
+// rewrites fixed leading prefixes, so it cannot reach the AGP-derived .cxx hash
+// directory that varies by checkout path and lands in DWARF as DW_AT_comp_dir.
+// That varying debug data feeds -Wl,--build-id=sha1, and .note.gnu.build-id
+// survives stripping, so the shipped .so differed by exactly 20 bytes between two
+// builds of the same commit. Passing -Wl,--build-id=none drops the content-derived
+// note, which removes the dependence. See the long explanation in the root
+// build.gradle for the measurements behind this.
 androidComponents {
     finalizeDsl { ext ->
-        ext.defaultConfig.externalNativeBuild.cmake.cppFlags(*rootProject.ext.reproCmakeFlags)
-        ext.defaultConfig.externalNativeBuild.cmake.cFlags(*rootProject.ext.reproCmakeFlags)
+        def cmake = ext.defaultConfig.externalNativeBuild.cmake
+        cmake.cppFlags(*rootProject.ext.reproCmakeFlags)
+        cmake.cFlags(*rootProject.ext.reproCmakeFlags)
+        cmake.arguments(*rootProject.ext.reproCmakeArguments)
     }
 }
 

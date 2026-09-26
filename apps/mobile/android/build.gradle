@@ -56,13 +56,52 @@ buildscript {
 // rootProject.ext.reproCmakeFlags while it is being configured — defining the
 // property afterwards fails with "Cannot get property 'reproCmakeFlags' on
 // extra properties extension as it does not exist".
+//
+// ─── Why -ffile-prefix-map alone is NOT enough ──────────────────────────────
+//
+// AGP names each native build directory .cxx/<buildType>/<hash>/<abi>, where
+// <hash> is computed from the absolute configure path (see the hash_key.txt AGP
+// writes next to it, whose own header claims it "should not depend on the
+// absolute path of the project itself" — it does: -H<abs path>, the output
+// directories and -DREACT_NATIVE_DIR all embed the checkout path).
+//
+// That <hash> is appended to every compilation directory, so it lands in DWARF
+// as DW_AT_comp_dir. -ffile-prefix-map rewrites a fixed leading prefix; it maps
+// the leading part of the path to "." but cannot touch the trailing <hash>,
+// which is varying data rather than a prefix. Observed concrete values for the
+// same module built from two checkouts:
+//     ./node_modules/.../android/.cxx/RelWithDebInfo/443n462c/arm64-v8a
+//     ./node_modules/.../android/.cxx/RelWithDebInfo/403s1624/arm64-v8a
+//
+// The linker then hashes the whole linked image (NDK passes -Wl,--build-id=sha1)
+// into .note.gnu.build-id. Stripping removes .debug_* but keeps that note, so the
+// shipped .so differs from the other build by exactly those 20 bytes — enough to
+// invalidate the APK signature and defeat apksigcopier. Confirmed by diffing the
+// two APKs: 44 of 985 entries differed, each .so by 20 bytes at offset 0x2e0,
+// entirely inside .note.gnu.build-id.
+//
+// -Wl,--build-id=none removes the content-derived note entirely, which removes
+// the dependence on the .cxx hash. Verified by compiling the same source from two
+// directories whose only difference was the trailing hash segment: with
+// --build-id=sha1 the stripped objects hashed 10615a7e... and aea2541e..., with
+// --build-id=none both hashed 4940f3e7... — byte-identical.
+//
+// These are LINKER flags, so they go to cmake.arguments (CMAKE_EXE_LINKER_FLAGS /
+// CMAKE_SHARED_LINKER_FLAGS) rather than the cppFlags/cFlags used for the
+// -ffile-prefix-map compile-time remapping above.
 def _repoRoot = rootDir.parentFile?.parentFile?.parentFile
 ext.reproCmakeFlags = [
     "-ffile-prefix-map=${rootDir}=.",
     "-ffile-prefix-map=${_repoRoot}=.",
     "-ffile-prefix-map=${gradle.gradleUserHomeDir}=.gradle-home",
 ]
+ext.reproCmakeArguments = [
+    "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,--build-id=none",
+    "-DCMAKE_EXE_LINKER_FLAGS=-Wl,--build-id=none",
+    "-DCMAKE_MODULE_LINKER_FLAGS=-Wl,--build-id=none",
+]
 def _reproFlags = ext.reproCmakeFlags
+def _reproArgs = ext.reproCmakeArguments
 
 apply plugin: "com.facebook.react.rootproject"
 
@@ -97,8 +136,10 @@ subprojects { sp ->
     def applyReproFlags = {
         def androidExt = sp.extensions.findByName("android")
         if (androidExt != null) {
-            androidExt.defaultConfig.externalNativeBuild.cmake.cppFlags(*_reproFlags)
-            androidExt.defaultConfig.externalNativeBuild.cmake.cFlags(*_reproFlags)
+            def cmake = androidExt.defaultConfig.externalNativeBuild.cmake
+            cmake.cppFlags(*_reproFlags)
+            cmake.cFlags(*_reproFlags)
+            cmake.arguments(*_reproArgs)
         }
     }
     sp.plugins.withId("com.android.library") { applyReproFlags() }
