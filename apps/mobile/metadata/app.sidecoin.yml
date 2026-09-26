@@ -39,24 +39,32 @@
 #        the F-Droid build (common.apk_implant_signatures) and ships it
 #        alongside the F-Droid-signed APK.
 #
-#   BOTH routes are gated on the same thing: F-Droid's from-source build must
-#   match our APK's contents, because a signature only validates against the
-#   exact bytes it was made over. publish.py:436 drops the developer-signed
-#   APK when `verify_apk_signature` fails.
+#   BOTH routes are gated on one thing: F-Droid's from-source build must match
+#   our APK's contents, because a signature only validates against the exact
+#   bytes it was made over. publish.py:436 drops the developer-signed APK when
+#   `verify_apk_signature` fails.
 #
-#   Our build does NOT currently reproduce. Two clean builds of this commit
-#   produced identical size (147,398,697 B) but different SHA-256
-#   (da932f7e... vs 749991f2...), because compiled native objects record the
-#   absolute source path. An empirical apksigcopier copy of our signature onto
-#   a differing APK failed verification with:
-#     APK Signature Scheme v2 signer #1: APK integrity check failed.
-#     CHUNKED_SHA512 digest mismatch.
-#   So route (a)/(b) cannot be enabled yet. The blocking path strings live in
-#   three .so files per ABI (libQuickCrypto.so,
-#   libreact_codegen_rnscreens.so, librnskia.so) under
-#   /Workspace/apecsdev/sidecoin/apps/mobile/node_modules/... . Removing them
-#   is the prerequisite; until then the recipe submits as an F-Droid-signed
-#   app, which is the default and unblocked path.
+#   That gate is now PASSED. The build became byte-reproducible in commits
+#   d9700ff (redirect __FILE__-derived strings with -ffile-prefix-map on every
+#   autolinked CMake target, including :app via its finalizeDsl) and 762805a
+#   (drop the content-derived ELF build-id, which -ffile-prefix-map cannot
+#   reach because it is seeded from the variable AGP .cxx/<hash>/ directory
+#   name). Verified by building the SAME commit from two different absolute
+#   paths and comparing:
+#     • apksigcopier compare --unsigned   -> exit 0
+#     • all 985 zip entries               -> byte-identical
+#     • all 100 lib/*.so across 4 ABIs    -> byte-identical
+#     • no leaked /Workspace, /home, /tmp build paths in any .so
+#   and then running F-Droid's own publish check (apksigcopier copy of our
+#   signature onto the other build + apksigner verify) -> exit 0, cert
+#   SHA-256 42126930dd049c558fcebc7f5893fa83cba0021a24aafe447e4dc6b3452d65d4.
+#
+#   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
+#   publish.py to fetch and compare. That URL is not live yet, so this recipe
+#   currently submits as an F-Droid-signed app, which is the default and
+#   unblocked path. Add `Binaries:` + `AllowedAPKSigningKeys:` once a release
+#   APK is hosted. If verification then fails, publish is SKIPPED (publish.py
+#   counts it as failed), not silently re-signed, so enabling it is safe.
 #
 # VERSIONING — versionCode is 8-digit YYYYMMDD (e.g. 2026-09-23 -> 20260923).
 # Android and F-Droid require versionCode to INCREASE with every release. A
@@ -99,8 +107,9 @@ Builds:
     versionCode: 20260923
     # FULL 40-char hash, not the v26.9.23 tag. Build_Metadata_Reference:
     # "Don't use branch name or tag name. The full commit hash should be used."
-    # This is the commit the tag points at (git rev-parse v26.9.23^{commit}).
-    commit: 9b7ccb7eb569d1bae0da6b3ed8d00b68436b019c
+    # This is the first commit whose native libraries are byte-reproducible
+    # (see the SIGNING note above); earlier commits embed absolute build paths.
+    commit: 762805aa2a2ee459663e60c8765a846f529a1a1b
     subdir: apps/mobile/android
     # `fdroid` is the FOSS flavor: it excludes the playstore-only Sentry
     # dependency (see android/app/build.gradle `playstoreImplementation`).
