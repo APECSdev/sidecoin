@@ -60,11 +60,12 @@
 #   SHA-256 42126930dd049c558fcebc7f5893fa83cba0021a24aafe447e4dc6b3452d65d4.
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
-#   publish.py to fetch and compare. That URL is not live yet, so this recipe
-#   currently submits as an F-Droid-signed app, which is the default and
-#   unblocked path. Add `Binaries:` + `AllowedAPKSigningKeys:` once a release
-#   APK is hosted. If verification then fails, publish is SKIPPED (publish.py
-#   counts it as failed), not silently re-signed, so enabling it is safe.
+#   publish.py to fetch and compare. That URL is now live: the signed release
+#   APK is attached to the v26.9.23 GitHub release (asset app-fdroid-release.apk,
+#   147,410,857 bytes, SHA-256 8da1c03cfce81bbd85507eb21952d5e60b29c59ea19d47cc493e69e481e62429),
+#   so `Binaries:` below resolves to it via %v -> versionName. If verification
+#   ever fails, publish is SKIPPED (publish.py counts it as failed), not
+#   silently re-signed, so an upstream mismatch can never ship a wrong APK.
 #
 # VERSIONING — versionCode is 8-digit YYYYMMDD (e.g. 2026-09-23 -> 20260923).
 # Android and F-Droid require versionCode to INCREASE with every release. A
@@ -100,6 +101,14 @@ AutoName: Sidecoin
 RepoType: git
 Repo: https://github.com/APECSdev/sidecoin.git
 
+# Hosted reference binary: the APK we signed with our own release key, from the
+# SAME commit as the build below, so publish.py (route (a)) can verify F-Droid's
+# source build byte-for-byte against it and then SHIP OURS. %v resolves to
+# versionName (26.9.23), matching the v26.9.23 tag/release. GitHub returns a 302
+# redirect to the asset; fdroidserver's net.download_file follows it (verified:
+# HTTP 200, content-length 147410857).
+Binaries: https://github.com/APECSdev/sidecoin/releases/download/v%v/app-fdroid-release.apk
+
 Builds:
   # versionCode / versionName MUST match apps/mobile/android/app/build.gradle.
   # If this drifts, F-Droid will build a different APK than the one tested.
@@ -132,6 +141,18 @@ Builds:
       - node_modules
     rm:
       - node_modules
+
+# The ONLY signer allowed to have produced the shipped APK. If an APK in the
+# repo carries any other signature, fdroid update drops it (update.py
+# get_apks_without_allowed_signatures). This is our release key's X.509 SHA-256:
+#   apksigner verify --print-certs app-fdroid-release.apk
+#   V2 Signer: certificate SHA-256 digest:
+#   42126930dd049c558fcebc7f5893fa83cba0021a24aafe447e4dc6b3452d65d4
+#   Subject: CN=APECS Dev, OU=Administration, O=APECSdev, L=Atlanta,
+#            ST=Georgia, C=US   (RSA 4096, valid 2026-09-22 .. 2054-02-07)
+# Field must match ^[a-fA-F0-9]{64}$ (metadata.py FieldValidator); lowercase to
+# match the canonical form fdroidserver stores.
+AllowedAPKSigningKeys: 42126930dd049c558fcebc7f5893fa83cba0021a24aafe447e4dc6b3452d65d4
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
