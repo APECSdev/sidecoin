@@ -21,6 +21,34 @@ const sharedPackage = path.resolve(monorepoRoot, "packages/shared");
 const apiClientPackage = path.resolve(monorepoRoot, "packages/api-client");
 
 // ──────────────────────────────────────────────────────
+// Android build flavor detection
+// ──────────────────────────────────────────────────────
+//
+// Metro is invoked by Gradle's per-variant bundle task
+// `createBundle<Flavor><BuildType>JsAndAssets`, so the flavor is visible in
+// process.argv as the task name and inside the --bundle-output path. React
+// Native exposes the flavor no other way: there is no env var and no runtime
+// flag (verified by capturing process.argv/process.env from inside a probe
+// metro.config.js run under :app:createBundleFdroidReleaseJsAndAssets).
+//
+// Only the `playstore` flavor bundles the real @sentry/react-native. Every
+// other invocation — the `fdroid` flavor, `react-native start`, Jest, and any
+// unknown context — is treated as FOSS and gets the no-op shim, so an APK we
+// hand to F-Droid can never carry the proprietary crash reporter.
+function detectAndroidFlavor(argv) {
+  const commandLine = argv.join(" ");
+  if (/createBundlePlaystore[A-Za-z]*JsAndAssets/.test(commandLine)) {
+    return "playstore";
+  }
+  if (/createBundleFdroid[A-Za-z]*JsAndAssets/.test(commandLine)) {
+    return "fdroid";
+  }
+  return null;
+}
+
+const androidFlavor = detectAndroidFlavor(process.argv);
+
+// ──────────────────────────────────────────────────────
 // Default config from React Native 0.81
 // ──────────────────────────────────────────────────────
 
@@ -82,12 +110,20 @@ const config = {
     // ──────────────────────────────────────────────────
     // resolveRequest:
     //   Redirect @sentry/react-native to a local no-op
-    //   module. Sentry is an optionalDependency and is
+    //   module unless we are bundling the playstore
+    //   flavor. Sentry is an optionalDependency and is
     //   absent from F-Droid builds; without this alias
-    //   Metro would fail to resolve the import.
+    //   Metro would fail to resolve the import there.
+    //
+    //   The flavor gate is what keeps the FOSS
+    //   guarantee: only `playstore` resolves the real
+    //   package (see detectAndroidFlavor above).
     // ──────────────────────────────────────────────────
     resolveRequest: (context, moduleName, platform) => {
-      if (moduleName === "@sentry/react-native") {
+      if (
+        moduleName === "@sentry/react-native" &&
+        androidFlavor !== "playstore"
+      ) {
         return context.resolveRequest(
           context,
           path.resolve(projectRoot, "src/lib/sentry-noop.ts"),
@@ -162,4 +198,8 @@ const config = {
   },
 };
 
+// detectAndroidFlavor is exported for the regression test in
+// src/__tests__/metroFlavor.test.ts. It is a plain property on the config
+// object, which Metro ignores.
 module.exports = mergeConfig(defaultConfig, config);
+module.exports.detectAndroidFlavor = detectAndroidFlavor;

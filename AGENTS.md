@@ -107,8 +107,13 @@ adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-relea
   minSdk 24, compileSdk/targetSdk 35, RN 0.81.1 / React 19.1.0, NDK
   `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~148 MB (large —
   ABI splits / dep trimming is an open item).
-- Flavors `fdroid` / `playstore`. Sentry is `optionalDependencies`-scoped, so
-  `fdroid` builds have no crash reporting (intentional).
+- Flavors `fdroid` / `playstore`. Sentry is `optionalDependencies`-scoped and
+  `metro.config.js` resolves it to `src/lib/sentry-noop.ts` for every flavor
+  EXCEPT `playstore`, so `fdroid` builds have no crash reporting (intentional,
+  and required by the F-Droid inclusion policy). The flavor is read from
+  `process.argv` because Gradle's per-variant
+  `createBundle<Flavor><BuildType>JsAndAssets` task name is the only place RN
+  exposes it; `metroFlavor.test.ts` pins it.
 - Signing uses our own key (`android/keystore.properties` +
   `apecsdev-release.keystore`, both gitignored). Cert `CN=APECS Dev`, SHA-256
   `42126930dd049c558fcebc7f5893fa83cba0021a24aafe447e4dc6b3452d65d4`.
