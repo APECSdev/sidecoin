@@ -124,6 +124,14 @@ Builds:
     # dependency (see android/app/build.gradle `playstoreImplementation`).
     gradle:
       - fdroid
+    # EXACT output path. With `subdir: apps/mobile/android`, fdroidserver's
+    # gradle output method only globs `<root_dir>/build/outputs/apk/...`, but a
+    # React Native `app` module writes to `<root_dir>/app/build/outputs/apk/...`
+    # (verified: the real `fdroid build` compiled a green assembleFdroidRelease
+    # then failed with "Failed to find any output apks"). An explicit `output:`
+    # switches build.output_method() to `raw`, which globs `root_dir + output`
+    # (build.py:793-795). The `fdroid` flavor segment matches `gradle: [fdroid]`.
+    output: app/build/outputs/apk/fdroid/release/*-release-unsigned.apk
     # Prebuild runs the React Native codegen + node module autolinking; without
     # it Gradle cannot resolve the generated native specs.
     #
@@ -137,10 +145,58 @@ Builds:
       CI=true pnpm install --frozen-lockfile
       cd apps/mobile/android
     ndk: 27.1.12297006
+    # node_modules is created by the prebuild `pnpm install`, so it cannot be
+    # named in `rm:` — fdroidserver applies `rm:` BEFORE `prebuild` and hard-fails
+    # on a glob that matches nothing (`getpaths_map`, common.py). The checkout's
+    # `git clean -dffx` already yields a pristine tree; scandelete covers the
+    # nonfree-source scan of the installed modules.
     scandelete:
       - node_modules
-    rm:
-      - node_modules
+    # Some React Native modules declare a LOCAL maven repo with a Gradle
+    # expression (`url "$rootDir/../node_modules/react-native/android"`,
+    # `url "${reactNativeRootDir}/android"`, ...). fdroidserver's scanner treats
+    # any maven url matching MAVEN_URL_REGEX that is not a known remote as an
+    # "unknown maven repo" (scanner.py), and because `scandelete: node_modules`
+    # also matches these paths it DELETES the whole build.gradle. Autolinking
+    # then fails at settings.gradle (`autolinkLibrariesFromCommand` -> the RN
+    # CLI can no longer read the module's namespace), aborting the build.
+    # `scanignore` is checked BEFORE scandelete in `handleproblem`, so listing
+    # these files keeps them in the tree while suppressing the false positive.
+    # Glob the pnpm content-hash so the entries survive dependency updates.
+    scanignore:
+      - node_modules/.pnpm/@react-native-async-storage+async-storage@*/node_modules/@react-native-async-storage/async-storage/android/build.gradle
+      - node_modules/.pnpm/react-native-safe-area-context@*/node_modules/react-native-safe-area-context/android/build.gradle
+      - node_modules/.pnpm/react-native-screens@*/node_modules/react-native-screens/android/build.gradle
+      - node_modules/.pnpm/react-native-svg@*/node_modules/react-native-svg/android/build.gradle
+      - node_modules/.pnpm/react-native-vector-icons@*/node_modules/react-native-vector-icons/android/build.gradle
+      - node_modules/.pnpm/react-native-webview@*/node_modules/react-native-webview/android/build.gradle
+      - node_modules/.pnpm/react-native@*/node_modules/react-native/ReactAndroid/publish.gradle
+      # ── Build-critical binaries the scanner would otherwise DELETE ────────
+      # `scandelete: node_modules` makes the scanner delete every flagged path
+      # under node_modules. Three of those deletions break the from-source build
+      # (found by running the real `fdroid build`; see /tmp/fdroid-build3.log):
+      #
+      # 1. HERMESC — react-native/sdks/hermesc/<abi>-bin/hermesc is the
+      #    Hermes bytecode compiler. The Gradle task
+      #    createBundle<Flavor><BuildType>JsAndAssets shells out to it to turn
+      #    the JS bundle into .hbc; with the binary deleted the task fails with
+      #    "Couldn't determine Hermesc location".
+      # 2. SKIA STATIC LIBS — @shopify/react-native-skia ships ONLY prebuilt
+      #    libs/android/<abi>/*.a (no externals/skia checkout; its
+      #    CMakeLists.txt imports libskia.a etc. as IMPORTED STATIC targets).
+      #    Deleting them makes :shopify-react-native-skia:buildCMake*
+      #    [arm64-v8a] fail on the missing libsvg.a. The package's only script
+      #    (install-skia.mjs) re-downloads the SAME prebuilt tarball, so
+      #    scanignoring them is the minimum change; building Skia from source
+      #    would need an `srclib` + build-skia.ts, which the published package
+      #    does not contain.
+      # 3. SQLITE .so — react-native-sqlite-storage/platforms/android-native/
+      #    libs/<abi>/libsqlc-native-driver.so is the native SQLite driver.
+      #    Deleting it makes the module fail to load at runtime (transaction
+      #    history is built on this module; it is not optional).
+      - node_modules/.pnpm/react-native@*/node_modules/react-native/sdks/hermesc/linux64-bin/hermesc
+      - node_modules/.pnpm/@shopify+react-native-skia@*/node_modules/@shopify/react-native-skia/libs/android
+      - node_modules/.pnpm/react-native-sqlite-storage@*/node_modules/react-native-sqlite-storage/platforms/android-native/libs
 
 # The ONLY signer allowed to have produced the shipped APK. If an APK in the
 # repo carries any other signature, fdroid update drops it (update.py
