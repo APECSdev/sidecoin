@@ -355,13 +355,44 @@ jest.mock("@shopify/react-native-skia", () => ({
 }));
 
 // victory-native
-jest.mock("victory-native", () => ({
-  VictoryChart: "VictoryChart",
-  VictoryLine: "VictoryLine",
-  VictoryBar: "VictoryBar",
-  VictoryAxis: "VictoryAxis",
-  VictoryTheme: { material: {} },
-}));
+//
+// victory-native 41.x (installed version) does NOT export the v3x
+// VictoryChart/VictoryLine/VictoryBar/VictoryAxis components — the only
+// exports are CartesianChart, PolarChart, Pie, Line, Area, Bar, Scatter, etc.
+// (see node_modules/victory-native/dist/index.d.ts). The mock therefore has to
+// describe the 41.x surface, or a screen that imports { CartesianChart, Line }
+// gets undefined at render time.
+//
+// CartesianChart's children is a FUNCTION ({ points }) => node that renders
+// Skia primitives. The mock invokes it with a fake `points` map (one key per
+// yKeys entry, each an array of {x, y} PointsArray entries) so the chart body
+// is exercised rather than skipped.
+jest.mock("victory-native", () => {
+  const React = require("react");
+  const View = require("react-native").View;
+  return {
+    __esModule: true,
+    CartesianChart: ({
+      children,
+      data,
+      yKeys,
+    }: any) => {
+      const keys: string[] = Array.isArray(yKeys) ? yKeys : [];
+      const rows: any[] = Array.isArray(data) ? data : [];
+      const points: Record<string, any[]> = {};
+      for (const k of keys) {
+        points[k] = rows.map((row: any, i: number) => ({
+          x: row?.day ?? i,
+          y: typeof row?.[k] === "number" ? row[k] : 0,
+        }));
+      }
+      const rendered =
+        typeof children === "function" ? children({ points }) : children;
+      return React.createElement(View, { testID: "mock-cartesian-chart" }, rendered);
+    },
+    Line: "Line",
+  };
+});
 
 // ---------------------------------------------------------------------------
 // Tests

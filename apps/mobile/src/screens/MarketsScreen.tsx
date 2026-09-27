@@ -15,12 +15,20 @@
 //     provider name when the upstream string is empty or "hardcoded".
 //   • The footer of the "As of" tile repeated the provider name; it now shows
 //     the upstream `source` value.
+//
+// CHARTS: the price tiles above are live (eCash Farm). The chart panel below is
+// driven by MOCK time-series data (MOCK_ECX_HISTORY) until the market indexer
+// exposes a history endpoint — the same placeholder the Vue view described.
+// Do NOT present this series as real: it is badged "Mock data" and the caption
+// says so. When /market/history lands, swap the constant for a fetch and drop
+// the badge; the CartesianChart wiring stays as-is.
 
 import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { CartesianChart, Line } from "victory-native";
 
 import { getMarketPrice, type MarketPrice } from "../api";
-import { GRAY } from "../theme/colors";
+import { ECASH, GRAY } from "../theme/colors";
 import {
   Alert,
   Badge,
@@ -42,6 +50,56 @@ function formatAsOf(value: string): string {
 
   return date.toISOString().replace(".000Z", "Z");
 }
+
+// ──────────────────────────────────────────────────────
+// MOCK time-series market data.
+//
+// 30 daily ECX/USD samples. These numbers are FABRICATED for the chart
+// placeholder — they are not fetched and not a projection. They end near the
+// live `projected.ecxUsd` neighbourhood purely so the chart looks plausible
+// against the live tile above; treat them as placeholders only.
+//
+// `day` is a simple 1..N index (the x axis), `price` the mocked USD value.
+// CartesianChart needs a numeric x for a linear scale, so we index rather
+// than pass Dates.
+// ──────────────────────────────────────────────────────
+export type MockEcxSample = {
+  day: number;
+  price: number;
+};
+
+export const MOCK_ECX_HISTORY: MockEcxSample[] = [
+  { day: 1, price: 71.4 },
+  { day: 2, price: 69.8 },
+  { day: 3, price: 73.2 },
+  { day: 4, price: 76.9 },
+  { day: 5, price: 75.1 },
+  { day: 6, price: 78.6 },
+  { day: 7, price: 82.3 },
+  { day: 8, price: 80.7 },
+  { day: 9, price: 84.2 },
+  { day: 10, price: 88.5 },
+  { day: 11, price: 86.9 },
+  { day: 12, price: 83.4 },
+  { day: 13, price: 85.8 },
+  { day: 14, price: 90.1 },
+  { day: 15, price: 93.7 },
+  { day: 16, price: 91.2 },
+  { day: 17, price: 95.6 },
+  { day: 18, price: 99.3 },
+  { day: 19, price: 97.4 },
+  { day: 20, price: 101.8 },
+  { day: 21, price: 105.2 },
+  { day: 22, price: 102.6 },
+  { day: 23, price: 98.9 },
+  { day: 24, price: 100.4 },
+  { day: 25, price: 103.1 },
+  { day: 26, price: 106.7 },
+  { day: 27, price: 104.3 },
+  { day: 28, price: 102.2 },
+  { day: 29, price: 104.9 },
+  { day: 30, price: 103.8 },
+];
 
 function formatSource(value: string): string {
   return value && value.toLowerCase() !== "hardcoded" ? value : "eCash Farm";
@@ -143,21 +201,51 @@ export function MarketsScreen(): React.JSX.Element {
         <View style={styles.head}>
           <View style={styles.headCopy}>
             <Eyebrow style={styles.chartsEyebrow}>Charts</Eyebrow>
-            <Text style={styles.headTitle}>Market charts coming soon</Text>
+            <Text style={styles.headTitle}>ECX / USD — last 30 days</Text>
             <Body style={styles.chartsBody}>
-              Historical market data is not indexed yet. This panel will display
-              ECX/eCash charts once time-series market data is available.
+              Historical market data is not indexed yet, so the series below is
+              placeholder data. It will be replaced by the live ECX/eCash
+              history once the market indexer exposes it.
             </Body>
           </View>
-          <Badge label="Placeholder" tone="neutral" />
+          <Badge label="Mock data" tone="warning" />
+        </View>
+
+        <View testID="markets-chart" style={styles.chartWrap}>
+          <CartesianChart
+            data={MOCK_ECX_HISTORY}
+            xKey="day"
+            yKeys={["price"]}
+            axisOptions={{
+              labelColor: GRAY[400],
+              lineColor: GRAY[800],
+              axisSide: { x: "bottom", y: "left" },
+            }}
+          >
+            {({ points }) => (
+              <Line
+                points={points.price}
+                color={ECASH[500]}
+                strokeWidth={3}
+                curveType="monotoneX"
+              />
+            )}
+          </CartesianChart>
+        </View>
+
+        <View style={styles.chartLegend}>
+          <View style={styles.chartLegendDot} />
+          <Muted style={styles.chartLegendText}>
+            ECX / USD · 30 daily samples · mock data, not a live index
+          </Muted>
         </View>
 
         <View style={styles.dashed}>
-          <Text style={styles.dashedTitle}>No chart data loaded</Text>
+          <Text style={styles.dashedTitle}>Placeholder series</Text>
           <Muted style={styles.dashedBody}>
-            No mocked candles, generated lines, or sample history are shown
-            here. Live charts will appear after historical market indexing is
-            available.
+            This line is generated sample data so the chart can be wired and
+            reviewed. Do not read it as market history. Live charts will appear
+            after historical market indexing is available.
           </Muted>
         </View>
       </Card>
@@ -258,6 +346,25 @@ const styles = StyleSheet.create({
   },
   chartsBody: {
     marginTop: 8,
+  },
+  chartWrap: {
+    marginTop: 20,
+    height: 220,
+  },
+  chartLegend: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  chartLegendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: ECASH[500],
+  },
+  chartLegendText: {
+    flexShrink: 1,
   },
   dashed: {
     marginTop: 20,
