@@ -132,21 +132,47 @@ Builds:
     # switches build.output_method() to `raw`, which globs `root_dir + output`
     # (build.py:793-795). The `fdroid` flavor segment matches `gradle: [fdroid]`.
     output: app/build/outputs/apk/fdroid/release/*-release-unsigned.apk
-    # Prebuild runs the React Native codegen + node module autolinking; without
-    # it Gradle cannot resolve the generated native specs.
+    # The buildserver image ships neither JDK 17 nor Node/pnpm. Three things
+    # must therefore be provisioned before Gradle runs:
+    #
+    # 1. JDK 17 — React Native 0.81.1 / AGP 8.x require it, and it is the JDK
+    #    our byte-reproducible reference APK was built with. 891 recipes in
+    #    fdroiddata install openjdk-17 in `sudo:`; the closest analog,
+    #    app.vger.voyager (also a JS/RN Android app), does exactly this.
+    # 2. Node — not in the image. Installed from the official tarball, verified
+    #    against nodejs.org's published SHA-256. `ca-certificates` is required
+    #    for the https download to validate.
+    # 3. pnpm — the F-Droid CI build failed with `bash: line 2: pnpm: command
+    #    not found`. Corepack (bundled with Node) turns on the pnpm shim pinned
+    #    by the repo's root `packageManager` (pnpm@9.15.4).
+    #
+    # The install itself runs in `init:`, which fdroidserver executes in
+    # prepare_source() immediately after checkout — BEFORE `rm:`/`prebuild:` and,
+    # crucially, before the source scanner. That ordering is what makes
+    # `scandelete: node_modules` safe: the scanner still sees every installed
+    # module, but init has already produced the tree Gradle needs.
     #
     # CI=true is REQUIRED, not cosmetic. apps/desktop declares a postinstall
     # that runs `cargo run --bin export_types` (a Tauri type-export) unless CI
     # is exactly "true". Without it, a clean install spends ~13m compiling Rust
     # and needs a toolchain the build server may not have. With it, install
     # drops to ~30s with zero cargo invocations.
-    prebuild: |
-      cd ../../..
-      CI=true pnpm install --frozen-lockfile
-      cd apps/mobile/android
+    sudo:
+      - apt-get update
+      - apt-get install -y openjdk-17-jdk-headless ca-certificates
+      - update-alternatives --auto java
+      - curl -Lo node.tar.gz https://nodejs.org/dist/v22.23.3/node-v22.23.3-linux-x64.tar.gz
+      - echo "1084aa36196bba4c3a5e69a1ee388a6e4ff729dad09445fbcd434b28fe3c24af node.tar.gz"
+        | sha256sum -c -
+      - tar xzf node.tar.gz --strip-components=1 -C /usr/local/
+    init:
+      - cd ../../..
+      - corepack enable
+      - CI=true pnpm install --frozen-lockfile
+      - cd apps/mobile/android
     ndk: 27.1.12297006
-    # node_modules is created by the prebuild `pnpm install`, so it cannot be
-    # named in `rm:` — fdroidserver applies `rm:` BEFORE `prebuild` and hard-fails
+    # node_modules is created by the `init:` `pnpm install`, so it cannot be
+    # named in `rm:` — fdroidserver applies `rm:` AFTER `init:` and hard-fails
     # on a glob that matches nothing (`getpaths_map`, common.py). The checkout's
     # `git clean -dffx` already yields a pristine tree; scandelete covers the
     # nonfree-source scan of the installed modules.
