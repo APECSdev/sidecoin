@@ -82,8 +82,28 @@ if (keystorePropertiesFile.exists()) {
 // builds of the same commit. Passing -Wl,--build-id=none drops the content-derived
 // note, which removes the dependence. See the long explanation in the root
 // build.gradle for the measurements behind this.
+//
+// The resource value below carries the third and last half of the fix.
+// ReactPlugin.configureDevServerLocation (AgpConfiguratorUtils.kt) calls a
+// `defaultConfig.resValue("string", "react_native_dev_server_ip",
+// getHostIpAddress())` from a finalizeDsl callback of its own. getHostIpAddress()
+// picks the first up, non-loopback IPv4 of whatever machine is building, so the
+// value baked into resources.arsc is the builder's LAN address: 10.141.60.188 on
+// our workstation, 172.17.0.3 (the Docker bridge) inside F-Droid's buildserver.
+// That single string was the ONLY difference between our published APK and
+// F-Droid's: all 985 entries matched in name, size and CRC except
+// resources.arsc, whose string pool differed nowhere else. Pinning it to
+// localhost makes the release resource constant across machines. The value is
+// consumed only by AndroidInfoHelpers.getDevServerNetworkIpAndPort, whose sole
+// caller is ChangeBundleLocationDialog — the "change bundle location" dev
+// dialog, reachable only through DevSupportManagerBase. Nothing in the release
+// bundle path reads it. `resValue` set from a finalizeDsl callback on :app wins
+// over ReactPlugin's, exactly as the CMake flags above do. Precedent: the merged
+// tech.dongdongbh.mindwtr recipe pins react_native_dev_server_ip=localhost for
+// the same reason.
 androidComponents {
     finalizeDsl { ext ->
+        ext.defaultConfig.resValue("string", "react_native_dev_server_ip", "localhost")
         def cmake = ext.defaultConfig.externalNativeBuild.cmake
         cmake.cppFlags(*rootProject.ext.reproCmakeFlags)
         cmake.cFlags(*rootProject.ext.reproCmakeFlags)
