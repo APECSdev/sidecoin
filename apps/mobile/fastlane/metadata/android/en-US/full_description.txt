@@ -1,15 +1,33 @@
-Sidecoin is an open-source wallet for the upcoming eCash hard fork
-(block ~973,728, October 31 2026).
+✨ Your Gateway to the eCash Drivechain Universe ✨
 
-It supports BIP-300 Hashrate Escrows and BIP-301 Blind Merged Mining,
-enabling trustless sidechains secured by Bitcoin's full SHA-256d hashrate.
+Sidecoin puts a whole ecosystem of sidechains in your pocket. One wallet, one seed, and a growing community of networks built on Bitcoin's security.
 
-Features:
-• 10 sidechains at launch (Thunder, zSide, BitNames, BitAssets, Photon, Truthcoin, CoinShift, and more)
-• BIP-300 deposit and withdrawal management
-• QR code scanning for payments
-• Biometric unlock (one prompt per session)
-• Lightweight: talks to public Esplora nodes, no full chain download
+⚡ WHAT YOU CAN DO
+• 🛡️ Track and manage 10 live sidechains, with more on the way
+• 🚀 Deposit and withdraw across supported sidechains
+• 📷 Scan any QR code to pay in seconds
+• 🔐 Unlock with biometrics — just one prompt per session
+• 💸 Send and receive with on-device signing and a clear review step
 
-Sidecoin is free software released under the MIT license.
-No tracking, no ads, no data collection.
+🌐 THE SIDECHAINS
+• ⚡ Thunder Network — fast, low-fee everyday payments
+• 🌨️ Snowside — full EVM smart contracts, secured by Bitcoin
+• 🕵️ zSide — private, shielded transactions
+• 🏷️ BitNames — human-readable names and identity
+• 💎 BitAssets — tokens, NFTs, and digital assets
+• ⚛️ Photon — quantum-resistant cryptography
+• 🎯 Truthcoin — decentralized prediction markets
+• 🔄 CoinShift — trustless cross-chain swaps
+• 🧬 RISCy — RISC-V innovation
+• 🏦 FreeBank — Bitcoin-native banking
+• ➕ Elements Plus — Blockstream confidentiality
+
+🪶 LIGHTWEIGHT BY DESIGN
+• No full chain download — talks to public Esplora nodes
+• No accounts, no sign-up, no custodian
+
+🌱 Powered by BIP-300 Hashrate Escrows and BIP-301 Blind Merged Mining — trustless sidechains secured by Bitcoin's full SHA-256d hashrate.
+
+MIT licensed. Free software.
+
+🚫 No tracking   🚫 No ads   🚫 No data collection

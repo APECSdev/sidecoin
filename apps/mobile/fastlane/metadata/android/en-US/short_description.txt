@@ -1,1 +1,1 @@
-eCash Drivechains wallet with BIP-300/301 sidechain support.
+Your eCash Drivechains Hub — one wallet, endless sidechains.
