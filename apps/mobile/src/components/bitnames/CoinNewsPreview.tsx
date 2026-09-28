@@ -26,7 +26,7 @@ import {
   type CoinNewsFeed,
   type CoinNewsPost,
 } from "../../api";
-import { ECASH, GRAY, SC } from "../../theme/colors";
+import { ECASH, GRAY } from "../../theme/colors";
 import { Card, Muted, SectionTitle, Title } from "../ui";
 import { CoinNewsComposer } from "./CoinNewsComposer";
 
@@ -257,7 +257,6 @@ export function CoinNewsPreview({
         ) : (
           <FeedTable
             rows={usWeeklyRows}
-            dashboard={dashboard}
             formatDate={formatDate}
             formatFee={formatFee}
           />
@@ -294,7 +293,6 @@ export function CoinNewsPreview({
           ) : (
             <FeedTable
               rows={japanWeeklyRows}
-              dashboard={dashboard}
               formatDate={formatDate}
               formatFee={formatFee}
             />
@@ -314,12 +312,10 @@ export function CoinNewsPreview({
 // ──────────────────────────────────────────────────────
 function FeedTable({
   rows,
-  dashboard,
   formatDate,
   formatFee,
 }: {
   rows: CoinNewsPost[];
-  dashboard: boolean;
   formatDate: (t: number) => string;
   formatFee: (f: string) => string;
 }): React.JSX.Element {

@@ -19,7 +19,7 @@ import Clipboard from "@react-native-clipboard/clipboard";
 
 import { GRAY, SC } from "../theme/colors";
 import { QrScanner } from "../components/QrScanner";
-import { Body, Card, Eyebrow, Mono, Muted, Screen } from "../components/ui";
+import { Card, Eyebrow, Mono, Muted, Screen } from "../components/ui";
 import type { RootStackScreenProps } from "../navigation/types";
 
 export function QrScanScreen({

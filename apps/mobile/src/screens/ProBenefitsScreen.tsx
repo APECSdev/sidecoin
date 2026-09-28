@@ -17,7 +17,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ECASH, GRAY } from "../theme/colors";
 import type { RootStackParamList } from "../navigation/types";
-import { Body, Button, Card, Eyebrow, Muted, Title } from "../components/ui";
+import { Body, Button, Card, Eyebrow, Muted } from "../components/ui";
 
 const UPGRADE_URL = "https://sidecoin.app/pro";
 

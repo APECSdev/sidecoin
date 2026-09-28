@@ -22,7 +22,7 @@
 //     (../components/bitnames/CoinNewsPreview); `dashboard` +
 //     showJapanFeed={false} match the Vue call site exactly.
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   Linking,
   Pressable,
@@ -33,7 +33,6 @@ import {
 } from "react-native";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import type { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 
 import {
   getSidechains,
@@ -59,7 +58,7 @@ import { getPlatformById } from "../data/platforms";
 import { CoinNewsPreview } from "../components/bitnames/CoinNewsPreview";
 import { ECASH, GRAY } from "../theme/colors";
 import { Badge, Button, Card, Eyebrow, Muted, Skeleton, Title } from "../components/ui";
-import type { RootStackParamList, TabParamList } from "../navigation/types";
+import type { RootStackParamList } from "../navigation/types";
 
 interface ChainRow {
   summary: SidechainSummary;

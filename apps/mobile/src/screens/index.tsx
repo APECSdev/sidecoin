@@ -18,22 +18,7 @@
 
 import React from "react";
 
-import { AssetSwapScreen } from "./AssetSwapScreen";
-import { DashboardScreen } from "./DashboardScreen";
-import { ExploreScreen } from "./ExploreScreen";
-import { FeedScreen } from "./FeedScreen";
-import { MarketsScreen } from "./MarketsScreen";
-import { OnboardingScreen } from "./OnboardingScreen";
 import { PlaceholderScreen } from "./PlaceholderScreen";
-import { PlatformDetailScreen } from "./PlatformDetailScreen";
-import { ProBenefitsScreen } from "./ProBenefitsScreen";
-import { ProfileScreen } from "./ProfileScreen";
-import { QrScanScreen } from "./QrScanScreen";
-import { ReceiveScreen } from "./ReceiveScreen";
-import { SendScreen } from "./SendScreen";
-import { SidechainsScreen } from "./SidechainsScreen";
-import { SettingsScreen } from "./SettingsScreen";
-import { ToolboxScreen } from "./ToolboxScreen";
 
 /**
  * Every route name in the Vue router (`apps/wallet/src/router/index.ts`),

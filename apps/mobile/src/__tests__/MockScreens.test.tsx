@@ -85,7 +85,6 @@ jest.mock("@react-native-clipboard/clipboard", () => ({
 
 // The scanner owns the camera permission flow; the route under test only
 // wires its onDecode/onClose callbacks, so a controllable stub is enough.
-let decodeRef: ((value: string) => void) | undefined;
 jest.mock("../components/QrScanner", () => {
   const React = require("react");
   const { Pressable, Text } = require("react-native");
@@ -97,7 +96,6 @@ jest.mock("../components/QrScanner", () => {
       onDecode: (v: string) => void;
       onClose: () => void;
     }) => {
-      decodeRef = onDecode;
       return React.createElement(
         Pressable,
         { testID: "mock-scanner", onPress: () => onDecode("ecash:qxyz") },

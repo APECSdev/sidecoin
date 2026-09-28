@@ -60,7 +60,7 @@ import {
 import { canAccessFeature, COIN_CONTROL_FEATURE_ID } from "../entitlements";
 import type { RootStackParamList } from "../navigation/types";
 import { ECASH, GRAY } from "../theme/colors";
-import { Alert, Badge, Button, Card, Muted } from "../components/ui";
+import { Alert, Badge, Button, Card } from "../components/ui";
 
 // The scanner is mounted only while open, so the camera library
 // (react-native-vision-camera) is never imported during normal render or in

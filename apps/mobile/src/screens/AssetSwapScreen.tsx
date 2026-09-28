@@ -33,7 +33,6 @@ import {
   Eyebrow,
   Mono,
   Muted,
-  Title,
 } from "../components/ui";
 
 const assets = [

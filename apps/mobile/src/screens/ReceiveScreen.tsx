@@ -30,7 +30,7 @@ import QRCode from "react-native-qrcode-svg";
 import { deriveReceiveAddress } from "@sidecoin/shared";
 
 import { loadWallet, setWalletNetwork, type WalletNetwork } from "../keystore";
-import { ECASH, GRAY, SC } from "../theme/colors";
+import { ECASH, GRAY } from "../theme/colors";
 import {
   Alert,
   Badge,
