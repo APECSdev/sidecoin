@@ -327,9 +327,22 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
 - Change **all three together**:
   1. `apps/mobile/android/app/build.gradle` (`versionCode` + `versionName`)
   2. `apps/mobile/package.json` (`"version"`)
-  3. `apps/mobile/fastlane/metadata/android/en-US/changelogs/<versionCode>.txt`
-     — `git mv` the file so its name matches the new `versionCode`.
+  3. `apps/mobile/android/app/src/fdroid/play/release-notes/en-US/default.txt`
+     — the store changelog. F-Droid reads release notes from the Triple-T
+     layout (`src/<flavor>/play/` in the app module), NOT from
+     `fastlane/metadata/android/<locale>/changelogs/<versionCode>.txt`.
 - Derive the date from the **release date**, not the commit date.
+
+**Store metadata lives in the Triple-T layout, not fastlane.** F-Droid's
+`update.py` `copy_triple_t_store_metadata()` scans
+`build/<pkg>/<subdir>/<module>/src/<flavor>/play/` for listings
+(`listings/<locale>/title.txt`, `short-description.txt`, `full-description.txt`),
+graphics (`listings/<locale>/graphics/{icon,phone-screenshots}/`), and release
+notes (`release-notes/<locale>/default.txt`). With `subdir: apps/mobile/android`
+and flavor `fdroid`, that resolves to
+`apps/mobile/android/app/src/fdroid/play/`. The reviewer on
+[MR 50457](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/50457) asked for
+this format explicitly, in place of `metadata/app.sidecoin/en-US/`.
 
 > **Monotonic-install caveat.** F-Droid and Play require a strictly
 > increasing `versionCode` per published release. A date is monotonically
