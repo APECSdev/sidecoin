@@ -73,7 +73,9 @@
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
 #   v26.9.29 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit 7aa639f (was 8da1c03c... at 762805a).
+#   The binary is REBUILT at commit fd4ec67 (was 8da1c03c... at 762805a);
+#   fd4ec67 is the version bump to 26.9.29 on top of 7aa639f, which carries
+#   the reproducibility pin described below.
 #   Reason: the first CI `fdroid build` compiled green and then failed the
 #   reproducibility check with exactly one differing file, resources.arsc.
 #   Its string pool held the same 7373 strings on both sides; the only value
@@ -137,7 +139,7 @@ Builds:
     # This is the first commit whose native libraries are byte-reproducible
     # (see the SIGNING note above); earlier commits embed absolute build paths
     # and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: 7aa639f1b4de7858a1c78ab90054463bc71c3d09
+    commit: fd4ec675a3f36307f88acfdaa8403485fa9fd7ae
     subdir: apps/mobile/android
     # `fdroid` is the FOSS flavor: it excludes the playstore-only Sentry
     # dependency (see android/app/build.gradle `playstoreImplementation`).

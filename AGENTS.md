@@ -103,7 +103,7 @@ cd android && ./gradlew assembleFdroidRelease
 adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
 
-- `applicationId app.sidecoin`, `versionCode 20260923`, `versionName 26.9.23`,
+- `applicationId app.sidecoin`, `versionCode 20260929`, `versionName 26.9.29`,
   minSdk 24, compileSdk/targetSdk 35, RN 0.81.1 / React 19.1.0, NDK
   `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~148 MB (large —
   ABI splits / dep trimming is an open item).
@@ -321,9 +321,9 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
 **The Android version is DATE-BASED and `versionCode` is EIGHT digits
 (`YYYYMMDD`).** This is a hard rule — not a suggestion.
 
-- `versionCode = 20260923` for 2026-09-23 (the release date), NOT `260923`
+- `versionCode = 20260929` for 2026-09-29 (the release date), NOT `260929`
   and NOT an arbitrary build counter.
-- `versionName = "26.9.23"` — the short `YY.M.D` form of the SAME date.
+- `versionName = "26.9.29"` — the short `YY.M.D` form of the SAME date.
 - Change **all three together**:
   1. `apps/mobile/android/app/build.gradle` (`versionCode` + `versionName`)
   2. `apps/mobile/package.json` (`"version"`)
@@ -354,8 +354,8 @@ this format explicitly, in place of `metadata/app.sidecoin/en-US/`.
 > field is an int32 (`2147483647` max), so even a 10-digit value fits.
 >
 > This applies to *published* versions. Earlier in-tree values (`26050011`,
-> `26050030`) were never tagged or distributed, so `20260923` is the first
-> published code and has nothing to exceed. If a code is ever *decreased*
+> `26050030`) were never tagged or distributed, so `20260923` was the first
+> published code. `20260929` is the next release. If a code is ever *decreased*
 > against an actually-installed build, the APK cannot install as an update —
 > the device must uninstall first and `adb install -r` fails.
 
