@@ -64,8 +64,8 @@
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
 #   publish.py to fetch and compare. The signed release APK is attached to the
-#   v26.9.29 GitHub release (asset app-fdroid-release.apk, 148,171,729 bytes,
-#   SHA-256 37197b6dcc53fe06d791e4e53be933e129814f20824d08bd736262705d5c482e),
+#   v26.9.29 GitHub release (asset app-fdroid-release.apk, 148,163,537 bytes,
+#   SHA-256 01e6acf47857b52660f5e334334fb7d0e8b2e6098da0100e4c9b49208afa4ebb),
 #   so `Binaries:` below resolves to it via %v -> versionName. If verification
 #   ever fails, publish is SKIPPED (publish.py counts it as failed), not
 #   silently re-signed, so an upstream mismatch can never ship a wrong APK.
@@ -73,9 +73,18 @@
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
 #   v26.9.29 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit c8c235d (was 8da1c03c... at 762805a);
-#   c8c235d is the version bump to 26.9.29 on top of 7aa639f, which carries
-#   the reproducibility pin described below.
+#   The binary is REBUILT at commit 362709c (was 8da1c03c... at 762805a);
+#   362709c drops the AGP-written `Dependency metadata` signing block
+#   (id 0x504b4453) that F-Droid's `check apk` scanner rejects outright, and
+#   sits on top of c8c235d, the version bump to 26.9.29, which in turn sits on
+#   7aa639f, which carries the reproducibility pin described below.
+#   Reason 1 (signing block): the first CI `fdroid build` compiled and passed
+#   reproducibility, but `check apk` failed with "ERROR Found extra signing
+#   block 'Dependency metadata' in ...binary.apk". AGP 7.0+ writes it from
+#   `android.dependenciesInfo`; it is read only by Play Console tooling, so it
+#   is disabled in the source app/build.gradle (precedent: com.wire and
+#   org.therapiefinder append the same stanza). Removing it shrinks the APK by
+#   the block's 8192 bytes, hence the new size and hash above.
 #   Reason: the first CI `fdroid build` compiled green and then failed the
 #   reproducibility check with exactly one differing file, resources.arsc.
 #   Its string pool held the same 7373 strings on both sides; the only value
@@ -125,7 +134,7 @@ Repo: https://github.com/APECSdev/sidecoin.git
 # source build byte-for-byte against it and then SHIP OURS. %v resolves to
 # versionName (26.9.29), matching the v26.9.29 tag/release. GitHub returns a 302
 # redirect to the asset; fdroidserver's net.download_file follows it (verified:
-# HTTP 200, content-length 148171729).
+# HTTP 200, content-length 148163537).
 Binaries: 
   https://github.com/APECSdev/sidecoin/releases/download/v%v/app-fdroid-release.apk
 
@@ -139,7 +148,7 @@ Builds:
     # This is the first commit whose native libraries are byte-reproducible
     # (see the SIGNING note above); earlier commits embed absolute build paths
     # and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: c8c235dd00d72ed209350e61a9b7cd9a3929313a
+    commit: 362709ca8948f4ee6ea675969f0df47013965491
     subdir: apps/mobile/android
     # `fdroid` is the FOSS flavor: it excludes the playstore-only Sentry
     # dependency (see android/app/build.gradle `playstoreImplementation`).
