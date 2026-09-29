@@ -64,8 +64,8 @@
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
 #   publish.py to fetch and compare. The signed release APK is attached to the
-#   v26.9.23 GitHub release (asset app-fdroid-release.apk, 148,171,729 bytes,
-#   SHA-256 a7da3dafee0337e7cda697e61ebcf9775b5d411762baba3a9d1290576da9c1ec),
+#   v26.9.29 GitHub release (asset app-fdroid-release.apk, 148,171,729 bytes,
+#   SHA-256 37197b6dcc53fe06d791e4e53be933e129814f20824d08bd736262705d5c482e),
 #   so `Binaries:` below resolves to it via %v -> versionName. If verification
 #   ever fails, publish is SKIPPED (publish.py counts it as failed), not
 #   silently re-signed, so an upstream mismatch can never ship a wrong APK.
@@ -73,8 +73,8 @@
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
 #   v26.9.29 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit fd4ec67 (was 8da1c03c... at 762805a);
-#   fd4ec67 is the version bump to 26.9.29 on top of 7aa639f, which carries
+#   The binary is REBUILT at commit c8c235d (was 8da1c03c... at 762805a);
+#   c8c235d is the version bump to 26.9.29 on top of 7aa639f, which carries
 #   the reproducibility pin described below.
 #   Reason: the first CI `fdroid build` compiled green and then failed the
 #   reproducibility check with exactly one differing file, resources.arsc.
@@ -139,7 +139,7 @@ Builds:
     # This is the first commit whose native libraries are byte-reproducible
     # (see the SIGNING note above); earlier commits embed absolute build paths
     # and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: fd4ec675a3f36307f88acfdaa8403485fa9fd7ae
+    commit: c8c235dd00d72ed209350e61a9b7cd9a3929313a
     subdir: apps/mobile/android
     # `fdroid` is the FOSS flavor: it excludes the playstore-only Sentry
     # dependency (see android/app/build.gradle `playstoreImplementation`).
