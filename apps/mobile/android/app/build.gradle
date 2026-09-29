@@ -116,6 +116,21 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
+    // AGP 7.0+ writes a `Dependency metadata` block (id 0x504b4453) into the
+    // APK Signing Block describing the Google Play libraries in use. F-Droid's
+    // scanner rejects it outright:
+    //
+    //   ERROR Found extra signing block 'Dependency metadata' in ...binary.apk
+    //
+    // (scanner.py scan_apk -> APK_SIGNING_BLOCK_IDS). The data is only read by
+    // Play Console tooling, so nothing needs it in an APK F-Droid ships.
+    // Disable it in both the APK and the AAB. Precedent: the merged
+    // com.wire and org.therapiefinder recipes append the same stanza.
+    dependenciesInfo {
+        includeInApk = false
+        includeInBundle = false
+    }
+
     namespace "app.sidecoin"
 
     defaultConfig {
