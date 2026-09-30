@@ -270,10 +270,22 @@ Builds:
       #    scanignoring them is the minimum change; building Skia from source
       #    would need an `srclib` + build-skia.ts, which the published package
       #    does not contain.
-      # 3. SQLITE .so — react-native-sqlite-storage/platforms/android-native/
-      #    libs/<abi>/libsqlc-native-driver.so is the native SQLite driver.
-      #    Deleting it makes the module fail to load at runtime (transaction
-      #    history is built on this module; it is not optional).
+      # 3. SQLITE .so — .pnpm/react-native-sqlite-storage@*/node_modules/
+      #    react-native-sqlite-storage/platforms/android-native/libs/<abi>/
+      #    libsqlc-native-driver.so. This is NOT the module that ships. The
+      #    package's react-native.config.js points android at
+      #    `platforms/android` (pure Java: org.pgsqlite.SQLitePluginPackage),
+      #    and autolinking resolves exactly that sourceDir — it never touches
+      #    `platforms/android-native`. The shipped Java has no
+      #    System.loadLibrary/libsqlc/io.liteglue reference at all, and the
+      #    built APK contains no sqlite native library (`unzip -l` finds no
+      #    sqlite/sqlc entry; only the `Lorg/pgsqlite/` classes are present).
+      #    The `.so` files are dead weight for Android and cannot be built —
+      #    the package ships no Android C/C++ sources (its only .cpp/.h files
+      #    are under platforms/ios and platforms/windows). They are
+      #    nevertheless scanned and flagged as "shared library", so they must
+      #    be either scanignored or scandeleted; scanignore is used so the
+      #    entry stays valid regardless of whether the tree is later deleted.
       - node_modules/.pnpm/react-native@*/node_modules/react-native/sdks/hermesc/linux64-bin/hermesc
       - node_modules/.pnpm/@shopify+react-native-skia@*/node_modules/@shopify/react-native-skia/libs/android
       - node_modules/.pnpm/react-native-sqlite-storage@*/node_modules/react-native-sqlite-storage/platforms/android-native/libs
