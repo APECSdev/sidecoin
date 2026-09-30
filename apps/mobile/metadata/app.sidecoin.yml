@@ -149,19 +149,23 @@ Builds:
     # (see the SIGNING note above); earlier commits embed absolute build paths
     # and the build-machine IP in resources.arsc (see the SIGNING note).
     commit: 362709ca8948f4ee6ea675969f0df47013965491
-    subdir: apps/mobile/android
+    # `subdir` is the MODULE directory, not the Gradle project root. fdroidserver
+    # roots both the gradle invocation (build.py) and the APK search at
+    # `root_dir = build_dir/subdir` (common.prepare_source), and its default
+    # gradle output method globs `<root_dir>/build/outputs/apk/<flavor>/release`.
+    # A React Native `app` module writes exactly there, so pointing `subdir` at
+    # `app` lets the default glob find the APK and removes the need for an
+    # `output:` line. (The gradle *task* still builds the multi-module project:
+    # fdroidserver runs the system `gradle` binary, which walks up to
+    # `apps/mobile/android/settings.gradle`, rather than `./gradlew`.)
+    # The old `subdir: apps/mobile/android` + explicit `output:` failed with
+    # "Failed to find any output apks", because the module's output sits one
+    # level below the directory fdroidserver was searching.
+    subdir: apps/mobile/android/app
     # `fdroid` is the FOSS flavor: it excludes the playstore-only Sentry
     # dependency (see android/app/build.gradle `playstoreImplementation`).
     gradle:
       - fdroid
-    # EXACT output path. With `subdir: apps/mobile/android`, fdroidserver's
-    # gradle output method only globs `<root_dir>/build/outputs/apk/...`, but a
-    # React Native `app` module writes to `<root_dir>/app/build/outputs/apk/...`
-    # (verified: the real `fdroid build` compiled a green assembleFdroidRelease
-    # then failed with "Failed to find any output apks"). An explicit `output:`
-    # switches build.output_method() to `raw`, which globs `root_dir + output`
-    # (build.py:793-795). The `fdroid` flavor segment matches `gradle: [fdroid]`.
-    output: app/build/outputs/apk/fdroid/release/*-release-unsigned.apk
     # The buildserver VM runs Debian trixie, which no longer ships a JDK 17.
     # Gradle needs one anyway: the React Native Gradle plugin forks a JVM with
     # `languageVersion=17`, and without a matching toolchain the build dies with
@@ -179,12 +183,16 @@ Builds:
     # Three things are provisioned here:
     #
     # 1. JDK 17 from bookworm, selected via update-java-alternatives.
-    # 2. Node — not in the image. From the official tarball, verified against
-    #    the SHA-256 published in nodejs.org/dist/v22.23.3/SHASUMS256.txt.
-    #    `ca-certificates` is required for the https download to validate.
+    # 2. Node + npm — not in the image. Installed from Debian forky (testing)
+    #    rather than the upstream nodejs.org tarball: F-Droid's buildserver has
+    #    no `node` and no `npm`, and pulling both from the distro keeps the
+    #    provisioning to plain apt. forky nodejs is 24.21.0, which satisfies
+    #    the repo's `engines.node` (>= 22 at the root, >= 20 in apps/mobile).
+    #    (No version pin: forky tracks testing and will roll forward.)
     # 3. pnpm — the first CI run failed with `bash: line 2: pnpm: command not
-    #    found`. Corepack (bundled with Node) turns on the pnpm shim pinned by
-    #    the repo's root `packageManager` (pnpm@9.15.4).
+    #    found`. Corepack turns on the pnpm shim pinned by the repo's root
+    #    `packageManager` (pnpm@9.15.4). forky's nodejs Depends: node-corepack,
+    #    so `corepack enable` works without a separate install.
     #
     # The install runs in `init:`, which fdroidserver executes in
     # prepare_source() immediately after checkout — BEFORE `rm:`/`prebuild:` and,
@@ -192,6 +200,11 @@ Builds:
     # `scandelete: node_modules` safe: the scanner still sees every installed
     # module, but init has already produced the tree Gradle needs.
     #
+    # `init:` runs with cwd = root_dir = build_dir/subdir, i.e. now inside
+    # `apps/mobile/android/app`, so its `cd` targets are shifted one level
+    # deeper than when subdir was `apps/mobile/android`. `cd ../../../..`
+    # climbs app -> android -> mobile -> apps -> repo root, and the last line
+    # returns to the module dir where gradle is invoked.
     # CI=true is REQUIRED, not cosmetic. apps/desktop declares a postinstall
     # that runs `cargo run --bin export_types` (a Tauri type-export) unless CI
     # is exactly "true". Without it, a clean install spends ~13m compiling Rust
@@ -199,20 +212,18 @@ Builds:
     # drops to ~30s with zero cargo invocations.
     sudo:
       - apt-get update
-      - apt-get install -y ca-certificates
-      - curl -Lo node.tar.gz https://nodejs.org/dist/v22.23.3/node-v22.23.3-linux-x64.tar.gz
-      - echo "1084aa36196bba4c3a5e69a1ee388a6e4ff729dad09445fbcd434b28fe3c24af node.tar.gz"
-        | sha256sum -c -
-      - tar xzf node.tar.gz --strip-components=1 -C /usr/local/
+      - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
+      - apt-get update
+      - apt-get install -y -t forky nodejs npm
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
       - apt-get update
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
     init:
-      - cd ../../..
+      - cd ../../../..
       - corepack enable
       - CI=true pnpm install --frozen-lockfile
-      - cd apps/mobile/android
+      - cd apps/mobile/android/app
     ndk: 27.1.12297006
     # node_modules is created by the `init:` `pnpm install`, so it cannot be
     # named in `rm:` — fdroidserver applies `rm:` AFTER `init:` and hard-fails
