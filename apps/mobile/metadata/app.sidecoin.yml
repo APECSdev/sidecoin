@@ -189,10 +189,15 @@ Builds:
     #    provisioning to plain apt. forky nodejs is 24.21.0, which satisfies
     #    the repo's `engines.node` (>= 22 at the root, >= 20 in apps/mobile).
     #    (No version pin: forky tracks testing and will roll forward.)
-    # 3. pnpm — the first CI run failed with `bash: line 2: pnpm: command not
-    #    found`. Corepack turns on the pnpm shim pinned by the repo's root
-    #    `packageManager` (pnpm@9.15.4). forky's nodejs Depends: node-corepack,
-    #    so `corepack enable` works without a separate install.
+    # 3. pnpm — pinned to the exact version in the repo's root `packageManager`
+    #    (pnpm@9.15.4) and installed with `npm install -g`, in this sudo block.
+    #    `corepack enable` does NOT work here: fdroidserver runs `init:` as an
+    #    unprivileged user and Debian's corepack tries to write its shims to
+    #    `/usr/bin` (`EACCES: permission denied, symlink … ->
+    #    '/usr/bin/pnpm'`). `npm install -g` runs as root in `sudo:` and lands
+    #    pnpm on PATH without touching /usr/bin. Same approach as
+    #    de.volksverpetzer.app.yml (`apt-get install -y -t forky npm` +
+    #    `npm install -g pnpm@<version>`).
     #
     # The install runs in `init:`, which fdroidserver executes in
     # prepare_source() immediately after checkout — BEFORE `rm:`/`prebuild:` and,
@@ -215,13 +220,13 @@ Builds:
       - echo "deb https://deb.debian.org/debian forky main" > /etc/apt/sources.list.d/forky.list
       - apt-get update
       - apt-get install -y -t forky nodejs npm
+      - npm install -g pnpm@9.15.4
       - echo "deb https://deb.debian.org/debian bookworm main" > /etc/apt/sources.list.d/bookworm.list
       - apt-get update
       - apt-get install -y -t bookworm openjdk-17-jdk-headless
       - update-java-alternatives -s java-1.17.0-openjdk-amd64
     init:
       - cd ../../../..
-      - corepack enable
       - CI=true pnpm install --frozen-lockfile
       - cd apps/mobile/android/app
     ndk: 27.1.12297006
