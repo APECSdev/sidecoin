@@ -30,6 +30,11 @@ import QRCode from "react-native-qrcode-svg";
 import { deriveReceiveAddress } from "@sidecoin/shared";
 
 import { loadWallet, setWalletNetwork, type WalletNetwork } from "../keystore";
+import {
+  listHistory,
+  type HistoryEntry,
+  type HistoryDirection,
+} from "../history";
 import { ECASH, GRAY } from "../theme/colors";
 import {
   Alert,
@@ -63,6 +68,40 @@ function toLabel(network: WalletNetwork): string {
   return network === "betanet" ? "Betanet" : "Signet";
 }
 
+/** Human label for a history row's direction. */
+function historyDirectionLabel(direction: HistoryDirection): string {
+  switch (direction) {
+    case "send":
+      return "Sent";
+    case "receive":
+      return "Received";
+    case "deposit":
+      return "Deposit";
+    case "withdraw":
+      return "Withdrawal";
+  }
+}
+
+/** Shorten a txid to its first and last 6 characters for the list view. */
+function shortTxid(txid: string): string {
+  return txid.length > 14 ? `${txid.slice(0, 6)}…${txid.slice(-6)}` : txid;
+}
+
+/**
+ * Render a row's amount as a signed decimal in the chain's coin unit.
+ * Amounts are stored as satoshi strings (see history.ts); this divides by
+ * 1e8 without ever converting the full value to a JS number, so a large
+ * balance cannot lose precision. Always shows at least 2 decimals, matching
+ * the `satsToBtc` convention used elsewhere in the wallet.
+ */
+function formatHistoryAmount(entry: HistoryEntry): string {
+  const negative = entry.direction === "send" || entry.direction === "withdraw";
+  const raw = entry.amountSats.padStart(9, "0");
+  const whole = raw.slice(0, -8);
+  const fraction = raw.slice(-8).replace(/0+$/, "").padEnd(2, "0");
+  return `${negative ? "-" : "+"}${whole}.${fraction}`;
+}
+
 export function ReceiveScreen(): React.JSX.Element {
   const [mnemonic, setMnemonic] = useState("");
   const [hasKey, setHasKey] = useState(false);
@@ -73,6 +112,7 @@ export function ReceiveScreen(): React.JSX.Element {
   const [copiedPaymentCode, setCopiedPaymentCode] = useState(false);
   const [error, setError] = useState("");
   const [selectedTab, setSelectedTab] = useState<ReceiveTab>("address");
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
 
   // BIP-44 coin type: 0 for mainnet + mainnet forks (betanet), 1 for test
   // networks. Mirrors the coinTypeFor logic in @sidecoin/shared/wallet/derivation.
@@ -112,6 +152,18 @@ export function ReceiveScreen(): React.JSX.Element {
     setMnemonic(wallet.mnemonic);
     setSelectedNetwork(wallet.network);
   }, []);
+
+  // Reload the local transaction history for the selected network whenever
+  // the network or the focus changes. The store is a plain SQLite read, so it
+  // is cheap; failures are non-fatal and just leave the panel empty.
+  useEffect(() => {
+    try {
+      setHistory(listHistory(selectedNetwork));
+    } catch (e) {
+      console.error("[ReceiveScreen] Failed to read history:", e);
+      setHistory([]);
+    }
+  }, [selectedNetwork, selectedTab]);
 
   // On mount AND on every focus — the focus read is the RN replacement for the
   // Vue `window.addEventListener(WALLET_NETWORK_EVENT, …)` listener, so a
@@ -373,19 +425,46 @@ export function ReceiveScreen(): React.JSX.Element {
 
               <Card tone="inset" style={styles.historyTable}>
                 <View style={styles.historyHeadRow}>
-                  <Text style={styles.historyTh}>Label</Text>
+                  <Text style={styles.historyTh}>Transaction</Text>
                   <Text style={styles.historyTh}>Status</Text>
                 </View>
-                <View style={styles.historyRow}>
-                  <View style={styles.historyCell}>
-                    <Text style={styles.historyTd}>Primary receive</Text>
-                    <Mono style={styles.historyAddress}>{address}</Mono>
+                {history.length === 0 ? (
+                  <View style={styles.historyRow}>
+                    <View style={styles.historyCell}>
+                      <Text style={styles.historyTd}>No transactions yet</Text>
+                      <Mono style={styles.historyAddress}>{address}</Mono>
+                    </View>
+                    <View style={styles.historyCellEnd}>
+                      <Text style={styles.historyTd}>Ready</Text>
+                      <Text style={styles.historyAmount}>—</Text>
+                    </View>
                   </View>
-                  <View style={styles.historyCellEnd}>
-                    <Text style={styles.historyTd}>Ready</Text>
-                    <Text style={styles.historyAmount}>—</Text>
-                  </View>
-                </View>
+                ) : (
+                  history.map((entry) => (
+                    <View key={entry.txid} style={styles.historyRow}>
+                      <View style={styles.historyCell}>
+                        <Text style={styles.historyTd}>
+                          {historyDirectionLabel(entry.direction)}
+                        </Text>
+                        <Mono style={styles.historyAddress}>
+                          {shortTxid(entry.txid)}
+                        </Mono>
+                      </View>
+                      <View style={styles.historyCellEnd}>
+                        <Text style={styles.historyTd}>
+                          {entry.status === "confirmed"
+                            ? `Confirmed #${entry.blockHeight ?? ""}`.trim()
+                            : entry.status === "failed"
+                              ? "Failed"
+                              : "Pending"}
+                        </Text>
+                        <Text style={styles.historyAmount}>
+                          {formatHistoryAmount(entry)}
+                        </Text>
+                      </View>
+                    </View>
+                  ))
+                )}
               </Card>
             </View>
           )}

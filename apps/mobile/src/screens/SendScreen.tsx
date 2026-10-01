@@ -49,6 +49,7 @@ import { parsePaymentUri } from "../components/paymenturi";
 import { QrScanner } from "../components/QrScanner";
 import { toSpendableUtxo, parseCoinsToSats } from "../send";
 import { loadWallet, type WalletNetwork } from "../keystore";
+import { recordTransaction } from "../history";
 import {
   getL1Utxos,
   broadcastTransaction,
@@ -258,7 +259,25 @@ export function SendScreen(): React.JSX.Element {
     try {
       const wallet = await loadWallet();
       const network = wallet?.network ?? "betanet";
-      setReceipt(await broadcastTransaction(L1_CHAIN_ID, built.hex, network));
+      const receipt = await broadcastTransaction(L1_CHAIN_ID, built.hex, network);
+      setReceipt(receipt);
+      // Record the send locally so the Receive-history panel has a durable
+      // record once the adapter/indexer is available again. A failure here
+      // must not mask a successful broadcast, so it is logged, not thrown.
+      try {
+        recordTransaction({
+          txid: receipt.txid,
+          network,
+          direction: "send",
+          amountSats: built.amountSatoshis.toString(),
+          address: address.trim(),
+          feeSats: built.feeSatoshis.toString(),
+          status: "pending",
+          blockHeight: null,
+        });
+      } catch (e) {
+        console.error("[SendScreen] Failed to record history entry:", e);
+      }
     } catch (e) {
       if (e instanceof ApiError) {
         setError(`Broadcast failed (${e.code}): ${e.message}`);
