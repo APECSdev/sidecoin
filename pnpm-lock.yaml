@@ -186,6 +186,9 @@ importers:
 
   apps/mobile:
     dependencies:
+      '@op-engineering/op-sqlite':
+        specifier: 18.2.5
+        version: 18.2.5(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
       '@react-native-async-storage/async-storage':
         specifier: 2.2.0
         version: 2.2.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))
@@ -264,9 +267,6 @@ importers:
       react-native-screens:
         specifier: 4.17.1
         version: 4.17.1(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
-      react-native-sqlite-storage:
-        specifier: 6.0.1
-        version: 6.0.1(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))
       react-native-svg:
         specifier: 15.14.0
         version: 15.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
@@ -350,9 +350,6 @@ importers:
       '@types/react':
         specifier: 19.1.0
         version: 19.1.0
-      '@types/react-native-sqlite-storage':
-        specifier: 6.0.5
-        version: 6.0.5
       '@types/react-native-vector-icons':
         specifier: 6.4.18
         version: 6.4.18
@@ -2662,6 +2659,16 @@ packages:
   '@onekeyfe/hd-transport@1.1.26':
     resolution: {integrity: sha512-5GaLb2u/cNFoWz3tiG3YFbjYCylWSz6ISARyfss7gfiI4sOGpstnRfLhFEoxHejNIGICrpPF3wPAazG7ouMvgg==}
 
+  '@op-engineering/op-sqlite@18.2.5':
+    resolution: {integrity: sha512-OLmcM0SQLapP1p5Q6Ck5P+V3N6RsAhBozIG07PbQr+8wgB0gYoFgFjuWZK0JvNBY+UYgYPxkOQDd4rk4naWNGw==}
+    peerDependencies:
+      '@sqlite.org/sqlite-wasm': '*'
+      react: '*'
+      react-native: '*'
+    peerDependenciesMeta:
+      '@sqlite.org/sqlite-wasm':
+        optional: true
+
   '@oslojs/encoding@1.1.0':
     resolution: {integrity: sha512-70wQhgYmndg4GCPxPPxPGevRKqTIJ2Nh4OkiMWmDAVYsTQ+Ta7Sq+rPevXyXGdzr30/qZBnyOalCszoMxlyldQ==}
 
@@ -3973,9 +3980,6 @@ packages:
 
   '@types/offscreencanvas@2019.7.3':
     resolution: {integrity: sha512-ieXiYmgSRXUDeOntE1InxjWyvEelZGP63M+cGuquuRLuIKKT1osnkXjxev9B7d1nXSug5vpunx+gNlbVxMlC9A==}
-
-  '@types/react-native-sqlite-storage@6.0.5':
-    resolution: {integrity: sha512-1gPwgYil6pHV/EDF816M8KmVsQC5nGMTAm8OMC25GbyuBaXFn7sdguMq6A2owtXB8c4qsH2tOEIQNetbOquawA==}
 
   '@types/react-native-vector-icons@6.4.18':
     resolution: {integrity: sha512-YGlNWb+k5laTBHd7+uZowB9DpIK3SXUneZqAiKQaj1jnJCZM0x71GDim5JCTMi4IFkhc9m8H/Gm28T5BjyivUw==}
@@ -9093,11 +9097,6 @@ packages:
       react: '*'
       react-native: '*'
 
-  react-native-sqlite-storage@6.0.1:
-    resolution: {integrity: sha512-1tDFjrint6X6qSYKf3gDyz+XB+X79jfiL6xTugKHPRtF0WvqMtVgdLuNqZunIXjNEvNtNVEbXaeZ6MsguFu00A==}
-    peerDependencies:
-      react-native: '>=0.14.0'
-
   react-native-svg@15.14.0:
     resolution: {integrity: sha512-B3gYc7WztcOT4N54AtUutbe0Nuqqh/nkresY0fAXzUHYLsWuIu/yGiCCD3DKfAs6GLv5LFtWTu7N333Q+e3bkg==}
     peerDependencies:
@@ -13940,6 +13939,11 @@ snapshots:
       long: 4.0.0
       protobufjs: 6.11.6
 
+  '@op-engineering/op-sqlite@18.2.5(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)':
+    dependencies:
+      react: 19.1.0
+      react-native: 0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)
+
   '@oslojs/encoding@1.1.0': {}
 
   '@pkgjs/parseargs@0.11.0':
@@ -15820,8 +15824,6 @@ snapshots:
   '@types/numeral@2.0.5': {}
 
   '@types/offscreencanvas@2019.7.3': {}
-
-  '@types/react-native-sqlite-storage@6.0.5': {}
 
   '@types/react-native-vector-icons@6.4.18':
     dependencies:
@@ -22385,10 +22387,6 @@ snapshots:
       react-freeze: 1.0.4(react@19.1.0)
       react-native: 0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)
       warn-once: 0.1.1
-
-  react-native-sqlite-storage@6.0.1(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)):
-    dependencies:
-      react-native: 0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)
 
   react-native-svg@15.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0):
     dependencies:
