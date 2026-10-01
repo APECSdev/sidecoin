@@ -58,6 +58,28 @@ platform-detail, swap, markets, toolbox, pro, settings); components
 (`components/ui.tsx`, `components/pro/*`, `components/QrScanner.tsx`,
 `components/paymenturi.ts`, `components/bitnames/*`).
 
+**Local transaction history** lives in `apps/mobile/src/history.ts` — a small
+SQLite store built on **`@op-engineering/op-sqlite`** (NOT
+`react-native-sqlite-storage`, which was removed). op-sqlite compiles the
+SQLite amalgamation (`cpp/sqlite3.c`) from source at build time and, in its
+default configuration, packages **no** prebuilt native library: its
+`android/build.gradle` sets `jniLibs.srcDirs = []` unless libsql / turso /
+sqlite-vec are explicitly enabled via the app's `package.json`. That is why the
+F-Droid recipe carries **no prebuilt-binary `scanignore` entry** for SQLite.
+Amounts are stored as decimal satoshi **strings**, never INTEGERs — op-sqlite
+returns INTEGER columns as JS numbers, which would corrupt values above 2^53.
+`SendScreen` records every broadcast; `ReceiveScreen`'s History tab reads the
+store back. Tests use the manual mock at
+`apps/mobile/__mocks__/@op-engineering/op-sqlite.js` (an in-memory engine that
+understands only the statements `history.ts` issues).
+
+**Release APKs are ARM-only.** `android/gradle.properties` sets
+`reactNativeArchitectures=arm64-v8a,armeabi-v7a`. Without that property the RN
+Gradle plugin returns an empty architecture list, which means no `abiFilters`
+at all and all four ABIs packaged — the x86/x86_64 images are emulator-only
+and accounted for ~72 MB of a ~148 MB APK. F-Droid ships one universal APK per
+version, so ABI splits are not an option; both ARM ABIs stay in one APK.
+
 **Tab order is `dashboard` (Home) | `feed` | `explore` | `platforms`** —
 Platforms is deliberately LAST. Send, Receive, Settings, Profile, and Scan QR
 live behind the floating action button (`components/FabMenu.tsx`) and are stack
@@ -103,10 +125,11 @@ cd android && ./gradlew assembleFdroidRelease
 adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
 
-- `applicationId app.sidecoin`, `versionCode 20260929`, `versionName 26.9.29`,
+- `applicationId app.sidecoin`, `versionCode 20260930`, `versionName 26.9.30`,
   minSdk 24, compileSdk/targetSdk 35, RN 0.81.1 / React 19.1.0, NDK
-  `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~148 MB (large —
-  ABI splits / dep trimming is an open item).
+  `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~71 MB
+  (`reactNativeArchitectures` limits it to arm64-v8a + armeabi-v7a; before
+  that it was ~148 MB with the two emulator-only ABIs included).
 - Flavors `fdroid` / `playstore`. Sentry is `optionalDependencies`-scoped and
   `metro.config.js` resolves it to `src/lib/sentry-noop.ts` for every flavor
   EXCEPT `playstore`, so `fdroid` builds have no crash reporting (intentional,
@@ -321,9 +344,9 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
 **The Android version is DATE-BASED and `versionCode` is EIGHT digits
 (`YYYYMMDD`).** This is a hard rule — not a suggestion.
 
-- `versionCode = 20260929` for 2026-09-29 (the release date), NOT `260929`
+- `versionCode = 20260930` for 2026-09-30 (the release date), NOT `260930`
   and NOT an arbitrary build counter.
-- `versionName = "26.9.29"` — the short `YY.M.D` form of the SAME date.
+- `versionName = "26.9.30"` — the short `YY.M.D` form of the SAME date.
 - Change **all three together**:
   1. `apps/mobile/android/app/build.gradle` (`versionCode` + `versionName`)
   2. `apps/mobile/package.json` (`"version"`)
@@ -355,7 +378,7 @@ this format explicitly, in place of `metadata/app.sidecoin/en-US/`.
 >
 > This applies to *published* versions. Earlier in-tree values (`26050011`,
 > `26050030`) were never tagged or distributed, so `20260923` was the first
-> published code. `20260929` is the next release. If a code is ever *decreased*
+> published code. `20260930` is the next release. If a code is ever *decreased*
 > against an actually-installed build, the APK cannot install as an update —
 > the device must uninstall first and `adb install -r` fails.
 

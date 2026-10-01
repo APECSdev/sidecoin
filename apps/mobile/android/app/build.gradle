@@ -137,8 +137,8 @@ android {
         applicationId "app.sidecoin"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 20260929
-        versionName "26.9.29"
+        versionCode 20260930
+        versionName "26.9.30"
     }
 
     signingConfigs {

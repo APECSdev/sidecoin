@@ -275,25 +275,16 @@ Builds:
       #    scanignoring them is the minimum change; building Skia from source
       #    would need an `srclib` + build-skia.ts, which the published package
       #    does not contain.
-      # 3. SQLITE .so — .pnpm/react-native-sqlite-storage@*/node_modules/
-      #    react-native-sqlite-storage/platforms/android-native/libs/<abi>/
-      #    libsqlc-native-driver.so. This is NOT the module that ships. The
-      #    package's react-native.config.js points android at
-      #    `platforms/android` (pure Java: org.pgsqlite.SQLitePluginPackage),
-      #    and autolinking resolves exactly that sourceDir — it never touches
-      #    `platforms/android-native`. The shipped Java has no
-      #    System.loadLibrary/libsqlc/io.liteglue reference at all, and the
-      #    built APK contains no sqlite native library (`unzip -l` finds no
-      #    sqlite/sqlc entry; only the `Lorg/pgsqlite/` classes are present).
-      #    The `.so` files are dead weight for Android and cannot be built —
-      #    the package ships no Android C/C++ sources (its only .cpp/.h files
-      #    are under platforms/ios and platforms/windows). They are
-      #    nevertheless scanned and flagged as "shared library", so they must
-      #    be either scanignored or scandeleted; scanignore is used so the
-      #    entry stays valid regardless of whether the tree is later deleted.
+      #
+      # There is deliberately NO SQLite entry. The wallet's history store uses
+      # @op-engineering/op-sqlite, which compiles the SQLite amalgamation
+      # (cpp/sqlite3.c) from source and, with its default configuration, sets
+      # `jniLibs.srcDirs = []` in android/build.gradle so no prebuilt native
+      # library is packaged at all. Its unused libsql/turso/sqlite-vec blobs
+      # are covered by `scandelete: node_modules`, and deleting them is safe
+      # because Gradle never reads those directories.
       - node_modules/.pnpm/react-native@*/node_modules/react-native/sdks/hermesc/linux64-bin/hermesc
       - node_modules/.pnpm/@shopify+react-native-skia@*/node_modules/@shopify/react-native-skia/libs/android
-      - node_modules/.pnpm/react-native-sqlite-storage@*/node_modules/react-native-sqlite-storage/platforms/android-native/libs
 
 # The ONLY signer allowed to have produced the shipped APK. If an APK in the
 # repo carries any other signature, fdroid update drops it (update.py
