@@ -64,20 +64,32 @@
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
 #   publish.py to fetch and compare. The signed release APK is attached to the
-#   v26.9.29 GitHub release (asset app-fdroid-release.apk, 148,163,537 bytes,
-#   SHA-256 01e6acf47857b52660f5e334334fb7d0e8b2e6098da0100e4c9b49208afa4ebb),
+#   v26.9.30 GitHub release (asset app-fdroid-release.apk, 74,521,086 bytes,
+#   SHA-256 b9f22fb5102b4fc5e7194059fa7459ab63b1b90f5d4380931928ce743786d983),
 #   so `Binaries:` below resolves to it via %v -> versionName. If verification
 #   ever fails, publish is SKIPPED (publish.py counts it as failed), not
 #   silently re-signed, so an upstream mismatch can never ship a wrong APK.
 #
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
-#   v26.9.29 release, which must be tagged and uploaded before submission.
+#   v26.9.30 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit 362709c (was 8da1c03c... at 762805a);
-#   362709c drops the AGP-written `Dependency metadata` signing block
-#   (id 0x504b4453) that F-Droid's `check apk` scanner rejects outright, and
-#   sits on top of c8c235d, the version bump to 26.9.29, which in turn sits on
-#   7aa639f, which carries the reproducibility pin described below.
+#   The binary is REBUILT at commit ecf636e (was 362709c at 26.9.29).
+#   26.9.30 carries two changes on top of the 26.9.29 chain:
+#     • ARM-only release APKs — reactNativeArchitectures was left at the AGP
+#       default (all four ABIs), so the APK shipped x86 + x86_64 libraries
+#       that exist only for emulators (x86_64 37.0 MB + x86 35.4 MB = 72.4 MB).
+#       Pinning it to arm64-v8a,armeabi-v7a takes the APK from 148,163,537 to
+#       74,521,086 bytes (-49.7%) with no loss of device coverage. Precedent:
+#       ch.swissbitcoinpay.checkout.yml sets the same property.
+#     • The history store moved from react-native-sqlite-storage (prebuilt
+#       .so, scanignored) to @op-engineering/op-sqlite, which compiles the
+#       SQLite amalgamation (cpp/sqlite3.c) from source, so the SQLite
+#       scanignore entry is gone.
+#   The 26.9.29 chain remains in place below it: 362709c drops the AGP-written
+#   `Dependency metadata` signing block (id 0x504b4453) that F-Droid's
+#   `check apk` scanner rejects outright, sits on top of c8c235d, the version
+#   bump to 26.9.29, which in turn sits on 7aa639f, the reproducibility pin
+#   described below.
 #   Reason 1 (signing block): the first CI `fdroid build` compiled and passed
 #   reproducibility, but `check apk` failed with "ERROR Found extra signing
 #   block 'Dependency metadata' in ...binary.apk". AGP 7.0+ writes it from
@@ -132,23 +144,23 @@ Repo: https://github.com/APECSdev/sidecoin.git
 # Hosted reference binary: the APK we signed with our own release key, from the
 # SAME commit as the build below, so publish.py (route (a)) can verify F-Droid's
 # source build byte-for-byte against it and then SHIP OURS. %v resolves to
-# versionName (26.9.29), matching the v26.9.29 tag/release. GitHub returns a 302
+# versionName (26.9.30), matching the v26.9.30 tag/release. GitHub returns a 302
 # redirect to the asset; fdroidserver's net.download_file follows it (verified:
-# HTTP 200, content-length 148163537).
+# HTTP 200, content-length 74521086).
 Binaries: 
   https://github.com/APECSdev/sidecoin/releases/download/v%v/app-fdroid-release.apk
 
 Builds:
   # versionCode / versionName MUST match apps/mobile/android/app/build.gradle.
   # If this drifts, F-Droid will build a different APK than the one tested.
-  - versionName: 26.9.29
-    versionCode: 20260929
-    # FULL 40-char hash, not the v26.9.29 tag. Build_Metadata_Reference:
+  - versionName: 26.9.30
+    versionCode: 20260930
+    # FULL 40-char hash, not the v26.9.30 tag. Build_Metadata_Reference:
     # "Don't use branch name or tag name. The full commit hash should be used."
     # This is the first commit whose native libraries are byte-reproducible
     # (see the SIGNING note above); earlier commits embed absolute build paths
     # and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: 362709ca8948f4ee6ea675969f0df47013965491
+    commit: ecf636edc525efe7e6590914d5d2cafcba7ad187
     # `subdir` is the MODULE directory, not the Gradle project root. fdroidserver
     # roots both the gradle invocation (build.py) and the APK search at
     # `root_dir = build_dir/subdir` (common.prepare_source), and its default
@@ -301,8 +313,8 @@ AllowedAPKSigningKeys:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 26.9.29
-CurrentVersionCode: 20260929
+CurrentVersion: 26.9.30
+CurrentVersionCode: 20260930
 
 # NonFreeNet: the wallet talks to third-party hosted services that are not
 # free software and cannot be self-hosted by the user from within the app:
