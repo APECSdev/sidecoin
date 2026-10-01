@@ -28,6 +28,11 @@ jest.mock("@react-navigation/native", () => ({
   },
 }));
 
+// The history store imports @op-engineering/op-sqlite at module scope. The
+// package's real entry point throws under Jest (no native module), so use the
+// manual in-memory mock in __mocks__/@op-engineering/op-sqlite.js.
+jest.mock("@op-engineering/op-sqlite");
+
 // The camera overlay is only mounted while the scanner is open. It now routes
 // through the FOSS bridge (../lib/zxingScanner -> a native Activity), so stub
 // that bridge: the native module is absent in Jest.

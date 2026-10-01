@@ -101,6 +101,10 @@ const config: Config = {
       + "|nativewind"
       + "|@shopify/react-native-skia"
       + "|victory-native"
+      // @op-engineering/op-sqlite ships untranspiled ESM (lib/module/index.js
+      // uses `import`). The history store imports it at module scope, so the
+      // Send screen and every screen that renders Receive history pull it in.
+      + "|@op-engineering/op-sqlite"
       + "|@sidecoin/shared"
       + "|@sidecoin/api-client"
       // @sidecoin/shared imports these ESM-only crypto libraries at runtime

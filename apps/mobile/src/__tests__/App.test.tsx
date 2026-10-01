@@ -269,6 +269,11 @@ jest.mock("@react-native-clipboard/clipboard", () => ({
 // Receive screen mounts it, so stub it to a plain host element.
 jest.mock("react-native-qrcode-svg", () => "QRCode");
 
+// @op-engineering/op-sqlite — the history store (used by SendScreen and the
+// Receive-history panel) imports it at module scope. Its native entry point
+// throws under Jest, so use the manual in-memory mock.
+jest.mock("@op-engineering/op-sqlite");
+
 // react-native-webview — ExploreScreen (an always-registered tab) imports it
 // at module scope, and its native RNCWebViewModule is absent under Jest.
 jest.mock("react-native-webview", () => {

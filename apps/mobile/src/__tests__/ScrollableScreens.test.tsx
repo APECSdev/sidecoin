@@ -22,6 +22,11 @@ jest.mock("@react-navigation/native", () => ({
   },
 }));
 
+// ReceiveScreen reads the local history store, which imports
+// @op-engineering/op-sqlite; the package's native entry point throws under
+// Jest, so use the manual in-memory mock.
+jest.mock("@op-engineering/op-sqlite");
+
 // A stored wallet so the screens take their "content" branch rather than the
 // "setup required" alert.
 jest.mock("../keystore", () => ({
