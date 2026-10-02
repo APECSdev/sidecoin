@@ -80,6 +80,17 @@ at all and all four ABIs packaged — the x86/x86_64 images are emulator-only
 and accounted for ~72 MB of a ~148 MB APK. F-Droid ships one universal APK per
 version, so ABI splits are not an option; both ARM ABIs stay in one APK.
 
+**Native libraries are compressed inside the APK.**
+`android/app/build.gradle` sets `packaging { jniLibs { useLegacyPackaging = true } }`,
+which deflates the 52 bundled `.so` files. AGP's default
+(`extractNativeLibs="false"`) stores them uncompressed so the loader can mmap
+them, which is better for install size and startup but makes the download much
+larger. With the property set, the release APK is 35,187,266 bytes instead of
+74,521,086. Use the DSL flag, not the `android:extractNativeLibs` manifest
+attribute — AGP writes `extractNativeLibs=false` after the manifest merge and
+can override a hand-written attribute. Requested by the F-Droid reviewer on
+[MR 50457](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/50457).
+
 **Tab order is `dashboard` (Home) | `feed` | `explore` | `platforms`** —
 Platforms is deliberately LAST. Send, Receive, Settings, Profile, and Scan QR
 live behind the floating action button (`components/FabMenu.tsx`) and are stack
@@ -125,9 +136,9 @@ cd android && ./gradlew assembleFdroidRelease
 adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
 
-- `applicationId app.sidecoin`, `versionCode 20260930`, `versionName 26.9.30`,
+- `applicationId app.sidecoin`, `versionCode 20261001`, `versionName 26.10.1`,
   minSdk 24, compileSdk/targetSdk 35, RN 0.81.1 / React 19.1.0, NDK
-  `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~71 MB
+  `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~35 MB
   (`reactNativeArchitectures` limits it to arm64-v8a + armeabi-v7a; before
   that it was ~148 MB with the two emulator-only ABIs included).
 - Flavors `fdroid` / `playstore`. Sentry is `optionalDependencies`-scoped and
@@ -344,9 +355,9 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
 **The Android version is DATE-BASED and `versionCode` is EIGHT digits
 (`YYYYMMDD`).** This is a hard rule — not a suggestion.
 
-- `versionCode = 20260930` for 2026-09-30 (the release date), NOT `260930`
+- `versionCode = 20261001` for 2026-10-01 (the release date), NOT `261001`
   and NOT an arbitrary build counter.
-- `versionName = "26.9.30"` — the short `YY.M.D` form of the SAME date.
+- `versionName = "26.10.1"` — the short `YY.M.D` form of the SAME date.
 - Change **all three together**:
   1. `apps/mobile/android/app/build.gradle` (`versionCode` + `versionName`)
   2. `apps/mobile/package.json` (`"version"`)
@@ -361,7 +372,7 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
 `build/<pkg>/<subdir>/<module>/src/<flavor>/play/` for listings
 (`listings/<locale>/title.txt`, `short-description.txt`, `full-description.txt`),
 graphics (`listings/<locale>/graphics/{icon,phone-screenshots}/`), and release
-notes (`release-notes/<locale>/default.txt`). With `subdir: apps/mobile/android`
+notes (`release-notes/<locale>/default.txt`). With `subdir: apps/mobile/android/app`
 and flavor `fdroid`, that resolves to
 `apps/mobile/android/app/src/fdroid/play/`. The reviewer on
 [MR 50457](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/50457) asked for
@@ -378,7 +389,7 @@ this format explicitly, in place of `metadata/app.sidecoin/en-US/`.
 >
 > This applies to *published* versions. Earlier in-tree values (`26050011`,
 > `26050030`) were never tagged or distributed, so `20260923` was the first
-> published code. `20260930` is the next release. If a code is ever *decreased*
+> published code. `20261001` is the next release. If a code is ever *decreased*
 > against an actually-installed build, the APK cannot install as an update —
 > the device must uninstall first and `adb install -r` fails.
 

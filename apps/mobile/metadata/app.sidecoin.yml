@@ -64,16 +64,24 @@
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
 #   publish.py to fetch and compare. The signed release APK is attached to the
-#   v26.9.30 GitHub release (asset app-fdroid-release.apk, 74,521,086 bytes,
-#   SHA-256 b9f22fb5102b4fc5e7194059fa7459ab63b1b90f5d4380931928ce743786d983),
+#   v26.10.1 GitHub release (asset app-fdroid-release.apk, 35,187,266 bytes,
+#   SHA-256 9043e1ac28d57df709ebafdeed721b4f3d043945d57d1f677b6bf68f89b747e2),
 #   so `Binaries:` below resolves to it via %v -> versionName. If verification
 #   ever fails, publish is SKIPPED (publish.py counts it as failed), not
 #   silently re-signed, so an upstream mismatch can never ship a wrong APK.
 #
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
-#   v26.9.30 release, which must be tagged and uploaded before submission.
+#   v26.10.1 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit ecf636e (was 362709c at 26.9.29).
+#   The binary is REBUILT at commit f42a174 (was ecf636e at 26.9.30).
+#   26.10.1 carries one change on top of the 26.9.30 chain:
+#     • Compressed native libraries — packaging.jniLibs.useLegacyPackaging
+#       deflates the bundled .so files, taking the APK from 74,521,086 to
+#       35,187,266 bytes (-52.8%). linsui requested this in review. The DSL
+#       flag is preferred over the android:extractNativeLibs manifest attribute
+#       because AGP writes extractNativeLibs=false after the manifest merge and
+#       can override a hand-written attribute. Precedents: com.invoiceninja.app,
+#       com.rogeriodocarmo.miroji.
 #   26.9.30 carries two changes on top of the 26.9.29 chain:
 #     • ARM-only release APKs — reactNativeArchitectures was left at the AGP
 #       default (all four ABIs), so the APK shipped x86 + x86_64 libraries
@@ -158,7 +166,7 @@ Builds:
   # If this drifts, F-Droid will build a different APK than the one tested.
   - versionName: 26.10.1
     versionCode: 20261001
-    # FULL 40-char hash, not the v26.9.30 tag. Build_Metadata_Reference:
+    # FULL 40-char hash, not the v26.10.1 tag. Build_Metadata_Reference:
     # "Don't use branch name or tag name. The full commit hash should be used."
     # This is the first commit whose native libraries are byte-reproducible
     # (see the SIGNING note above); earlier commits embed absolute build paths
