@@ -91,6 +91,36 @@ attribute — AGP writes `extractNativeLibs=false` after the manifest merge and
 can override a hand-written attribute. Requested by the F-Droid reviewer on
 [MR 50457](https://gitlab.com/fdroid/fdroiddata/-/merge_requests/50457).
 
+### F-Droid submission (MR 50457)
+
+**The recipe lives in two places and they are NOT identical.**
+`apps/mobile/metadata/app.sidecoin.yml` is the maintenance copy and keeps an
+explanatory comment header. The authoritative copy is
+`metadata/app.sidecoin.yml` in
+[fdroiddata](https://gitlab.com/fdroid/fdroiddata). CI enforces that
+`fdroid rewritemeta` produces **zero diff**, and rewritemeta **strips every
+comment** — so the fdroiddata copy is comment-free by definition. Edit the
+source copy, then copy it over and run `fdroid rewritemeta`; do not hand-edit
+the fdroiddata copy.
+
+**Route (a): F-Droid publishes the upstream-signed binary, it does not rebuild
+ours.** `Binaries:` points at
+`https://github.com/APECSdev/sidecoin/releases/download/v%v/app-fdroid-release.apk`
+and `AllowedAPKSigningKeys` pins our cert
+(`42126930dd049c558fcebc7f5893fa83cba0021a24aafe447e4dc6b3452d65d4`). publish.py
+downloads that APK and verifies it against the built one; a mismatch **skips**
+publish rather than re-signing.
+
+**Every release must therefore ship a GitHub release asset named EXACTLY
+`app-fdroid-release.apk`.** `gh release create <file>#<label>` sets a *label*,
+not the filename — use `gh release upload vX.Y.Z /path/to/app-fdroid-release.apk`.
+A wrong asset name makes `%v` 404 and breaks the next update check.
+
+**Current state:** 26.10.1 (`versionCode 20261001`, commit
+`f42a174837aba9ec98df6809ef502c414151724e`), pipeline green. `AutoUpdateMode:
+Version` + `UpdateCheckMode: Tags` means the next release needs a new tag AND a
+new `app-fdroid-release.apk` upload with that exact filename.
+
 **Tab order is `dashboard` (Home) | `feed` | `explore` | `platforms`** —
 Platforms is deliberately LAST. Send, Receive, Settings, Profile, and Scan QR
 live behind the floating action button (`components/FabMenu.tsx`) and are stack
