@@ -163,7 +163,7 @@ Builds:
     # This is the first commit whose native libraries are byte-reproducible
     # (see the SIGNING note above); earlier commits embed absolute build paths
     # and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: ecf636edc525efe7e6590914d5d2cafcba7ad187
+    commit: f42a174837aba9ec98df6809ef502c414151724e
     # `subdir` is the MODULE directory, not the Gradle project root. fdroidserver
     # roots both the gradle invocation (build.py) and the APK search at
     # `root_dir = build_dir/subdir` (common.prepare_source), and its default
