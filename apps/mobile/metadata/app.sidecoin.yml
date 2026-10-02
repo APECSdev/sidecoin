@@ -121,8 +121,8 @@
 # distribution, so there is no published version for this one to exceed.
 
 Categories:
-  - Money
   - Security
+  - Wallet
 
 License: MIT
 
@@ -322,7 +322,9 @@ CurrentVersionCode: 20260930
 #   • https://esplora.beta.ecash.ninja   (Betanet block explorer / API)
 #   • https://esplora.signet.drivechain.info (Signet block explorer / API)
 #   • https://ecashfarm.com/v1       (ECX market price)
-#   • https://supaqt.com/v1          (Coin News feeds)
-# This is an anti-feature, not a blocker.
+#   • https://supaqt.com/v1          (SupaQt Coin News feeds)
+# This is an anti-feature, not a blocker. The reason is carried in the
+# localized-string form below so linsui's "Add the reasons." request is met.
 AntiFeatures:
-  - NonFreeNet
+  NonFreeNet:
+    en-US: Talks to hosted sidecoin.app, Esplora, eCash Farm and SupaQt services
