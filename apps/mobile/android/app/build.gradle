@@ -131,14 +131,36 @@ android {
         includeInBundle = false
     }
 
+    // Compress the bundled .so files inside the APK.
+    //
+    // AGP defaults to android:extractNativeLibs="false", which stores the
+    // native libraries uncompressed so the loader can mmap them straight out
+    // of the APK. That is the better default for install size and startup
+    // time, but it makes the download far larger: the 52 .so files total
+    // 64,581,892 bytes of the 74,521,086-byte v26.9.30 APK.
+    //
+    // linsui asked for this during F-Droid review ("Please enable
+    // useLegacyPackaging. This should make the apk much smaller.").
+    // useLegacyPackaging is the documented replacement for the
+    // extractNativeLibs manifest attribute:
+    // https://developer.android.com/build/releases/past-releases/agp-4-2-0-release-notes
+    //
+    // Precedents in fdroiddata: com.invoiceninja.app,
+    // com.rogeriodocarmo.miroji.
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+        }
+    }
+
     namespace "app.sidecoin"
 
     defaultConfig {
         applicationId "app.sidecoin"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 20260930
-        versionName "26.9.30"
+        versionCode 20261001
+        versionName "26.10.1"
     }
 
     signingConfigs {

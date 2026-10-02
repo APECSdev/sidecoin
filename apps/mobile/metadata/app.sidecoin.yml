@@ -144,17 +144,20 @@ Repo: https://github.com/APECSdev/sidecoin.git
 # Hosted reference binary: the APK we signed with our own release key, from the
 # SAME commit as the build below, so publish.py (route (a)) can verify F-Droid's
 # source build byte-for-byte against it and then SHIP OURS. %v resolves to
-# versionName (26.9.30), matching the v26.9.30 tag/release. GitHub returns a 302
+# versionName (26.10.1), matching the v26.10.1 tag/release. GitHub returns a 302
 # redirect to the asset; fdroidserver's net.download_file follows it (verified:
-# HTTP 200, content-length 74521086).
+# HTTP 200, content-length 35187266, sha256 9043e1ac28d57df709ebafdeed721b4f3d0
+# 43945d57d1f677b6bf68f89b747e2). 26.10.1 deflates the bundled .so files (see
+# the useLegacyPackaging note in android/app/build.gradle), cutting the APK
+# from 74,521,086 to 35,187,266 bytes.
 Binaries: 
   https://github.com/APECSdev/sidecoin/releases/download/v%v/app-fdroid-release.apk
 
 Builds:
   # versionCode / versionName MUST match apps/mobile/android/app/build.gradle.
   # If this drifts, F-Droid will build a different APK than the one tested.
-  - versionName: 26.9.30
-    versionCode: 20260930
+  - versionName: 26.10.1
+    versionCode: 20261001
     # FULL 40-char hash, not the v26.9.30 tag. Build_Metadata_Reference:
     # "Don't use branch name or tag name. The full commit hash should be used."
     # This is the first commit whose native libraries are byte-reproducible
@@ -313,8 +316,8 @@ AllowedAPKSigningKeys:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 26.9.30
-CurrentVersionCode: 20260930
+CurrentVersion: 26.10.1
+CurrentVersionCode: 20261001
 
 # NonFreeNet: the wallet talks to third-party hosted services that are not
 # free software and cannot be self-hosted by the user from within the app:
