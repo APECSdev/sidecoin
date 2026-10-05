@@ -399,9 +399,12 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
     is no standalone `qr-scan` route.
 16. **`react-native-quick-crypto` and `react-native-nitro-modules` were
     REMOVED (10/2026).** Inherited from the original mobile scaffold and
-    never imported by app code — the entire crypto stack is pure-JS
-    `@noble`/`@scure` (secp256k1 sign 660 ms on-device, measured). Removing
-    them also eliminates the prebuilt OpenSSL F-Droid review flagged
+    never imported by app code. Credit **`@noble`/`@scure`** for making
+    quick-crypto unnecessary: their pure-JS primitives are written for
+    constrained runtimes (Hermes included) and are fast enough that native
+    OpenSSL acceleration is not needed — secp256k1 sign 660 ms on-device,
+    measured. Removing the pair also eliminates the prebuilt OpenSSL F-Droid
+    review flagged
     (quick-crypto's `android/build.gradle` pulled
     `io.github.ronickg:openssl:3.6.0-1`, adding `libcrypto.so`/`libssl.so`).
     The `crypto:` entry in `metro.config.js` `extraNodeModules` was the only

@@ -4,10 +4,13 @@ Sidecoin puts a whole ecosystem of sidechains in your pocket. One wallet, one se
 
 ⚡ WHAT YOU CAN DO
 • 🛡️ Track and manage 10 live sidechains, with more on the way
-• 🚀 Deposit and withdraw across supported sidechains
-• 📷 Scan any QR code to pay in seconds
-• 🔐 Unlock with biometrics — just one prompt per session
 • 💸 Send and receive with on-device signing and a clear review step
+• 📷 Scan any QR code to pay in seconds
+• 🌍 Explore the Drivechain web with the built-in browser
+• 🔐 Unlock with biometrics — just one prompt per session
+
+🚧 DEPOSIT & WITHDRAW — IN DEVELOPMENT
+Moving value between L1 and a sidechain is shown in the app for review, but the deposit and withdrawal flows are not live yet — the buttons are clearly marked as under development.
 
 🌐 THE SIDECHAINS
 • ⚡ Thunder Network — fast, low-fee everyday payments
@@ -20,7 +23,10 @@ Sidecoin puts a whole ecosystem of sidechains in your pocket. One wallet, one se
 • 🔄 CoinShift — trustless cross-chain swaps
 • 🧬 RISCy — RISC-V innovation
 • 🏦 FreeBank — Bitcoin-native banking
-• ➕ Elements Plus — Blockstream confidentiality
+• ➕ Elements Plus — announced, coming soon (no BIP-300 slot assigned yet)
+
+🧪 TEST NETWORKS
+Before the eCash fork activates, Sidecoin runs against the public signet and betanet test networks — the same app, the same wallet, free test coins. L1 reads and broadcasts go to community Esplora endpoints (esplora.signet.drivechain.info, esplora.beta.ecash.ninja); the market price card reads eCash Farm.
 
 🪶 LIGHTWEIGHT BY DESIGN
 • No full chain download — talks to public Esplora nodes

@@ -1002,12 +1002,17 @@ export function PlatformDetailScreen(): React.JSX.Element {
 
                   <Pressable
                     accessibilityRole="button"
-                    style={styles.solidButton}
+                    disabled
+                    style={[styles.solidButton, styles.soonButton]}
                   >
                     <Text style={styles.solidButtonText}>
                       Review deposit
                     </Text>
                   </Pressable>
+                  <Text style={styles.soonNote}>
+                    Deposit flow is under development — live deposit addresses
+                    are not indexed yet.
+                  </Text>
                 </View>
 
                 <View style={styles.formCard}>
@@ -1027,12 +1032,17 @@ export function PlatformDetailScreen(): React.JSX.Element {
 
                   <Pressable
                     accessibilityRole="button"
-                    style={styles.outlineButton}
+                    disabled
+                    style={[styles.outlineButton, styles.soonButton]}
                   >
                     <Text style={styles.outlineButtonText}>
                       Review withdrawal
                     </Text>
                   </Pressable>
+                  <Text style={styles.soonNote}>
+                    Withdrawal flow is under development — return value to L1
+                    once it ships.
+                  </Text>
                 </View>
               </View>
             ) : null}
@@ -1050,7 +1060,8 @@ export function PlatformDetailScreen(): React.JSX.Element {
                   </View>
                   <Pressable
                     accessibilityRole="button"
-                    style={styles.outlineButton}
+                    disabled
+                    style={[styles.outlineButton, styles.soonButton]}
                   >
                     <Text style={styles.outlineButtonText}>Export CSV</Text>
                   </Pressable>
@@ -1599,6 +1610,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     alignSelf: "flex-start",
+  },
+  // The deposit/withdraw/CSV flows are not live yet. The buttons stay
+  // visible but disabled (Pressable disabled + dimmed) so they can't be
+  // mistaken for working controls, with an explicit under-development
+  // note under each (F-Droid review: dead buttons read as functional).
+  soonButton: {
+    opacity: 0.45,
+  },
+  soonNote: {
+    marginTop: 8,
+    fontSize: 12,
+    color: GRAY[400],
   },
   outlineButtonText: {
     fontSize: 14,
