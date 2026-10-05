@@ -30,7 +30,7 @@ const activeChain = computed(() => {
           </div>
           <div>
             <p class="text-lg font-black tracking-tight text-white">
-              SidΞcoin Explorer
+              Sidecoin Explorer
             </p>
             <p class="text-xs uppercase tracking-[0.22em] text-gray-500">
               L1 + Drivechains

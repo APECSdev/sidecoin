@@ -234,7 +234,7 @@ export function RootNavigator(): React.JSX.Element {
   if (booting) {
     return (
       <View style={[styles.splash, { paddingTop: insets.top }]}>
-        <Text style={styles.splashTitle} accessibilityLabel="Sidecoin">SidΞcoin</Text>
+        <Text style={styles.splashTitle} accessibilityLabel="Sidecoin">Sidecoin</Text>
         <ActivityIndicator color={SC.primary} />
       </View>
     );

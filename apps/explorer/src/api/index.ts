@@ -33,7 +33,7 @@ function isIndexedChain(chainId: string): boolean {
 
 function notIndexedMessage(chainId: string): string {
   const label = getExplorerChain(chainId)?.displayName ?? chainId;
-  return `${label} explorer data is not indexed yet. SidΞcoin only shows live chain data.`;
+  return `${label} explorer data is not indexed yet. Sidecoin only shows live chain data.`;
 }
 
 function emptyExplorerStatus(chainId: string): ExplorerStatus {

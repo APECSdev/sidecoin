@@ -1,7 +1,7 @@
 {
   "name": "@sidecoin/explorer",
   "version": "26.6.8",
-  "description": "SidΞcoin — Chain-aware block explorer for L1 and Drivechain activity.",
+  "description": "Sidecoin — Chain-aware block explorer for L1 and Drivechain activity.",
   "private": true,
   "license": "MIT",
   "type": "module",

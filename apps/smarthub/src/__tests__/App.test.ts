@@ -9,7 +9,7 @@ describe("App", () => {
     const wrapper = mount(App);
 
     expect(wrapper.find("h1").attributes("aria-label")).toBe("Sidecoin Smart Hub");
-    expect(wrapper.text()).toContain("SidΞcoin");
+    expect(wrapper.text()).toContain("Sidecoin");
     expect(wrapper.text()).toContain("Smart Hub");
   });
 

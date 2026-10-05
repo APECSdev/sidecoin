@@ -129,7 +129,7 @@ function mountComposer() {
 
 async function fillDraft(wrapper: ReturnType<typeof mountComposer>) {
   await wrapper.find("select").setValue("japan-weekly");
-  await wrapper.find("input[type='text']").setValue(" Introducing SidΞcoin ");
+  await wrapper.find("input[type='text']").setValue(" Introducing Sidecoin ");
   await wrapper.find("input[type='url']").setValue(" https://sidecoin.app/markets ");
   await wrapper.find("textarea").setValue(" Line 1\\nLine 2 ");
 }
@@ -202,9 +202,9 @@ describe("CoinNewsComposer.vue", () => {
   it("updates byte counters using UTF-8 byte length", async () => {
     const wrapper = mountComposer();
 
-    await wrapper.find("input[type='text']").setValue("SidΞcoin");
+    await wrapper.find("input[type='text']").setValue("Sidecoin");
 
-    expect(wrapper.text()).toContain("9 / 255 bytes");
+    expect(wrapper.text()).toContain("8 / 255 bytes");
   });
 
   it("builds and signs a reviewed Coin News transaction", async () => {
@@ -214,7 +214,7 @@ describe("CoinNewsComposer.vue", () => {
 
     expect(encodeCoinNewsV2).toHaveBeenCalledWith({
       feed: "japan-weekly",
-      title: "Introducing SidΞcoin",
+      title: "Introducing Sidecoin",
       link: "https://sidecoin.app/markets",
       body: "Line 1\\nLine 2",
     });

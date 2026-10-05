@@ -6,7 +6,7 @@ import App from "../App.vue";
 import { routes } from "../router";
 
 describe("App", () => {
-  it("renders SidΞcoin Explorer shell", async () => {
+  it("renders Sidecoin Explorer shell", async () => {
     const router = createRouter({
       history: createWebHistory(),
       routes,
@@ -21,7 +21,7 @@ describe("App", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("SidΞcoin Explorer");
+    expect(wrapper.text()).toContain("Sidecoin Explorer");
     expect(wrapper.text()).toContain("L1 + Drivechains");
     expect(wrapper.find('img[src="/favicon-48x48.png"]').exists()).toBe(true);
   });

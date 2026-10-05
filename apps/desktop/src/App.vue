@@ -10,7 +10,7 @@ import { RouterView } from "vue-router";
     <nav class="fixed left-0 top-0 h-full w-56 border-r border-gray-800 bg-gray-950 p-4">
       <div class="mb-8">
         <h1 class="text-xl font-bold text-ecash-400">
-          <span aria-hidden="true">SidΞcoin</span>
+          <span aria-hidden="true">Sidecoin</span>
           <span class="sr-only">Sidecoin</span>
         </h1>
         <p class="text-xs text-gray-500">eCash Drivechains Wallet</p>

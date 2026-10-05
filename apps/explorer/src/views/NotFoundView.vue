@@ -7,7 +7,7 @@ import { RouterLink } from "vue-router";
 <template>
   <section class="rounded-3xl border border-gray-800 bg-gray-900/70 p-8">
     <p class="text-sm font-black uppercase tracking-[0.22em] text-yellow-300">
-      SidΞcoin Explorer
+      Sidecoin Explorer
     </p>
     <h1 class="mt-3 text-4xl font-black text-white">Page not found</h1>
     <p class="mt-3 max-w-2xl text-gray-400">

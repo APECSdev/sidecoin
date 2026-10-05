@@ -1,7 +1,7 @@
 {
   "name": "@sidecoin/smarthub",
   "version": "26.6.8",
-  "description": "SidΞcoin Smart Hub — secure portal challenge landing page for Sidecoin app authentication.",
+  "description": "Sidecoin Smart Hub — secure portal challenge landing page for Sidecoin app authentication.",
   "private": true,
   "license": "MIT",
   "type": "module",

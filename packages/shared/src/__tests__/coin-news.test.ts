@@ -54,16 +54,16 @@ describe("encodeCoinNewsV2", () => {
     expect(hex(payload)).toBe("434e02a1a1a1a10548656c6c6f");
   });
 
-  it("encodes the Greek Xi title using UTF-8 byte length", () => {
+  it("encodes multi-byte titles using UTF-8 byte length", () => {
     const payload = encodeCoinNewsV2({
       feed: "us-weekly",
-      title: "Introducing SidΞcoin",
+      title: "Introducing Café",
     });
 
     // Header is 7 bytes. Byte 7 is the one-byte title length.
-    // "Introducing SidΞcoin" is 21 UTF-8 bytes because Ξ is two bytes.
-    expect(payload[7]).toBe(21);
-    expect(payload.length).toBe(29);
+    // "Introducing Café" is 17 UTF-8 bytes because é is two bytes.
+    expect(payload[7]).toBe(17);
+    expect(payload.length).toBe(25);
   });
 
   it("encodes link, body, and flag TLVs in tag/len/value format", () => {

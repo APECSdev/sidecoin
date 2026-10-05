@@ -76,7 +76,7 @@ onBeforeUnmount(() => {
     >
       <div>
         <h1 class="text-lg font-bold text-ecash-400">
-          <span aria-hidden="true">SidΞcoin</span>
+          <span aria-hidden="true">Sidecoin</span>
           <span class="sr-only">Sidecoin</span>
         </h1>
         <p class="text-[10px] uppercase tracking-wider text-gray-600">
@@ -106,7 +106,7 @@ onBeforeUnmount(() => {
     >
       <div class="mb-8">
         <h1 class="text-3xl font-bold text-ecash-400">
-          <span aria-hidden="true">SidΞcoin</span>
+          <span aria-hidden="true">Sidecoin</span>
           <span class="sr-only">Sidecoin</span>
         </h1>
         <p class="text-xs text-gray-500">Drivechains Financial Hub</p>

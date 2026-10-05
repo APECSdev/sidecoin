@@ -146,7 +146,7 @@ const currencyLabels: Record<string, string> = {
 
 const currencySymbols: Record<string, string> = {
   btc: "₿",
-  eth: "Ξ",
+  eth: "e",
   ltc: "Ł",
   xmr: "ɱ",
   usdterc20: "₮",

@@ -233,7 +233,7 @@ function resetComposer() {
             v-model="title"
             type="text"
             autocomplete="off"
-            placeholder="Introducing SidΞcoin"
+            placeholder="Introducing Sidecoin"
             class="w-full rounded-lg border border-gray-700 bg-gray-900 px-3 py-3 text-white placeholder-gray-600 focus:border-ecash-500 focus:outline-none"
           />
           <p class="mt-2 text-xs leading-5 text-gray-600">

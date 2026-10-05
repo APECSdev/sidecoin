@@ -90,7 +90,7 @@ watch([chainId, blockId], loadBlock);
     </p>
     <h1 class="mt-3 text-2xl font-black text-blue-100">Coming soon</h1>
     <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-100/80">
-      This block view is not indexed yet. SidΞcoin only shows live chain data.
+      This block view is not indexed yet. Sidecoin only shows live chain data.
       Until SupaQt indexing is connected for {{ chain.displayName }}, block
       details will remain empty.
     </p>

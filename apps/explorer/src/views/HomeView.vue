@@ -11,7 +11,7 @@ import { statusClass } from "../explorer/format";
   <section class="space-y-8">
     <div class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6 md:p-8">
       <p class="text-sm font-black uppercase tracking-[0.22em] text-yellow-300">
-        SidΞcoin Drivechains Explorer
+        Sidecoin Drivechains Explorer
       </p>
       <h1 class="mt-3 max-w-3xl text-4xl font-black tracking-tight text-white md:text-6xl">
         Search L1 and Drivechain activity.

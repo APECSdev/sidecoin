@@ -89,7 +89,7 @@ const challengeUri =
             <span
               class="bg-gradient-to-br from-ecash-300 via-ecash-500 to-ecash-600 bg-clip-text text-transparent"
               aria-hidden="true"
-            >SidΞcoin</span>
+            >Sidecoin</span>
             <span class="block text-white">Smart Hub</span>
           </h1>
 

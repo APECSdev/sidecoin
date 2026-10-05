@@ -168,7 +168,7 @@ async function smokeBlocksEndpoint(chainId) {
 }
 
 async function main() {
-  console.log("SidΞcoin Explorer API smoke check");
+  console.log("Sidecoin Explorer API smoke check");
   console.log(`API base: ${API_BASE}`);
   console.log(`Indexed chains: ${INDEXED_CHAINS.join(", ")}`);
   console.log("");

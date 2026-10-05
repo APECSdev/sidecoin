@@ -238,7 +238,7 @@ export function CoinNewsComposer(): React.JSX.Element {
             value={title}
             onChangeText={setTitle}
             autoComplete="off"
-            placeholder="Introducing SidΞcoin"
+            placeholder="Introducing Sidecoin"
             placeholderTextColor={GRAY[600]}
             style={styles.input}
           />

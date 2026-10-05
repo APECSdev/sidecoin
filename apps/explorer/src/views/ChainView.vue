@@ -112,7 +112,7 @@ watch(chainId, loadChain);
   <section v-if="chain" class="space-y-6">
     <div class="rounded-3xl border border-gray-800 bg-gray-900/70 p-6">
       <p class="text-sm font-black uppercase tracking-[0.22em] text-yellow-300">
-        SidΞcoin Explorer
+        Sidecoin Explorer
       </p>
       <h1 class="mt-3 text-3xl font-black tracking-tight text-white md:text-5xl">
         {{ chain.displayName }} Explorer

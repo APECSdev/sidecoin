@@ -31,7 +31,7 @@ describe("explorer components", () => {
       },
     });
 
-    expect(wrapper.text()).toContain("SidΞcoin Explorer");
+    expect(wrapper.text()).toContain("Sidecoin Explorer");
     expect(wrapper.text()).toContain("Unavailable");
     expect(wrapper.text()).toContain("Could not load explorer data.");
   });
@@ -57,7 +57,7 @@ describe("explorer components", () => {
 
     expect(wrapper.text()).toContain("Coming soon");
     expect(wrapper.text()).toContain("This explorer view is not indexed yet");
-    expect(wrapper.text()).toContain("SidΞcoin only shows live chain data");
+    expect(wrapper.text()).toContain("Sidecoin only shows live chain data");
     expect(wrapper.text()).toContain("Want early access when zSide comes online?");
     expect(wrapper.text()).toContain("Become a Founding Member");
     expect(wrapper.text()).toContain("View Founder Leaderboard");
@@ -212,7 +212,7 @@ describe("chain dashboard labels", () => {
     });
 
     expect(wrapper.text()).toContain("This explorer view is not indexed yet");
-    expect(wrapper.text()).toContain("SidΞcoin only shows live chain data");
+    expect(wrapper.text()).toContain("Sidecoin only shows live chain data");
     expect(wrapper.text()).toContain("Want early access when zSide comes online?");
     expect(wrapper.text()).toContain("Become a Founding Member");
     expect(wrapper.text()).toContain("View Founder Leaderboard");

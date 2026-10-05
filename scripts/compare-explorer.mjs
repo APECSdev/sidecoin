@@ -418,7 +418,7 @@ async function compareExplorerFrontendSmoke() {
 
     assertTruthy(
       `frontend ${routePath} returns app shell`,
-      text.includes("SidΞcoin Explorer") || text.includes('<div id="app">'),
+      text.includes("Sidecoin Explorer") || text.includes('<div id="app">'),
     );
   }
 }

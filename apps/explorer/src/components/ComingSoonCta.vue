@@ -19,7 +19,7 @@ const foundersHref =
     </p>
     <h2 class="mt-3 text-2xl font-black text-blue-100">Coming soon</h2>
     <p class="mt-2 max-w-3xl text-sm leading-6 text-blue-100/80">
-      This explorer view is not indexed yet. SidΞcoin only shows live chain
+      This explorer view is not indexed yet. Sidecoin only shows live chain
       data. Until SupaQt indexing is connected for this network, blocks,
       transactions, addresses, balances, deposits, and withdrawals will
       remain empty.
