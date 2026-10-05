@@ -379,6 +379,24 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
     wire fields (`fee_sats`, `valueSats`, `totalSats`), or shared
     Bitcoin-standard identifiers (`amountSatoshis`, `feeSatoshis`,
     `feeRateSatPerVb`).
+13. **Branding is plain text: no styled wordmark.** The Greek Xi (Ξ)
+    was removed from all user-facing text (commit `fbf30a3`) — the name is
+    written **"Sidecoin"** everywhere. Do not re-introduce Ξ styling in
+    UI strings, aria labels, or tests. Legacy: binary assets (launcher
+    icons, og/hero images, dashboard screenshot) still carry the Xi glyph
+    and need regeneration. Two non-brand glyphs kept: `PaymentFlow.vue`
+    currency map uses `eth: "ETH"` (text, not the Ξ ETH glyph), and
+    other coin glyphs (₿, Ł, …) are untouched.
+14. **`Alert` only colors plain-string children.** Pass error text as a
+    string child (or give element children an explicit color) — a styled
+    `<Text>` child renders black on the dark-red error background and is
+    unreadable. See `SendScreen`/`ReceiveScreen`.
+15. **QR scanner permission is requested in the native activity.**
+    `ZxingQrScannerActivity` registers a
+    `RequestPermission` launcher and asks for CAMERA before building its
+    UI; without it the activity silently finished and every scan returned
+    null. The FAB "Scan" action opens Send with `autoScan: true` — there
+    is no standalone `qr-scan` route.
 
 ## Versioning (apps/mobile)
 
