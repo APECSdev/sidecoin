@@ -116,10 +116,13 @@ publish rather than re-signing.
 not the filename — use `gh release upload vX.Y.Z /path/to/app-fdroid-release.apk`.
 A wrong asset name makes `%v` 404 and breaks the next update check.
 
-**Current state:** 26.10.1 (`versionCode 20261001`, commit
-`f42a174837aba9ec98df6809ef502c414151724e`), pipeline green. `AutoUpdateMode:
-Version` + `UpdateCheckMode: Tags` means the next release needs a new tag AND a
-new `app-fdroid-release.apk` upload with that exact filename.
+**Current state:** 26.10.5 (`versionCode 20261005`, recipe commit
+`2200761c72`, source commit `2eb9a668cf019b002195fc8b4c0f07264442652b`), MR
+pipeline `2915044830` all green including the reproducible `check apk` step
+(28.7 MB, 44 native libs — quick-crypto/nitro/OpenSSL removed). mezinster's
+review was answered with note `3958314135`. `AutoUpdateMode: Version` +
+`UpdateCheckMode: Tags` means the next release needs a new tag AND a new
+`app-fdroid-release.apk` upload with that exact filename.
 
 **Tab order is `dashboard` (Home) | `feed` | `explore` | `platforms`** —
 Platforms is deliberately LAST. Send, Receive, Settings, Profile, and Scan QR
@@ -166,11 +169,12 @@ cd android && ./gradlew assembleFdroidRelease
 adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
 
-- `applicationId app.sidecoin`, `versionCode 20261001`, `versionName 26.10.1`,
+- `applicationId app.sidecoin`, `versionCode 20261005`, `versionName 26.10.5`,
   minSdk 24, compileSdk/targetSdk 35, RN 0.81.1 / React 19.1.0, NDK
-  `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~35 MB
-  (`reactNativeArchitectures` limits it to arm64-v8a + armeabi-v7a; before
-  that it was ~148 MB with the two emulator-only ABIs included).
+  `27.1.12297006`, Kotlin 2.0.21, Gradle 8.13. Release APK ~29 MB (26.10.5)
+  after dropping quick-crypto/nitro/OpenSSL and NativeWind; earlier: 35 MB in
+  26.10.1, ~148 MB before `reactNativeArchitectures` limited it to
+  arm64-v8a + armeabi-v7a).
 - Flavors `fdroid` / `playstore`. Sentry is `optionalDependencies`-scoped and
   `metro.config.js` resolves it to `src/lib/sentry-noop.ts` for every flavor
   EXCEPT `playstore`, so `fdroid` builds have no crash reporting (intentional,
@@ -417,9 +421,9 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
 **The Android version is DATE-BASED and `versionCode` is EIGHT digits
 (`YYYYMMDD`).** This is a hard rule — not a suggestion.
 
-- `versionCode = 20261001` for 2026-10-01 (the release date), NOT `261001`
+- `versionCode = 20261005` for 2026-10-05 (the release date), NOT `261005`
   and NOT an arbitrary build counter.
-- `versionName = "26.10.1"` — the short `YY.M.D` form of the SAME date.
+- `versionName = "26.10.5"` — the short `YY.M.D` form of the SAME date.
 - Change **all three together**:
   1. `apps/mobile/android/app/build.gradle` (`versionCode` + `versionName`)
   2. `apps/mobile/package.json` (`"version"`)
