@@ -397,6 +397,17 @@ smarthub 5 · mobile 183 (12 suites) · api-client 12.
     UI; without it the activity silently finished and every scan returned
     null. The FAB "Scan" action opens Send with `autoScan: true` — there
     is no standalone `qr-scan` route.
+16. **`react-native-quick-crypto` and `react-native-nitro-modules` were
+    REMOVED (10/2026).** Inherited from the original mobile scaffold and
+    never imported by app code — the entire crypto stack is pure-JS
+    `@noble`/`@scure` (secp256k1 sign 660 ms on-device, measured). Removing
+    them also eliminates the prebuilt OpenSSL F-Droid review flagged
+    (quick-crypto's `android/build.gradle` pulled
+    `io.github.ronickg:openssl:3.6.0-1`, adding `libcrypto.so`/`libssl.so`).
+    The `crypto:` entry in `metro.config.js` `extraNodeModules` was the only
+    remaining reference and went with them; `packages/shared`'s unused
+    `bip39` 3.1.0 (Node-crypto-dependent) was dropped too. Device-verified:
+    one send before and one after removal with identical timing.
 
 ## Versioning (apps/mobile)
 

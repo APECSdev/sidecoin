@@ -419,6 +419,11 @@ const styles = StyleSheet.create({
   loadErrorText: {
     marginTop: 4,
     fontSize: 13,
+    // Rendered inside the error-tone Alert, whose background is dark red
+    // (#2a0d0d). Without an explicit colour this text falls back to the
+    // default dark text colour and is unreadable. Matches
+    // ALERT_TONE.error.fg (see ui.tsx / ReceiveScreen's errorDetail).
+    color: "#fca5a5",
   },
   grid: {
     gap: 16,

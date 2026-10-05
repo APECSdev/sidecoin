@@ -144,7 +144,12 @@ const config = {
     extraNodeModules: {
       assert: require.resolve("assert"),
       buffer: require.resolve("buffer"),
-      crypto: require.resolve("react-native-quick-crypto"),
+      // NOTE: no `crypto` mapping. The Node crypto builtin used to be shimmed
+      // to react-native-quick-crypto (the library's documented integration
+      // pattern) for Node-crypto-dependent deps like the npm `bip39` package.
+      // The wallet stack is now all @noble/@scure pure JS (which reads
+      // globalThis.crypto via react-native-get-random-values), nothing in the
+      // bundle imports `crypto`, and quick-crypto is removed.
       events: require.resolve("events"),
       fs: require.resolve("memfs"),
       http: require.resolve("stream-http"),

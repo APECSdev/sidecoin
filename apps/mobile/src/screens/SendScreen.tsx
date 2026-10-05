@@ -1108,6 +1108,11 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     letterSpacing: 3,
     textTransform: "uppercase",
+    // Alert's tone fg is only applied to string children; these Text
+    // elements sit on the success tone's dark maroon (ECASH-950) background
+    // and need explicit colours or they render in the default dark text
+    // colour — illegible. Matches ALERT_TONE.success.fg.
+    color: ECASH[400],
   },
   receiptTitle: {
     fontSize: 20,
@@ -1116,6 +1121,7 @@ const styles = StyleSheet.create({
   },
   receiptTxid: {
     fontSize: 14,
+    color: ECASH[100],
   },
   mono: {
     fontSize: 13,
