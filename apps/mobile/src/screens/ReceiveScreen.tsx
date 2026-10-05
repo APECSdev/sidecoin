@@ -504,6 +504,10 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   errorDetail: {
+    // Explicit colour: Alert only tints string children, so an element child
+    // would otherwise inherit Android's default black — invisible on the
+    // dark-red error background (same bug as SendScreen's error alert).
+    color: "#fca5a5",
     marginTop: 4,
     fontSize: 12,
   },

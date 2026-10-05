@@ -44,6 +44,13 @@ interface FabAction {
    * for the test that queries it.
    */
   actionId: string;
+
+  /**
+   * Optional params passed to the route. Used by the "Scan" action to tell
+   * SendScreen to open its QR scanner immediately, so a scan always ends on a
+   * pre-populated Send form.
+   */
+  params?: Record<string, unknown>;
 }
 
 /**
@@ -55,7 +62,15 @@ const FAB_ACTIONS: FabAction[] = [
   { icon: "qr-code", label: "Receive", route: "receive", actionId: "receive" },
   { icon: "person", label: "Profile", route: "profile", actionId: "profile" },
   { icon: "settings", label: "Settings", route: "settings", actionId: "settings" },
-  { icon: "qr-code-scanner", label: "Scan", route: "qr-scan", actionId: "scan" },
+  // "Scan" is Send-with-scanner: the standalone qr-scan route (copy-to-
+  // clipboard only) was removed — a scan must land on the pre-populated form.
+  {
+    icon: "qr-code-scanner",
+    label: "Scan",
+    route: "send",
+    actionId: "scan",
+    params: { autoScan: true },
+  },
 ];
 
 /**
@@ -80,10 +95,23 @@ export function FabMenu({ bottomOffset }: FabMenuProps): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
-  function go(route: keyof RootStackParamList): void {
+  function go(
+    route: keyof RootStackParamList,
+    params?: Record<string, unknown>,
+  ): void {
     setOpen(false);
     // Routes live on the parent stack; the tab navigator bubbles the action up.
-    navigation.navigate(route as never);
+    // The union-keyed generic navigate overload can't resolve (route, params)
+    // tuples for a union of routes, so the params call goes through a narrowed
+    // signature. Param-less actions keep the original single-argument call.
+    if (params) {
+      (navigation.navigate as unknown as (
+        route: keyof RootStackParamList,
+        params?: Record<string, unknown>,
+      ) => void)(route, params);
+    } else {
+      navigation.navigate(route as never);
+    }
   }
 
   return (
@@ -111,7 +139,7 @@ export function FabMenu({ bottomOffset }: FabMenuProps): React.JSX.Element {
                 accessibilityRole="button"
                 accessibilityLabel={action.label}
                 testID={`fab-action-${action.actionId}`}
-                onPress={() => go(action.route)}
+                onPress={() => go(action.route, action.params)}
                 style={styles.action}
               >
                 <Text style={styles.actionLabel}>{action.label}</Text>

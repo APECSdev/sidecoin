@@ -20,8 +20,17 @@ import { SendScreen } from "../screens/SendScreen";
 // Module mocks (declared before importing the component under test)
 // ---------------------------------------------------------------------------
 
+// Mutable per-test route params. SendScreen reads route.params.autoScan
+// (set by the FAB "Scan" action) to open the QR scanner on mount.
+let mockRouteParams: { autoScan?: boolean } | undefined = undefined;
+
 jest.mock("@react-navigation/native", () => ({
-  useNavigation: () => ({ navigate: jest.fn(), push: jest.fn() }),
+  useNavigation: () => ({
+    navigate: jest.fn(),
+    push: jest.fn(),
+    setParams: jest.fn(),
+  }),
+  useRoute: () => ({ params: mockRouteParams }),
   useFocusEffect: (cb: () => void | (() => void)) => {
     const React = require("react");
     React.useEffect(cb, [cb]);
@@ -424,5 +433,25 @@ describe("SendScreen", () => {
     await waitFor(() => {
       expect(screen.getByText(/rejected/)).toBeTruthy();
     });
+  });
+
+  // -----------------------------------------------------------------
+  // FAB "Scan" integration — Send launched with { autoScan: true } must
+  // open the QR scanner immediately, so a scan always ends pre-populating
+  // the send form. The zxingScanner bridge is stubbed unavailable, so the
+  // scanner shows its manual-entry fallback — which is exactly what
+  // "scanner is open" looks like in a unit test.
+  // -----------------------------------------------------------------
+
+  it("opens the QR scanner when launched with { autoScan: true }", () => {
+    mockRouteParams = { autoScan: true };
+    render(<SendScreen />);
+    expect(screen.getByText("Enter address manually")).toBeTruthy();
+  });
+
+  it("does not open the QR scanner without the autoScan param", () => {
+    mockRouteParams = undefined;
+    render(<SendScreen />);
+    expect(screen.queryByText("Enter address manually")).toBeNull();
   });
 });

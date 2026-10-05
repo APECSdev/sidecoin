@@ -67,12 +67,18 @@ describe("FabMenu", () => {
     ["receive", "receive"],
     ["profile", "profile"],
     ["settings", "settings"],
-    ["scan", "qr-scan"],
+    // "Scan" is Send-with-scanner: it must land on the send route carrying
+    // autoScan so the camera opens and a scan pre-populates the form.
+    ["scan", "send"],
   ])("navigates to %s when the %s action is pressed", (id, route) => {
     render(<FabMenu bottomOffset={100} />);
     fireEvent.press(screen.getByTestId("fab-toggle"));
     fireEvent.press(screen.getByTestId(`fab-action-${id}`));
-    expect(mockNavigate).toHaveBeenCalledWith(route);
+    if (id === "scan") {
+      expect(mockNavigate).toHaveBeenCalledWith("send", { autoScan: true });
+    } else {
+      expect(mockNavigate).toHaveBeenCalledWith(route);
+    }
   });
 
   it("closes the menu after navigating", () => {

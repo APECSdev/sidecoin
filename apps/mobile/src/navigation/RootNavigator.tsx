@@ -12,17 +12,21 @@
 //          ├─ explore
 //          └─ platforms  (deliberately LAST)
 //       pushed on top of the stack:
-//          send, receive, settings, qr-scan, swap, markets, platform-detail,
+//          send, receive, settings, swap, markets, platform-detail,
 //          hardware, toolbox, pro, profile
 //
 // Send, Receive, and Settings used to be tabs. They now live behind the
 // floating action button (./components/FabMenu.tsx), which also adds QR scan and
-// Profile actions; the tab bar keeps only the four primary destinations.
+// Profile actions; the tab bar keeps only the four primary destinations. The
+// FAB's "Scan" action navigates to Send with { autoScan: true }, so a scan
+// always ends on a pre-populated Send form (the old standalone qr-scan route,
+// which only copied the payload to the clipboard, was removed).
 //
 // FAB SCOPE (operator directive): the FAB is present on EVERY screen except
-// "qr-scan" (the camera preview owns the viewport) and "onboarding" (no wallet
-// exists yet). The tab shell draws its own FAB so it can clear the tab bar; the
-// parent draws one for every other stack screen.
+// "onboarding" (no wallet exists yet — every FAB action is a dead end). The
+// tab shell draws its own FAB so it can clear the tab bar; the parent draws
+// one for every other stack screen. The Send screen's scanner is a full-screen
+// Modal, so the FAB's menu is simply closed while the camera is up.
 //
 // The Vue router kept all 12 routes flat and always mounted a sidebar/footer
 // with 9 links. RN splits primary destinations into a bottom tab bar and
@@ -57,7 +61,6 @@ import {
   PlatformDetailScreen,
   ProBenefitsScreen,
   ProfileScreen,
-  QrScanScreen,
   ReceiveScreen,
   SendScreen,
   SettingsScreen,
@@ -82,12 +85,9 @@ const HardwareScreen = makePlaceholder(
 /**
  * Routes where the FAB must NOT render:
  *   • "main"       — the tab shell draws its own FAB so it can clear the bar.
- *   • "qr-scan"    — the camera preview owns the viewport and already has a
- *                    Close affordance; a floating button would cover the
- *                    viewfinder and could be tapped mid-scan.
  *   • "onboarding" — no wallet exists yet, so every FAB action is a dead end.
  */
-const FAB_HIDDEN_ROUTES: readonly string[] = ["main", "qr-scan", "onboarding"];
+const FAB_HIDDEN_ROUTES: readonly string[] = ["main", "onboarding"];
 
 // ──────────────────────────────────────────────────────
 // Tab icon map — MaterialIcons names.
@@ -270,11 +270,6 @@ export function RootNavigator(): React.JSX.Element {
           name="settings"
           component={SettingsScreen}
           options={{ title: "Settings" }}
-        />
-        <Stack.Screen
-          name="qr-scan"
-          component={QrScanScreen}
-          options={{ headerShown: false }}
         />
         <Stack.Screen name="swap" component={SwapScreen} options={{ title: "Swap" }} />
         <Stack.Screen

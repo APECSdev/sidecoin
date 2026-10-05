@@ -112,7 +112,6 @@ jest.mock("../components/QrScanner", () => {
 
 import { FeedScreen } from "../screens/FeedScreen";
 import { ExploreScreen } from "../screens/ExploreScreen";
-import { QrScanScreen } from "../screens/QrScanScreen";
 
 function treeText(node: unknown): string {
   if (node == null) return "";
@@ -202,53 +201,3 @@ describe("ExploreScreen (real WebView)", () => {
   });
 });
 
-describe("QrScanScreen", () => {
-  it("shows the scanner before anything is decoded", () => {
-    render(
-      <QrScanScreen
-        navigation={{ goBack: jest.fn() } as never}
-        route={{ key: "qr-scan", name: "qr-scan" } as never}
-      />,
-    );
-    expect(screen.getByTestId("mock-scanner")).toBeTruthy();
-  });
-
-  it("copies the decoded value to the clipboard and displays it", () => {
-    mockSetString.mockClear();
-    render(
-      <QrScanScreen
-        navigation={{ goBack: jest.fn() } as never}
-        route={{ key: "qr-scan", name: "qr-scan" } as never}
-      />,
-    );
-    fireEvent.press(screen.getByTestId("mock-scanner"));
-    expect(mockSetString).toHaveBeenCalledWith("ecash:qxyz");
-    expect(screen.getByText("ecash:qxyz")).toBeTruthy();
-  });
-
-  it("returns to scanning on 'Scan another code'", () => {
-    const { toJSON } = render(
-      <QrScanScreen
-        navigation={{ goBack: jest.fn() } as never}
-        route={{ key: "qr-scan", name: "qr-scan" } as never}
-      />,
-    );
-    fireEvent.press(screen.getByTestId("mock-scanner"));
-    // Now on the confirmation view.
-    expect(treeText(toJSON())).toContain("Scanned");
-    fireEvent.press(screen.getByLabelText("Scan another code"));
-    expect(screen.getByTestId("mock-scanner")).toBeTruthy();
-  });
-
-  it("closes back to the previous screen", () => {
-    const goBack = jest.fn();
-    render(
-      <QrScanScreen
-        navigation={{ goBack } as never}
-        route={{ key: "qr-scan", name: "qr-scan" } as never}
-      />,
-    );
-    fireEvent.press(screen.getByTestId("mock-scanner-close"));
-    expect(goBack).toHaveBeenCalled();
-  });
-});

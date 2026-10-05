@@ -447,7 +447,6 @@ describe("App", () => {
       "send",
       "receive",
       "settings",
-      "qr-scan",
       "swap",
       "markets",
       "platform-detail",

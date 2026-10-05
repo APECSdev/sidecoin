@@ -52,7 +52,6 @@ export { PlaceholderScreen } from "./PlaceholderScreen";
 export { PlatformDetailScreen } from "./PlatformDetailScreen";
 export { ProBenefitsScreen } from "./ProBenefitsScreen";
 export { ProfileScreen } from "./ProfileScreen";
-export { QrScanScreen } from "./QrScanScreen";
 export { ReceiveScreen } from "./ReceiveScreen";
 export { SendScreen } from "./SendScreen";
 export { SidechainsScreen } from "./SidechainsScreen";

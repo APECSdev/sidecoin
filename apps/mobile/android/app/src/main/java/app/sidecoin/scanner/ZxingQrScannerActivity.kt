@@ -32,6 +32,7 @@ import android.widget.Button
 import android.widget.FrameLayout
 import android.widget.TextView
 import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
@@ -77,6 +78,27 @@ class ZxingQrScannerActivity : ComponentActivity() {
      */
     private val delivered = AtomicBoolean(false)
 
+    /**
+     * Runtime CAMERA permission launcher.
+     *
+     * Registered at construction time (a ComponentActivity requirement: the
+     * callback must exist before onStart). When the user grants the camera
+     * mid-flow we continue exactly where onCreate left off; a denial keeps
+     * the historical contract — finish with RESULT_CANCELED so the JS layer
+     * resolves null and the caller simply returns to the previous screen.
+     */
+    private val cameraPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                Log.d(TAG, "CAMERA granted at runtime; starting scanner.")
+                buildUi()
+                startCamera()
+            } else {
+                Log.w(TAG, "CAMERA denied at runtime; closing scanner.")
+                finishCanceled()
+            }
+        }
+
     /** ZXing reader. QR-only, matching the old scanner's `codeTypes: ["qr"]`. */
     private val reader = MultiFormatReader().apply {
         setHints(
@@ -90,14 +112,18 @@ class ZxingQrScannerActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // The camera permission is declared in the manifest; if the user has
-        // not granted it we simply return to the JS layer, which already shows
-        // the permission guidance and an "enter address manually" fallback.
+        // The camera permission is declared in the manifest. If the user has
+        // not granted it yet, ASK via the standard runtime dialog instead of
+        // silently closing: previously a first-time user saw the scanner do
+        // nothing at all (finishCanceled -> JS resolves null), because no
+        // code path — native or JS — ever called requestPermissions. On grant
+        // the UI builds in the launcher callback; on denial we keep the old
+        // contract (RESULT_CANCELED, JS shows its fallback guidance).
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
             != PackageManager.PERMISSION_GRANTED
         ) {
-            Log.w(TAG, "CAMERA permission not granted; closing scanner.")
-            finishCanceled()
+            Log.d(TAG, "CAMERA not granted yet; requesting at runtime.")
+            cameraPermissionLauncher.launch(Manifest.permission.CAMERA)
             return
         }
 

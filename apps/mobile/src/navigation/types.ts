@@ -11,7 +11,7 @@
 //   dashboard, feed, explore, platforms
 //
 // Stack routes pushed on top of the tab shell:
-//   send, receive, settings, qr-scan, swap, markets, platform-detail,
+//          send, receive, settings, swap, markets, platform-detail,
 //   hardware, toolbox, pro, profile
 //
 // Onboarding is a stack route rendered INSTEAD of the tab shell when no
@@ -38,10 +38,10 @@ export type TabParamList = {
 export type RootStackParamList = {
   main: NavigatorScreenParams<TabParamList> | undefined;
   onboarding: undefined;
-  send: undefined;
+  /** autoScan: open the QR scanner immediately (the FAB "Scan" action). */
+  send: { autoScan?: boolean } | undefined;
   receive: undefined;
   settings: undefined;
-  "qr-scan": undefined;
   swap: undefined;
   markets: undefined;
   "platform-detail": { platformId: string };

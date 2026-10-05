@@ -36,8 +36,9 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
+import type { RouteProp } from "@react-navigation/native";
 import {
   buildAndSignP2wpkhTransaction,
   deriveSigningKey,
@@ -126,6 +127,7 @@ const COIN_CONTROL_PREVIEW_ROWS: CoinControlPreviewRow[] = [
 export function SendScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<RouteProp<RootStackParamList, "send">>();
 
   const [selectedTab, setSelectedTab] = useState<SendTab>("simple");
   const [address, setAddress] = useState("");
@@ -136,6 +138,17 @@ export function SendScreen(): React.JSX.Element {
   const [built, setBuilt] = useState<BuiltTx | null>(null);
   const [receipt, setReceipt] = useState<BroadcastReceipt | null>(null);
   const [showScanner, setShowScanner] = useState(false);
+
+  // The FAB "Scan" action lands here with { autoScan: true }: open the QR
+  // scanner immediately so a scan always ends on a pre-populated Send form.
+  // The param is cleared right away so re-mounts (or a re-focus) don't
+  // spontaneously relaunch the camera.
+  React.useEffect(() => {
+    if (route.params?.autoScan) {
+      setShowScanner(true);
+      navigation.setParams({ autoScan: undefined });
+    }
+  }, [route.params?.autoScan, navigation]);
 
   // The network label tracks the stored wallet network (the wallet default is
   // betanet), so the header chip stays truthful instead of hardcoding one
@@ -348,9 +361,11 @@ export function SendScreen(): React.JSX.Element {
         </ScrollView>
 
         {error ? (
-          <Alert tone="error" style={styles.errorAlert}>
-            <Text style={styles.errorText}>{error}</Text>
-          </Alert>
+          // Plain-string child on purpose: the shared Alert only applies its
+          // tone fg colour to string children. A wrapped <Text> element used
+          // to render with NO colour, i.e. Android's default black on the
+          // dark-red error background — invisible in dark mode.
+          <Alert tone="error" style={styles.errorAlert}>{error}</Alert>
         ) : null}
 
         {selectedTab === "simple" ? (
@@ -838,9 +853,6 @@ const styles = StyleSheet.create({
   },
   errorAlert: {
     marginTop: 24,
-  },
-  errorText: {
-    fontSize: 14,
   },
   column: {
     marginTop: 24,
