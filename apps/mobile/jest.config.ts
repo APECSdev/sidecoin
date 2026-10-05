@@ -97,8 +97,6 @@ const config: Config = {
       // and ExploreScreen imports it at module scope, so the tab shell pulls
       // it in transitively.
       + "|react-native-webview"
-      + "|react-native-css-interop"
-      + "|nativewind"
       + "|@shopify/react-native-skia"
       + "|victory-native"
       // @op-engineering/op-sqlite ships untranspiled ESM (lib/module/index.js

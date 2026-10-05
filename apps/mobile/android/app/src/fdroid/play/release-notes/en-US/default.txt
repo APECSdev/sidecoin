@@ -1,10 +1,11 @@
-First release:
-• Betanet (default) and Signet, with live balance + broadcast
-• Send / Receive with on-device signing, QR scanning, and a review
-  step before funds leave your wallet
-• On-device transaction history
-• Encrypted keystore, no plaintext seed on disk
-• 10 active BIP-300 sidechains (Thunder, zSide, BitNames, BitAssets,
-  Photon, Truthcoin, CoinShift, …)
-• Markets view with the projected ECX price from eCash Farm
-• ARM-only + compressed native libs: download half the size
+• Removed the unused native crypto libraries — the APK no longer
+  bundles any third-party prebuilt OpenSSL (the wallet signs with
+  pure-JS @noble/@scure primitives, verified at ~0.7 s per send)
+• Deposit and withdrawal controls are now clearly marked as
+  under development instead of looking like live buttons
+• Fixed unreadable dark-on-dark text on the broadcast receipt and
+  error panels
+• QR scanner now properly asks for camera permission on first use,
+  and the scan action opens the pre-filled send screen directly
+• Honest store listing: test networks (betanet/signet), the Explore
+  browser, and Elements Plus as coming soon are now described
