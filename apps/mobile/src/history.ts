@@ -27,6 +27,12 @@
 
 import { open, type DB } from "@op-engineering/op-sqlite";
 
+import {
+  getTxStatus,
+  type EsploraTxStatus,
+  type L1Network,
+} from "./api/index";
+
 /** File name of the on-device history database. */
 const DB_NAME = "sidecoin-history.sqlite";
 
@@ -208,12 +214,58 @@ export function markConfirmed(txid: string, blockHeight: number): void {
   );
 }
 
-/** Mark a transaction failed (e.g. rejected by the node on broadcast). */
+/**
+ * Mark a transaction failed (e.g. rejected by the node on broadcast). Used by
+ * `refreshHistoryStatuses` when Esplora 404s a txid that was never accepted
+ * into the mempool.
+ */
 export function markFailed(txid: string): void {
   getHistoryDb().executeSync(
     `UPDATE history SET status = 'failed' WHERE txid = ?`,
     [txid],
   );
+}
+
+/**
+ * Reconcile every "pending" history row against the chain.
+ *
+ * `SendScreen` records a transaction as pending the moment it is broadcast,
+ * but nothing ever re-queries Esplora to learn when it confirms — so without
+ * this pass the History tab shows "pending" forever. For each pending row we
+ * fetch `/tx/:txid`; a `confirmed` status flips the row to "confirmed" (with
+ * the block height), and a 404 (unknown txid, i.e. never accepted) flips it
+ * to "failed" so the user isn't staring at a stuck spinner.
+ *
+ * Network errors (offline, Esplora unreachable) leave the row untouched so a
+ * transient failure doesn't corrupt history. The reconciliation is done one
+ * txid at a time because history is user-scale (dozens of rows, not
+ * thousands); parallelizing it buys nothing but complexity.
+ *
+ * @param fetchStatus  Injectable status lookup so tests can avoid the
+ *                     network. Defaults to the real Esplora call.
+ */
+export async function refreshHistoryStatuses(
+  network: string,
+  fetchStatus: (
+    txid: string,
+    network: L1Network,
+  ) => Promise<EsploraTxStatus> = getTxStatus,
+): Promise<void> {
+  const pending = listHistory(network).filter((e) => e.status === "pending");
+  for (const entry of pending) {
+    try {
+      const status = await fetchStatus(entry.txid, entry.network as L1Network);
+      if (status.confirmed && typeof status.blockHeight === "number") {
+        markConfirmed(entry.txid, status.blockHeight);
+      }
+    } catch (err) {
+      // 404 → the txid never made it into a block or mempool (never accepted,
+      // or dropped); anything else (offline, DNS, timeout) is left pending.
+      if (err instanceof Error && /\b404\b/.test(err.message)) {
+        markFailed(entry.txid);
+      }
+    }
+  }
 }
 
 /** Remove every row for one network. Used by a future "clear history" action. */

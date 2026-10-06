@@ -206,9 +206,16 @@ beforeEach(async () => {
 describe("DashboardScreen", () => {
   it("should render without crashing", async () => {
     const { toJSON } = render(<DashboardScreen />);
-    await waitFor(() => {
-      expect(mockGetSidechains).toHaveBeenCalled();
-    });
+    // The default waitFor timeout is 1000 ms, which this smoke test can
+    // exceed when the runner is under parallel load (observed as a flake in
+    // CI while an unrelated host build was saturating the machine). 10 s is
+    // still fast for a passing run and gives a generous margin under load.
+    await waitFor(
+      () => {
+        expect(mockGetSidechains).toHaveBeenCalled();
+      },
+      { timeout: 10000 },
+    );
     expect(toJSON()).not.toBeNull();
   });
 

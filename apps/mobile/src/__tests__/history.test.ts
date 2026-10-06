@@ -14,6 +14,7 @@ import {
   markFailed,
   clearHistory,
   closeHistoryDb,
+  refreshHistoryStatuses,
   type HistoryEntry,
 } from "../history";
 
@@ -103,5 +104,50 @@ describe("history store", () => {
     clearHistory("betanet");
     expect(listHistory("betanet")).toHaveLength(0);
     expect(listHistory("signet")).toHaveLength(1);
+  });
+
+  describe("refreshHistoryStatuses", () => {
+    const fetchOk = async () => ({ confirmed: true, blockHeight: 777 });
+
+    it("flips pending rows to confirmed with the block height", async () => {
+      recordTransaction(base);
+      await refreshHistoryStatuses("betanet", fetchOk);
+      const row = listHistory("betanet")[0];
+      expect(row.status).toBe("confirmed");
+      expect(row.blockHeight).toBe(777);
+    });
+
+    it("marks never-accepted txids as failed on a 404", async () => {
+      recordTransaction(base);
+      await refreshHistoryStatuses("betanet", async () => {
+        throw new Error("Failed to fetch tx status: HTTP 404 Not Found");
+      });
+      expect(listHistory("betanet")[0].status).toBe("failed");
+    });
+
+    it("leaves rows pending on non-404 errors", async () => {
+      recordTransaction(base);
+      await refreshHistoryStatuses("betanet", async () => {
+        throw new Error("Failed to fetch tx status: HTTP 502 Bad Gateway");
+      });
+      expect(listHistory("betanet")[0].status).toBe("pending");
+    });
+
+    it("skips rows that are already confirmed", async () => {
+      recordTransaction({ ...base, status: "confirmed", blockHeight: 1 });
+      const fetcher = jest.fn();
+      await refreshHistoryStatuses("betanet", fetcher);
+      expect(fetcher).not.toHaveBeenCalled();
+    });
+
+    it("passes the row's own network to the fetcher", async () => {
+      recordTransaction({ ...base, network: "signet", txid: "cc" });
+      const seen: string[] = [];
+      await refreshHistoryStatuses("signet", async (txid, network) => {
+        seen.push(`${network}:${txid}`);
+        return { confirmed: false };
+      });
+      expect(seen).toEqual(["signet:cc"]);
+    });
   });
 });

@@ -32,6 +32,7 @@ import { deriveReceiveAddress } from "@sidecoin/shared";
 import { loadWallet, setWalletNetwork, type WalletNetwork } from "../keystore";
 import {
   listHistory,
+  refreshHistoryStatuses,
   type HistoryEntry,
   type HistoryDirection,
 } from "../history";
@@ -163,6 +164,30 @@ export function ReceiveScreen(): React.JSX.Element {
       console.error("[ReceiveScreen] Failed to read history:", e);
       setHistory([]);
     }
+  }, [selectedNetwork, selectedTab]);
+
+  // Reconcile pending rows against the chain. `SendScreen` records a
+  // broadcast as "pending" and nothing ever re-queried Esplora, so without
+  // this pass every sent transaction showed "pending" forever. Runs when the
+  // History tab is opened (or the network changes) and re-reads the store so
+  // the UI picks up the freshly-confirmed rows. Failures are non-fatal — the
+  // rows just stay pending for the next pass.
+  useEffect(() => {
+    if (selectedTab !== "history") return;
+    let cancelled = false;
+    refreshHistoryStatuses(selectedNetwork)
+      .catch((e) => console.error("[ReceiveScreen] History refresh failed:", e))
+      .finally(() => {
+        if (cancelled) return;
+        try {
+          setHistory(listHistory(selectedNetwork));
+        } catch (e) {
+          console.error("[ReceiveScreen] Failed to re-read history:", e);
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [selectedNetwork, selectedTab]);
 
   // On mount AND on every focus — the focus read is the RN replacement for the

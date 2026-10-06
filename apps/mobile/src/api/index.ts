@@ -596,6 +596,45 @@ async function esploraBroadcast(
 // `network` defaults to "signet" for back-compat.
 
 /** Fetch raw transaction hex by txid from the L1 block explorer. */
+/**
+ * Confirmation status of a single transaction, from Esplora's `/tx/:txid`
+ * endpoint. Used by the history reconciliation pass (`refreshHistoryStatuses`
+ * in `src/history.ts`) to flip broadcast transactions from "pending" to
+ * "confirmed" once they appear in a block.
+ */
+export interface EsploraTxStatus {
+  /** True once the transaction is included in a block. */
+  confirmed: boolean;
+  /** Block height when confirmed; undefined while still in the mempool. */
+  blockHeight?: number;
+}
+
+/**
+ * Fetch confirmation status for one txid from Esplora (`GET /tx/:txid` →
+ * `status.confirmed` + `status.block_height`). Throws on HTTP errors; a 404
+ * (unknown txid, e.g. a tx that was never accepted) surfaces as an error too
+ * so the caller can leave the row pending.
+ */
+export async function getTxStatus(
+  txid: string,
+  network: L1Network = "signet",
+): Promise<EsploraTxStatus> {
+  const base = esploraBase(network);
+  const res = await globalThis.fetch(`${base}/tx/${txid}`);
+  if (!res.ok) {
+    throw new Error(
+      `Failed to fetch tx status ${txid}: HTTP ${res.status} ${res.statusText}`,
+    );
+  }
+  const body = (await res.json()) as {
+    status?: { confirmed?: boolean; block_height?: number };
+  };
+  return {
+    confirmed: body.status?.confirmed === true,
+    blockHeight: body.status?.block_height,
+  };
+}
+
 export async function getRawTransaction(
   txid: string,
   network: L1Network = "signet",
