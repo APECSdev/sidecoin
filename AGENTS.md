@@ -268,7 +268,7 @@ must be green before commit.
 
 **Test baselines** (`pnpm --filter <pkg> test`; verify before citing in a PR):
 shared 254 (+1 skip) · wallet 382 · web 118 · explorer 43 · desktop 76 ·
-smarthub 5 · mobile 183 (12 suites) · api-client 12.
+smarthub 5 · mobile 228 (16 suites) · api-client 12.
 
 ## CI (`.github/workflows/`)
 
