@@ -19,6 +19,7 @@ const projectRoot = __dirname;
 const monorepoRoot = path.resolve(projectRoot, "../..");
 const sharedPackage = path.resolve(monorepoRoot, "packages/shared");
 const apiClientPackage = path.resolve(monorepoRoot, "packages/api-client");
+const observabilityPackage = path.resolve(monorepoRoot, "packages/observability");
 
 // ──────────────────────────────────────────────────────
 // Android build flavor detection
@@ -76,6 +77,7 @@ const config = {
   watchFolders: [
     sharedPackage,
     apiClientPackage,
+    observabilityPackage,
     path.resolve(monorepoRoot, "node_modules"),
   ],
 

@@ -65,6 +65,7 @@ const config: Config = {
     // packages/.
     "^@sidecoin/shared(.*)$": "<rootDir>/../../packages/shared/src$1",
     "^@sidecoin/api-client(.*)$": "<rootDir>/../../packages/api-client/src$1",
+    "^@sidecoin/observability(.*)$": "<rootDir>/../../packages/observability/src$1",
   },
 
   // ────────────────────────────────────────────────────
@@ -105,6 +106,7 @@ const config: Config = {
       + "|@op-engineering/op-sqlite"
       + "|@sidecoin/shared"
       + "|@sidecoin/api-client"
+      + "|@sidecoin/observability"
       // @sidecoin/shared imports these ESM-only crypto libraries at runtime
       // (derivation/signing), so Jest must transform them too.
       + "|@noble"
