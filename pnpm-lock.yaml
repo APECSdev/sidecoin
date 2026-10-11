@@ -210,6 +210,9 @@ importers:
       '@sidecoin/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@sidecoin/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@sidecoin/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -491,9 +494,15 @@ importers:
       '@onekeyfe/hd-shared':
         specifier: 1.1.26
         version: 1.1.26
+      '@sentry/vue':
+        specifier: 11.5.0
+        version: 11.5.0(pinia@3.0.3(typescript@5.6.3)(vue@3.5.22(typescript@5.6.3)))(vue@3.5.22(typescript@5.6.3))
       '@sidecoin/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
+      '@sidecoin/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@sidecoin/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -573,6 +582,12 @@ importers:
       '@astrojs/vue':
         specifier: 6.0.1
         version: 6.0.1(@types/node@25.0.3)(astro@6.3.8(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(rollup@4.60.4)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(vue@3.5.22(typescript@5.8.3))(yaml@2.9.0)
+      '@sentry/browser':
+        specifier: 11.5.0
+        version: 11.5.0
+      '@sidecoin/observability':
+        specifier: workspace:*
+        version: link:../../packages/observability
       '@sidecoin/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -606,10 +621,29 @@ importers:
         version: 4.0.18(@types/node@25.0.3)(@vitest/ui@4.0.16)(happy-dom@20.0.11)(jiti@2.7.0)(jsdom@27.3.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
 
   packages/api-client:
+    dependencies:
+      '@sidecoin/observability':
+        specifier: workspace:*
+        version: link:../observability
     devDependencies:
       '@types/node':
         specifier: 25.0.3
         version: 25.0.3
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+      vitest:
+        specifier: 4.0.18
+        version: 4.0.18(@types/node@25.0.3)(@vitest/ui@4.0.16)(happy-dom@20.0.11)(jiti@2.7.0)(jsdom@27.3.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)
+
+  packages/observability:
+    devDependencies:
+      '@types/node':
+        specifier: 25.0.3
+        version: 25.0.3
+      '@vitest/coverage-v8':
+        specifier: 4.0.18
+        version: 4.0.18(@vitest/browser@4.0.16(vite@7.1.9(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0))(vitest@4.0.18))(vitest@4.0.18)
       typescript:
         specifier: 5.8.3
         version: 5.8.3
@@ -3106,6 +3140,14 @@ packages:
     resolution: {integrity: sha512-tSzfc3aE7m0PM0Aj7HBDet5llH9AB9oc+tBQ8AvOqUSnWodLrNCuWeQszJ7mIBovD3figgCU3h0cvI6U5cDtsg==}
     engines: {node: '>= 14'}
 
+  '@sentry/browser-utils@11.5.0':
+    resolution: {integrity: sha512-R2rro9Hc4jtOprXYwCjyS6WqmdXX/5Rzya6C7X5HWdcW5/osW1ICB4Yk5XndrgVDUeEJ6aqo8mKvmTWJ759ATQ==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+
+  '@sentry/browser@11.5.0':
+    resolution: {integrity: sha512-jwky2cRbwdQG4JpU3spKX9h2gc8C57AFnrQrGJc3AC+jCgwpfso/I0MI6Am3f552gVCR9kfuT6ozv1YliV+FoQ==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+
   '@sentry/browser@8.54.0':
     resolution: {integrity: sha512-BgUtvxFHin0fS0CmJVKTLXXZcke0Av729IVfi+2fJ4COX8HO7/HAP02RKaSQGmL2HmvWYTfNZ7529AnUtrM4Rg==}
     engines: {node: '>=14.18'}
@@ -3162,9 +3204,21 @@ packages:
     engines: {node: '>= 10'}
     hasBin: true
 
+  '@sentry/conventions@0.26.0':
+    resolution: {integrity: sha512-ttSRcoLf2kIENDIFzH12aJaVMdxnidMYLvVNwEX/JjXfXaQot8u5M47QmgAFOOhVJ4nQ2uU8wTCh+fwSPrrCfg==}
+    engines: {node: '>=14'}
+
+  '@sentry/core@11.5.0':
+    resolution: {integrity: sha512-flEMRAfk8t3JW7w32shN6piuLJESkuryF90WzMn75ZGEiVoXkhStOvLT8qX8SQaLeFll4vLp7nDPdTsdJe1APw==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+
   '@sentry/core@8.54.0':
     resolution: {integrity: sha512-03bWf+D1j28unOocY/5FDB6bUHtYlm6m6ollVejhg45ZmK9iPjdtxNWbrLsjT1WRym0Tjzowu+A3p+eebYEv0Q==}
     engines: {node: '>=14.18'}
+
+  '@sentry/feedback@11.5.0':
+    resolution: {integrity: sha512-L/0lq8Pgh7cR12ay3+yx56dOkEWiPSiT0ukkMEdkGrqbDbHurEIHIfXk7JhcxGUL+Ug1ObCtgI6StqwZSB7o2A==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
 
   '@sentry/react-native@6.14.0':
     resolution: {integrity: sha512-BBqixN6oV6tCNp1ABXfzvD531zxj1fUAH0HDPvOR/jX0h9f9pYfxCyI64B+DoQbVZKFsg8nte0QIHkZDhRAW9A==}
@@ -3183,6 +3237,14 @@ packages:
     peerDependencies:
       react: ^16.14.0 || 17.x || 18.x || 19.x
 
+  '@sentry/replay-canvas@11.5.0':
+    resolution: {integrity: sha512-V6PNnufdaBoMcj/qpygn9+w7Ug+mHIzfkYo5gUgeikwt2ISSNywRLhRYAadoKN32D3rz8UBuwi+4czap1eqCMQ==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+
+  '@sentry/replay@11.5.0':
+    resolution: {integrity: sha512-QkS6rGyj+zjzJOKMxmbj9m2dj4cqRzDZouw45iBCXyoW/6QCIFGqjxEPAWO9JS1ZCo9JRUf0wLfIbaO1pF0xRQ==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+
   '@sentry/types@8.54.0':
     resolution: {integrity: sha512-wztdtr7dOXQKi0iRvKc8XJhJ7HaAfOv8lGu0yqFOFwBZucO/SHnu87GOPi8mvrTiy1bentQO5l+zXWAaMvG4uw==}
     engines: {node: '>=14.18'}
@@ -3190,6 +3252,19 @@ packages:
   '@sentry/utils@8.54.0':
     resolution: {integrity: sha512-JL8UDjrsKxKclTdLXfuHfE7B3KbrAPEYP7tMyN/xiO2vsF6D84fjwYyalO0ZMtuFZE6vpSze8ZOLEh6hLnPYsw==}
     engines: {node: '>=14.18'}
+
+  '@sentry/vue@11.5.0':
+    resolution: {integrity: sha512-DkIch4qA774GngIxd+feqjnIrGkvMaCM77WwNim1Y+uzrpt+gomxhqWKtyc+Ne1QSJOtjUO2hybaAqEv22ZcLA==}
+    engines: {node: '>=20.19.0 <22.0.0 || >=22.12.0 <23.0.0 || >=23.2.0'}
+    peerDependencies:
+      '@tanstack/vue-router': ^1.64.0
+      pinia: 2.x || 3.x || 4.x
+      vue: 2.x || 3.x
+    peerDependenciesMeta:
+      '@tanstack/vue-router':
+        optional: true
+      pinia:
+        optional: true
 
   '@shikijs/core@4.1.0':
     resolution: {integrity: sha512-jLJtSJeuFffqX6/inRE1zqU5aFv2hrszvYgq3OjbAgFRZiWv7abKMDdQzYxuSDfmUPQozZvI/kuy6VMTvnvqTQ==}
@@ -10649,6 +10724,9 @@ packages:
   web-namespaces@2.0.1:
     resolution: {integrity: sha512-bKr1DkiNa2krS7qxNtdrtHAmzuYGFQLiQ13TsorsdT6ULTkPLKuu5+GsFpDlg6JFjUTwX2DyhMPG2be8uPrqsQ==}
 
+  web-vitals@6.2.3:
+    resolution: {integrity: sha512-Dmy+vdO1UPMqXiAtZSNayhl4f794Bxfd94W4HIj2HlYtczEQfEOon969memlcpcHrTuOKLa5baFjX7WbgmOq+A==}
+
   webdriver@9.23.3:
     resolution: {integrity: sha512-8FdXOhzkxqDI6F1dyIsQONhKLDZ9HPSEwNBnH3bD1cHnj/6nVvyYrUtDPo/+J324BuwOa1IVTH3m8mb3B2hTlA==}
     engines: {node: '>=18.20.0'}
@@ -14514,6 +14592,21 @@ snapshots:
   '@sentry/babel-plugin-component-annotate@3.4.0':
     optional: true
 
+  '@sentry/browser-utils@11.5.0':
+    dependencies:
+      '@sentry/conventions': 0.26.0
+      '@sentry/core': 11.5.0
+      web-vitals: 6.2.3
+
+  '@sentry/browser@11.5.0':
+    dependencies:
+      '@sentry/browser-utils': 11.5.0
+      '@sentry/conventions': 0.26.0
+      '@sentry/core': 11.5.0
+      '@sentry/feedback': 11.5.0
+      '@sentry/replay': 11.5.0
+      '@sentry/replay-canvas': 11.5.0
+
   '@sentry/browser@8.54.0':
     dependencies:
       '@sentry-internal/browser-utils': 8.54.0
@@ -14568,8 +14661,18 @@ snapshots:
       - supports-color
     optional: true
 
+  '@sentry/conventions@0.26.0': {}
+
+  '@sentry/core@11.5.0':
+    dependencies:
+      '@sentry/conventions': 0.26.0
+
   '@sentry/core@8.54.0':
     optional: true
+
+  '@sentry/feedback@11.5.0':
+    dependencies:
+      '@sentry/core': 11.5.0
 
   '@sentry/react-native@6.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)':
     dependencies:
@@ -14595,6 +14698,16 @@ snapshots:
       react: 19.1.0
     optional: true
 
+  '@sentry/replay-canvas@11.5.0':
+    dependencies:
+      '@sentry/core': 11.5.0
+      '@sentry/replay': 11.5.0
+
+  '@sentry/replay@11.5.0':
+    dependencies:
+      '@sentry/browser-utils': 11.5.0
+      '@sentry/core': 11.5.0
+
   '@sentry/types@8.54.0':
     dependencies:
       '@sentry/core': 8.54.0
@@ -14604,6 +14717,15 @@ snapshots:
     dependencies:
       '@sentry/core': 8.54.0
     optional: true
+
+  '@sentry/vue@11.5.0(pinia@3.0.3(typescript@5.6.3)(vue@3.5.22(typescript@5.6.3)))(vue@3.5.22(typescript@5.6.3))':
+    dependencies:
+      '@sentry/browser': 11.5.0
+      '@sentry/conventions': 0.26.0
+      '@sentry/core': 11.5.0
+      vue: 3.5.22(typescript@5.6.3)
+    optionalDependencies:
+      pinia: 3.0.3(typescript@5.6.3)(vue@3.5.22(typescript@5.6.3))
 
   '@shikijs/core@4.1.0':
     dependencies:
@@ -24168,6 +24290,8 @@ snapshots:
       defaults: 1.0.4
 
   web-namespaces@2.0.1: {}
+
+  web-vitals@6.2.3: {}
 
   webdriver@9.23.3:
     dependencies:
