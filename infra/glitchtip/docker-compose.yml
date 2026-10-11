@@ -1,0 +1,69 @@
+name: glitchtip
+
+# GlitchTip for the Sidecoin monorepo — Postgres-only, fronted by a Cloudflare
+# Tunnel. The web container is bound to 127.0.0.1 ONLY; cloudflared is the sole
+# ingress. No inbound port is exposed to the public internet.
+#
+# Image is pinned to a specific tag (no :latest in prod). See README.md.
+
+services:
+  postgres:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: glitchtip
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - glitchtip
+
+  web:
+    image: glitchtip/glitchtip:6.2.6
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: ./bin/run-all-in-one.sh
+    environment:
+      DATABASE_URL: postgres://glitchtip:${POSTGRES_PASSWORD}@postgres:5432/glitchtip
+      # Postgres-only mode: empty VALKEY_URL disables Valkey/Redis; Postgres is
+      # used for cache + task queue (confirmed against 6.2.x docs + compose).
+      VALKEY_URL: ""
+      SECRET_KEY: ${SECRET_KEY}
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN}
+      EMAIL_URL: ${EMAIL_URL}
+      DEFAULT_FROM_EMAIL: ${DEFAULT_FROM_EMAIL}
+      PORT: "8000"
+      # Behind the Cloudflare Tunnel (edge TLS). Trust the forwarded proto so
+      # Django builds correct https:// redirect / cookie URLs.
+      SECURE_PROXY_SSL_HEADER: "('HTTP_X_FORWARDED_PROTO', 'https')"
+    # localhost ONLY — cloudflared is the sole ingress. No public app port.
+    ports:
+      - "127.0.0.1:8000:8000"
+    networks:
+      - glitchtip
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${TUNNEL_TOKEN}
+    depends_on:
+      - web
+    networks:
+      - glitchtip
+
+networks:
+  glitchtip:
+    driver: bridge
+
+volumes:
+  pgdata:

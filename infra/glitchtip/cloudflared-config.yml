@@ -1,0 +1,23 @@
+# cloudflared tunnel ingress — reference copy.
+#
+# PREFERRED: run a TOKEN-BASED (remotely-managed) tunnel and configure the
+# ingress in the Cloudflare Zero Trust dashboard (Networks → Tunnels → Public
+# Hostnames). Then this file is documentation only and `TUNNEL_TOKEN` in .env is
+# the only secret. This is what docker-compose.yml uses.
+#
+# If you manage the tunnel LOCALLY instead, use the ingress below and mount your
+# tunnel credentials JSON + this file into the container.
+#
+#   hostname: glitchtip.sidecoin.app
+#   service:  http://web:8000        # the compose service, NOT a public port
+#   originRequest:
+#     noTLSVerify: false
+#
+# DNS: create a proxied (orange-cloud) CNAME for glitchtip.sidecoin.app pointing
+# at <tunnel-id>.cfargotunnel.com. cloudflared does this automatically with
+#   cloudflared tunnel route dns <tunnel> glitchtip.sidecoin.app
+#
+# Optional hardening: gate the login UI with Cloudflare Access (Zero Trust →
+# Access → Applications) so only your team can reach the dashboard. The Sentry
+# ingest endpoints (/api/<project>/store/, /envelope) must remain reachable by
+# your apps' SDKs — scope Access to the UI paths, not the ingest API.
