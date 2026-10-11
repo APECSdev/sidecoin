@@ -15,6 +15,8 @@
   "dependencies": {
     "@astrojs/check": "0.9.9",
     "@astrojs/vue": "6.0.1",
+    "@sentry/browser": "11.5.0",
+    "@sidecoin/observability": "workspace:*",
     "@sidecoin/shared": "workspace:*",
     "@tailwindcss/vite": "4.1.11",
     "astro": "6.3.8",

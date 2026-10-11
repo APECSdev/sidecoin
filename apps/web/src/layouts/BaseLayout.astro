@@ -63,6 +63,12 @@ const ogImage = new URL("/images/og-sidecoin.png", Astro.site);
       @import "../styles/global.css";
     </style>
 
+    <!-- GlitchTip error tracking (self-hosted). No DSN => no-op, zero network calls. -->
+    <script>
+      import { initObservability } from "../lib/observability";
+      initObservability();
+    </script>
+
     <!-- Analytics -->
     <script is:inline async defer src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
     <noscript><img src="https://queue.simpleanalyticscdn.com/noscript.gif" alt="" referrerpolicy="no-referrer-when-downgrade" /></noscript>
