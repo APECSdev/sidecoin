@@ -21,11 +21,11 @@
 // exposes a history endpoint — the same placeholder the Vue view described.
 // Do NOT present this series as real: it is badged "Mock data" and the caption
 // says so. When /market/history lands, swap the constant for a fetch and drop
-// the badge; the CartesianChart wiring stays as-is.
+// the badge; the chart wiring stays as-is.
 
 import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
-import { CartesianChart, Line } from "victory-native";
+import { LineChart } from "react-native-gifted-charts";
 
 import { getMarketPrice, type MarketPrice } from "../api";
 import { ECASH, GRAY } from "../theme/colors";
@@ -60,8 +60,8 @@ function formatAsOf(value: string): string {
 // against the live tile above; treat them as placeholders only.
 //
 // `day` is a simple 1..N index (the x axis), `price` the mocked USD value.
-// CartesianChart needs a numeric x for a linear scale, so we index rather
-// than pass Dates.
+// We index rather than pass Dates so the chart's x axis stays a plain linear
+// scale.
 // ──────────────────────────────────────────────────────
 export type MockEcxSample = {
   day: number;
@@ -101,6 +101,14 @@ export const MOCK_ECX_HISTORY: MockEcxSample[] = [
   { day: 30, price: 103.8 },
 ];
 
+// react-native-gifted-charts takes { value, label } points, so map the mock
+// series once at module scope. X labels stay sparse (first day + every 5th)
+// to keep 30 samples readable.
+const MOCK_CHART_DATA = MOCK_ECX_HISTORY.map((sample) => ({
+  value: sample.price,
+  label: sample.day === 1 || sample.day % 5 === 0 ? String(sample.day) : "",
+}));
+
 function formatSource(value: string): string {
   return value && value.toLowerCase() !== "hardcoded" ? value : "eCash Farm";
 }
@@ -109,6 +117,7 @@ export function MarketsScreen(): React.JSX.Element {
   const [price, setPrice] = useState<MarketPrice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartWidth, setChartWidth] = useState(0);
 
   const loadMarketPrice = useCallback(async () => {
     setLoading(true);
@@ -211,26 +220,29 @@ export function MarketsScreen(): React.JSX.Element {
           <Badge label="Mock data" tone="warning" />
         </View>
 
-        <View testID="markets-chart" style={styles.chartWrap}>
-          <CartesianChart
-            data={MOCK_ECX_HISTORY}
-            xKey="day"
-            yKeys={["price"]}
-            axisOptions={{
-              labelColor: GRAY[400],
-              lineColor: GRAY[800],
-              axisSide: { x: "bottom", y: "left" },
-            }}
-          >
-            {({ points }) => (
-              <Line
-                points={points.price}
-                color={ECASH[500]}
-                strokeWidth={3}
-                curveType="monotoneX"
-              />
-            )}
-          </CartesianChart>
+        <View
+          testID="markets-chart"
+          style={styles.chartWrap}
+          onLayout={(event) => setChartWidth(event.nativeEvent.layout.width)}
+        >
+          {chartWidth > 0 && (
+            <LineChart
+              data={MOCK_CHART_DATA}
+              adjustToWidth
+              width={chartWidth}
+              initialSpacing={0}
+              curved
+              noOfSections={4}
+              color={ECASH[500]}
+              thickness={3}
+              hideDataPoints
+              hideRules
+              yAxisColor={GRAY[800]}
+              xAxisColor={GRAY[800]}
+              yAxisTextStyle={{ color: GRAY[400] }}
+              xAxisLabelTextStyle={{ color: GRAY[400] }}
+            />
+          )}
         </View>
 
         <View style={styles.chartLegend}>

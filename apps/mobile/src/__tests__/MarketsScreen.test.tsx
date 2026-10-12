@@ -17,37 +17,22 @@
 // "Market charts coming soon" placeholder and no <CartesianChart> at all.
 
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
-// victory-native draws through @shopify/react-native-skia, whose RNSkiaModule
-// TurboModule does not exist under Jest. Mock the 41.x surface (CartesianChart +
-// Line) the same way App.test.tsx does, and record the props/children the screen
-// passes so the assertions below can inspect them.
+// react-native-gifted-charts draws through react-native-svg. Mock the
+// LineChart surface the same way App.test.tsx does, and record the props the
+// screen passes so the assertions below can inspect them.
 const chartProps: any = {};
-let lastPoints: Record<string, any[]> | null = null;
 
-jest.mock("victory-native", () => {
+jest.mock("react-native-gifted-charts", () => {
   const React = require("react");
   const { View } = require("react-native");
   return {
     __esModule: true,
-    CartesianChart: ({ children, ...rest }: any) => {
-      Object.assign(chartProps, rest);
-      const keys: string[] = Array.isArray(rest.yKeys) ? rest.yKeys : [];
-      const rows: any[] = Array.isArray(rest.data) ? rest.data : [];
-      const points: Record<string, any[]> = {};
-      for (const k of keys) {
-        points[k] = rows.map((row: any, i: number) => ({
-          x: row?.[rest.xKey] ?? i,
-          y: typeof row?.[k] === "number" ? row[k] : 0,
-        }));
-      }
-      lastPoints = points;
-      const rendered =
-        typeof children === "function" ? children({ points }) : children;
-      return React.createElement(View, { testID: "mock-cartesian-chart" }, rendered);
+    LineChart: (props: any) => {
+      Object.assign(chartProps, props);
+      return React.createElement(View, { testID: "mock-line-chart" });
     },
-    Line: "Line",
   };
 });
 
@@ -71,24 +56,30 @@ const LIVE_PRICE = {
 beforeEach(() => {
   jest.clearAllMocks();
   for (const k of Object.keys(chartProps)) delete chartProps[k];
-  lastPoints = null;
 });
 
 describe("MarketsScreen chart (mock data)", () => {
-  it("renders the CartesianChart over the mock series and labels it as mock", async () => {
+  it("renders the line chart over the mock series and labels it as mock", async () => {
     mockedGetMarketPrice.mockResolvedValue(LIVE_PRICE as any);
 
     render(<MarketsScreen />);
 
-    // The chart mounts synchronously (independent of the price fetch).
-    expect(screen.getByTestId("markets-chart")).toBeTruthy();
-    expect(screen.getByTestId("mock-cartesian-chart")).toBeTruthy();
+    // The chart wrapper mounts synchronously (independent of the price fetch);
+    // the chart itself renders once onLayout reports the wrapper width.
+    const wrap = screen.getByTestId("markets-chart");
+    expect(wrap).toBeTruthy();
+    fireEvent(wrap, "onLayout", {
+      nativeEvent: { layout: { width: 300, height: 220 } },
+    });
+    expect(screen.getByTestId("mock-line-chart")).toBeTruthy();
 
-    // The series is the mock constant, keyed on the numeric x (`day`) with a
-    // single y series (`price`).
-    expect(chartProps.data).toBe(MOCK_ECX_HISTORY);
-    expect(chartProps.xKey).toBe("day");
-    expect(chartProps.yKeys).toEqual(["price"]);
+    // The series is the mock constant mapped to { value, label } points, one
+    // point per sample, drawn as a curved 3px line.
+    expect(chartProps.data).toHaveLength(MOCK_ECX_HISTORY.length);
+    expect(chartProps.data[0].value).toBe(MOCK_ECX_HISTORY[0].price);
+    expect(chartProps.data[0].label).toBe(String(MOCK_ECX_HISTORY[0].day));
+    expect(chartProps.curved).toBe(true);
+    expect(chartProps.thickness).toBe(3);
 
     // The mock disclosure must be visible so the fabricated series can never be
     // mistaken for a live index.
@@ -97,10 +88,6 @@ describe("MarketsScreen chart (mock data)", () => {
       screen.getByText(/mock data, not a live index/i),
     ).toBeTruthy();
 
-    // The <Line> receives one point per sample.
-    await waitFor(() => {
-      expect(lastPoints?.price).toHaveLength(MOCK_ECX_HISTORY.length);
-    });
   });
 
   it("keeps the mock series well-formed for a linear x scale", () => {
@@ -111,7 +98,7 @@ describe("MarketsScreen chart (mock data)", () => {
       expect(Number.isFinite(sample.price)).toBe(true);
       expect(sample.price).toBeGreaterThan(0);
 
-      // Strictly increasing x -- CartesianChart maps `day` onto a linear scale.
+      // Strictly increasing x -- the chart maps `day` onto a linear scale.
       if (i > 0) {
         expect(sample.day).toBeGreaterThan(MOCK_ECX_HISTORY[i - 1].day);
       }
@@ -128,7 +115,10 @@ describe("MarketsScreen chart (mock data)", () => {
     });
 
     // The price panel errored, but the chart placeholder is unaffected.
-    expect(screen.getByTestId("mock-cartesian-chart")).toBeTruthy();
-    expect(chartProps.data).toBe(MOCK_ECX_HISTORY);
+    fireEvent(screen.getByTestId("markets-chart"), "onLayout", {
+      nativeEvent: { layout: { width: 300, height: 220 } },
+    });
+    expect(screen.getByTestId("mock-line-chart")).toBeTruthy();
+    expect(chartProps.data).toHaveLength(MOCK_ECX_HISTORY.length);
   });
 });

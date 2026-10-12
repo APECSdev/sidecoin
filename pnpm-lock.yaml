@@ -204,9 +204,6 @@ importers:
       '@react-navigation/native-stack':
         specifier: 7.5.1
         version: 7.5.1(@react-navigation/native@7.1.18(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native-safe-area-context@5.3.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native-screens@4.17.1(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
-      '@shopify/react-native-skia':
-        specifier: 2.3.9
-        version: 2.3.9(react-native-reanimated@4.1.3(@babel/core@7.25.2)(react-native-worklets@0.6.1(@babel/core@7.25.2)(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
       '@sidecoin/api-client':
         specifier: workspace:*
         version: link:../../packages/api-client
@@ -249,6 +246,9 @@ importers:
       react-native-get-random-values:
         specifier: 2.0.0
         version: 2.0.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))
+      react-native-gifted-charts:
+        specifier: 1.4.81
+        version: 1.4.81(react-native-svg@15.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
       react-native-keychain:
         specifier: 10.0.0
         version: 10.0.0
@@ -279,9 +279,6 @@ importers:
       uuid:
         specifier: 13.0.0
         version: 13.0.0
-      victory-native:
-        specifier: 41.20.1
-        version: 41.20.1(cwwy4vq2sujnrehjc5aydmrjjm)
     optionalDependencies:
       '@sentry/react-native':
         specifier: 6.14.0
@@ -3306,19 +3303,6 @@ packages:
   '@shikijs/vscode-textmate@10.0.2':
     resolution: {integrity: sha512-83yeghZ2xxin3Nj8z1NMd/NCuca+gsYXswywDy5bHvwlWL8tpTQmzGeUuHd9FC3E/SBEMvzJRwWEOz5gGes9Qg==}
 
-  '@shopify/react-native-skia@2.3.9':
-    resolution: {integrity: sha512-bC4K8cfL7UVZ1ttI8DFDiM5nQVtd3wopuvimTZp9QYsPEij2kEoQEy3r/Ybq8G8LlOMa3ItmTlQPBr+FbUhIEA==}
-    hasBin: true
-    peerDependencies:
-      react: '>=19.0'
-      react-native: '>=0.78'
-      react-native-reanimated: '>=3.19.1'
-    peerDependenciesMeta:
-      react-native:
-        optional: true
-      react-native-reanimated:
-        optional: true
-
   '@sideway/address@4.1.5':
     resolution: {integrity: sha512-IqO/DUQHUkPeixNQ8n0JA6102hT9CmaljNTPmQ1u8MEhBo/R4Q8eKLN/vGZxuebwOroDB4cbpjheD4+/sKFK4Q==}
 
@@ -4047,11 +4031,6 @@ packages:
   '@types/react-native@0.70.19':
     resolution: {integrity: sha512-c6WbyCgWTBgKKMESj/8b4w+zWcZSsCforson7UdXtXMecG3MxCinYi6ihhrHVPyUrVzORsvEzK8zg32z4pK6Sg==}
 
-  '@types/react-reconciler@0.28.9':
-    resolution: {integrity: sha512-HHM3nxyUZ3zAylX8ZEyrDNd2XZOnQ0D5XfunJF5FLQnZbHHYq4UWvW1QfelQNXv1ICNkwYhfxjwfnqivYB6bFg==}
-    peerDependencies:
-      '@types/react': '*'
-
   '@types/react-test-renderer@19.1.0':
     resolution: {integrity: sha512-XD0WZrHqjNrxA/MaR9O22w/RNidWR9YZmBdRGI7wcnWGrv/3dA8wKCJ8m63Sn+tLJhcjmuhOi629N66W6kgWzQ==}
 
@@ -4508,9 +4487,6 @@ packages:
   '@wdio/xvfb@9.23.3':
     resolution: {integrity: sha512-m0uITSBWk5hZyBdCFChpU05rkZCrTlu19qOHlSoJq19HX7m7mLbAz3tuu4SE+6jSw/E16I99zTC5S1bpxj7bEg==}
     engines: {node: '>=18'}
-
-  '@webgpu/types@0.1.21':
-    resolution: {integrity: sha512-pUrWq3V5PiSGFLeLxoGqReTZmiiXwY3jRkIG5sLLKjyqNxrwm/04b4nw7LSmGWJcKk59XOM/YRTUwOzo4MMlow==}
 
   '@xmldom/xmldom@0.9.10':
     resolution: {integrity: sha512-A9gOqLdi6cV4ibazAjcQufGj0B1y/vDqYrcuP6d/6x8P27gRS8643Dj9o1dEKtB6O7fwxb2FgBmJS2mX7gpvdw==}
@@ -5202,9 +5178,6 @@ packages:
   canvas-renderer@2.2.1:
     resolution: {integrity: sha512-RrBgVL5qCEDIXpJ6NrzyRNoTnXxYarqm/cS/W6ERhUJts5UQtt/XPEosGN3rqUkZ4fjBArlnCbsISJ+KCFnIAg==}
 
-  canvaskit-wasm@0.40.0:
-    resolution: {integrity: sha512-Od2o+ZmoEw9PBdN/yCGvzfu0WVqlufBPEWNG452wY7E9aT8RBE+ChpZF526doOlg7zumO4iCS+RAeht4P0Gbpw==}
-
   cashaddrjs@0.4.4:
     resolution: {integrity: sha512-xZkuWdNOh0uq/mxJIng6vYWfTowZLd9F4GMAlp2DwFHlcCqCm91NtuAc47RuV4L7r4PYcY5p6Cr2OKNb4hnkWA==}
 
@@ -5595,72 +5568,6 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
-
-  d3-array@3.2.4:
-    resolution: {integrity: sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg==}
-    engines: {node: '>=12'}
-
-  d3-color@3.1.0:
-    resolution: {integrity: sha512-zg/chbXyeBtMQ1LbD/WSoW2DpC3I0mpmPdW+ynRTj/x2DAWYrIY7qeZIHidozwV24m4iavr15lNwIwLxRmOxhA==}
-    engines: {node: '>=12'}
-
-  d3-dispatch@3.0.1:
-    resolution: {integrity: sha512-rzUyPU/S7rwUflMyLc1ETDeBj0NRuHKKAcvukozwhshr6g6c5d8zh4c2gQjY2bZ0dXeGLWc1PF174P2tVvKhfg==}
-    engines: {node: '>=12'}
-
-  d3-drag@3.0.0:
-    resolution: {integrity: sha512-pWbUJLdETVA8lQNJecMxoXfH6x+mO2UQo8rSmZ+QqxcbyA3hfeprFgIT//HW2nlHChWeIIMwS2Fq+gEARkhTkg==}
-    engines: {node: '>=12'}
-
-  d3-ease@3.0.1:
-    resolution: {integrity: sha512-wR/XK3D3XcLIZwpbvQwQ5fK+8Ykds1ip7A2Txe0yxncXSdq1L9skcG7blcedkOX+ZcgxGAmLX1FrRGbADwzi0w==}
-    engines: {node: '>=12'}
-
-  d3-format@3.1.2:
-    resolution: {integrity: sha512-AJDdYOdnyRDV5b6ArilzCPPwc1ejkHcoyFarqlPqT7zRYjhavcT3uSrqcMvsgh2CgoPbK3RCwyHaVyxYcP2Arg==}
-    engines: {node: '>=12'}
-
-  d3-interpolate@3.0.1:
-    resolution: {integrity: sha512-3bYs1rOD33uo8aqJfKP3JWPAibgw8Zm2+L9vBKEHJ2Rg+viTR7o5Mmv5mZcieN+FRYaAOWX5SJATX6k1PWz72g==}
-    engines: {node: '>=12'}
-
-  d3-path@3.1.0:
-    resolution: {integrity: sha512-p3KP5HCf/bvjBSSKuXid6Zqijx7wIfNW+J/maPs+iwR35at5JCbLUT0LzF1cnjbCHWhqzQTIN2Jpe8pRebIEFQ==}
-    engines: {node: '>=12'}
-
-  d3-scale@4.0.2:
-    resolution: {integrity: sha512-GZW464g1SH7ag3Y7hXjf8RoUuAFIqklOAq3MRl4OaWabTFJY9PN/E1YklhXLh+OQ3fM9yS2nOkCoS+WLZ6kvxQ==}
-    engines: {node: '>=12'}
-
-  d3-selection@3.0.0:
-    resolution: {integrity: sha512-fmTRWbNMmsmWq6xJV8D19U/gw/bwrHfNXxrIN+HfZgnzqTHp9jOmKMhsTUjXOJnZOdZY9Q28y4yebKzqDKlxlQ==}
-    engines: {node: '>=12'}
-
-  d3-shape@3.2.0:
-    resolution: {integrity: sha512-SaLBuwGm3MOViRq2ABk3eLoxwZELpH6zhl3FbAoJ7Vm1gofKx6El1Ib5z23NUEhF9AsGl7y+dzLe5Cw2AArGTA==}
-    engines: {node: '>=12'}
-
-  d3-time-format@4.1.0:
-    resolution: {integrity: sha512-dJxPBlzC7NugB2PDLwo9Q8JiTR3M3e4/XANkreKSUxF8vvXKqm1Yfq4Q5dl8budlunRVlUUaDUgFt7eA8D6NLg==}
-    engines: {node: '>=12'}
-
-  d3-time@3.1.0:
-    resolution: {integrity: sha512-VqKjzBLejbSMT4IgbmVgDjpkYrNWUYJnbCGo874u7MMKIWsILRX+OpX/gTk8MqjpT1A/c6HY2dCA77ZN0lkQ2Q==}
-    engines: {node: '>=12'}
-
-  d3-timer@3.0.1:
-    resolution: {integrity: sha512-ndfJ/JxxMd3nw31uyKoY2naivF+r29V+Lc0svZxe1JvvIRmi8hUsrMvdOwgS1o6uBHmiz91geQ0ylPP0aj1VUA==}
-    engines: {node: '>=12'}
-
-  d3-transition@3.0.1:
-    resolution: {integrity: sha512-ApKvfjsSR6tg06xrL434C0WydLr7JewBB3V+/39RMHsaXTOG0zmt/OAXeng5M5LBm0ojmxJrpomQVZ1aPvBL4w==}
-    engines: {node: '>=12'}
-    peerDependencies:
-      d3-selection: 2 - 3
-
-  d3-zoom@3.0.0:
-    resolution: {integrity: sha512-b8AmV3kfQaqWAuacbPuNbL6vahnOJflOhexLzMMNLga62+/nh0JzvJ0aO/5a5MVgUFGS7Hu1P9P03o3fJkDCyw==}
-    engines: {node: '>=12'}
 
   data-uri-to-buffer@6.0.2:
     resolution: {integrity: sha512-7hvf7/GW8e86rW0ptuwS3OcBGDjIi6SZva7hCyWC0yYry2cOPmLIjXAUHI6DK2HsnwJd9ifmt57i8eV2n4YNpw==}
@@ -6599,6 +6506,13 @@ packages:
     resolution: {integrity: sha512-b1O07XYq8eRuVzBNgJLstU6FYc1tS6wnMtF1I1D9lE8LxZSOGZ7LhxN54yPP6mGw5f2CkXY2BQUL9Fx41qvcIg==}
     engines: {node: '>= 14'}
 
+  gifted-charts-core@0.1.83:
+    resolution: {integrity: sha512-v8KX6ItE1ujsxufJDZMR4uxKBimPW7Fzj6zkflr3locMcuJW5vT6fa4JajrilfcOXb4Vlyu+mRX5pcXdT12b6w==}
+    peerDependencies:
+      react: '*'
+      react-native: '*'
+      react-native-svg: '*'
+
   github-slugger@2.0.0:
     resolution: {integrity: sha512-IaOQ9puYtjrkq7Y0Ygl9KDZnrf/aiUJYUpVf89y8kyaxbRG7Y1SrX/jaumrv81vc61+kiMempujsM3Yw7w5qcw==}
 
@@ -6939,10 +6853,6 @@ packages:
     resolution: {integrity: sha512-4gd7VpWNQNB4UKKCFFVcp1AVv+FMOgs9NKzjHKusc8jTMhd5eL1NqQqOpE0KzMds804/yHlglp3uxgluOqAPLw==}
     engines: {node: '>= 0.4'}
 
-  internmap@2.0.3:
-    resolution: {integrity: sha512-5Hh7Y1wQbvY5ooGgPbDaL5iYLAPzMTUrjMulskHLH6wnv/A+1q5rgEaiuqEjB+oxGXIVZs1FF+R/KPN3ZSQYYg==}
-    engines: {node: '>=12'}
-
   invariant@2.2.4:
     resolution: {integrity: sha512-phJfQVBuaJM5raOpJjSfkiD6BpbCE4Ns//LaXl6wGYtUBY83nWS6Rf9tXm2e8VaK60JEjYldbPif/A2B1C2gNA==}
 
@@ -7222,11 +7132,6 @@ packages:
   iterator.prototype@1.1.5:
     resolution: {integrity: sha512-H0dkQoCa3b2VEeKQBOxFph+JAbcrQdE7KC0UkqwpLmv2EC4P41QXP+rqo9wYodACiG5/WM5s9oDApTU8utwj9g==}
     engines: {node: '>= 0.4'}
-
-  its-fine@1.2.5:
-    resolution: {integrity: sha512-fXtDA0X0t0eBYAGLVM5YsgJGsJ5jEmqZEPrGbzdf5awjv0xE7nqv3TVnvtUF060Tkes15DbDAKW/I48vsb6SyA==}
-    peerDependencies:
-      react: '>=18.0'
 
   jackspeak@3.4.3:
     resolution: {integrity: sha512-OGlZQpz2yfahA/Rd1Y8Cd9SIEsqvXkLVoSw/cgwhnhFMDbsQFeZYoJJ7bIZBS9BcamUW96asq/npPWugM+RQBw==}
@@ -9000,9 +8905,6 @@ packages:
   react-devtools-core@6.1.5:
     resolution: {integrity: sha512-ePrwPfxAnB+7hgnEr8vpKxL9cmnp7F322t8oqcPshbIQQhDKgFDW4tjhF2wjVbdXF9O/nyuy3sQWd9JGpiLPvA==}
 
-  react-fast-compare@3.2.2:
-    resolution: {integrity: sha512-nsO+KSNgo1SbJqJEYRE9ERzo7YtYbou/OqjSQKxV7jcKox7+usiUVZOAC+XnDOABXggQTno0Y1CpVnuWEc1boQ==}
-
   react-freeze@1.0.4:
     resolution: {integrity: sha512-r4F0Sec0BLxWicc7HEyo2x3/2icUTrRmDjaaRyzzn+7aDyFZliszMDOgLVwSnQnYENOlL1o569Ze2HZefk8clA==}
     engines: {node: '>=10'}
@@ -9044,6 +8946,20 @@ packages:
     resolution: {integrity: sha512-wx7/aPqsUIiWsG35D+MsUJd8ij96e3JKddklSdrdZUrheTx89gPtz3Q2yl9knBArj5u26Cl23T88ai+Q0vypdQ==}
     peerDependencies:
       react-native: '>=0.81'
+
+  react-native-gifted-charts@1.4.81:
+    resolution: {integrity: sha512-AgQKtuGNs5/k3YtTIILTx8M+7c8F5XmL87VYI7H5b1vTkNmjxRoGEV6xWDvTWKAe1GqBlFgJrBUpl/tMuRalDQ==}
+    peerDependencies:
+      expo-linear-gradient: '*'
+      react: '*'
+      react-native: '*'
+      react-native-linear-gradient: '*'
+      react-native-svg: '*'
+    peerDependenciesMeta:
+      expo-linear-gradient:
+        optional: true
+      react-native-linear-gradient:
+        optional: true
 
   react-native-is-edge-to-edge@1.3.1:
     resolution: {integrity: sha512-NIXU/iT5+ORyCc7p0z2nnlkouYKX425vuU1OEm6bMMtWWR9yvb+Xg5AZmImTKoF9abxCPqrKC3rOZsKzUYgYZA==}
@@ -9116,12 +9032,6 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
-
-  react-reconciler@0.31.0:
-    resolution: {integrity: sha512-7Ob7Z+URmesIsIVRjnLoDGwBEG/tVitidU0nMsqX/eeJaLY89RISO/10ERe0MqmzuKUUB1rmY+h1itMbUHg9BQ==}
-    engines: {node: '>=0.10.0'}
-    peerDependencies:
-      react: ^19.0.0
 
   react-refresh@0.14.2:
     resolution: {integrity: sha512-jCvmsr+1IUSMUyzOkRcvnVbX3ZYC6g9TDrDbFuFmRDq7PD4yaGbLKNQL6k2jnArV8hjYxh7hVhAZB6s9HDGpZA==}
@@ -9426,9 +9336,6 @@ packages:
   saxes@6.0.0:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
-
-  scheduler@0.25.0:
-    resolution: {integrity: sha512-xFVuu11jh+xcO7JOAGJNOXld8/TcEHK/4CituBUeUb5hqxJLj9YuemAEuvm9gQ/+pgXYfbQuqAkiYu+u7YEsNA==}
 
   scheduler@0.26.0:
     resolution: {integrity: sha512-NlHwttCI/l5gCPR3D1nNXtWABUmBwvZpEQiD4IXSbIDq8BzLIK/7Ir5gTFSGZDUu37K5cMNp0hFtzO38sC7gWA==}
@@ -10512,15 +10419,6 @@ packages:
 
   vfile@6.0.3:
     resolution: {integrity: sha512-KzIbH/9tXat2u30jf+smMwFCsno4wHVdNmzFyL+T/L3UGqqk6JKfVqOFOZEpZSHADH1k40ab6NUIXZq422ov3Q==}
-
-  victory-native@41.20.1:
-    resolution: {integrity: sha512-wz+T0WqmYe7qydwuDrMcsGcXsO3acEVEKG7iw6xlHvy+ul8LBA2YSlHAoz3uM2CkOnTCWFWH3t37qlZrn1zHUg==}
-    peerDependencies:
-      '@shopify/react-native-skia': '>=1.2.3'
-      react: '*'
-      react-native: '*'
-      react-native-gesture-handler: '>=2.0.0'
-      react-native-reanimated: '>=3.0.0'
 
   vite-dev-rpc@1.1.0:
     resolution: {integrity: sha512-pKXZlgoXGoE8sEKiKJSng4hI1sQ4wi5YT24FCrwrLt6opmkjlqPPVmiPWWJn8M8byMxRGzp1CrFuqQs4M/Z39A==}
@@ -14874,15 +14772,6 @@ snapshots:
 
   '@shikijs/vscode-textmate@10.0.2': {}
 
-  '@shopify/react-native-skia@2.3.9(react-native-reanimated@4.1.3(@babel/core@7.25.2)(react-native-worklets@0.6.1(@babel/core@7.25.2)(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)':
-    dependencies:
-      canvaskit-wasm: 0.40.0
-      react: 19.1.0
-      react-reconciler: 0.31.0(react@19.1.0)
-    optionalDependencies:
-      react-native: 0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)
-      react-native-reanimated: 4.1.3(@babel/core@7.25.2)(react-native-worklets@0.6.1(@babel/core@7.25.2)(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
-
   '@sideway/address@4.1.5':
     dependencies:
       '@hapi/hoek': 9.3.0
@@ -15854,10 +15743,6 @@ snapshots:
     dependencies:
       '@types/react': 19.1.0
 
-  '@types/react-reconciler@0.28.9(@types/react@19.1.0)':
-    dependencies:
-      '@types/react': 19.1.0
-
   '@types/react-test-renderer@19.1.0':
     dependencies:
       '@types/react': 19.1.0
@@ -16639,8 +16524,6 @@ snapshots:
   '@wdio/xvfb@9.23.3':
     dependencies:
       '@wdio/logger': 9.18.0
-
-  '@webgpu/types@0.1.21': {}
 
   '@xmldom/xmldom@0.9.10': {}
 
@@ -17668,10 +17551,6 @@ snapshots:
     dependencies:
       '@types/node': 25.0.3
 
-  canvaskit-wasm@0.40.0:
-    dependencies:
-      '@webgpu/types': 0.1.21
-
   cashaddrjs@0.4.4:
     dependencies:
       big-integer: 1.6.36
@@ -18122,70 +18001,6 @@ snapshots:
       lru-cache: 11.5.1
 
   csstype@3.2.3: {}
-
-  d3-array@3.2.4:
-    dependencies:
-      internmap: 2.0.3
-
-  d3-color@3.1.0: {}
-
-  d3-dispatch@3.0.1: {}
-
-  d3-drag@3.0.0:
-    dependencies:
-      d3-dispatch: 3.0.1
-      d3-selection: 3.0.0
-
-  d3-ease@3.0.1: {}
-
-  d3-format@3.1.2: {}
-
-  d3-interpolate@3.0.1:
-    dependencies:
-      d3-color: 3.1.0
-
-  d3-path@3.1.0: {}
-
-  d3-scale@4.0.2:
-    dependencies:
-      d3-array: 3.2.4
-      d3-format: 3.1.2
-      d3-interpolate: 3.0.1
-      d3-time: 3.1.0
-      d3-time-format: 4.1.0
-
-  d3-selection@3.0.0: {}
-
-  d3-shape@3.2.0:
-    dependencies:
-      d3-path: 3.1.0
-
-  d3-time-format@4.1.0:
-    dependencies:
-      d3-time: 3.1.0
-
-  d3-time@3.1.0:
-    dependencies:
-      d3-array: 3.2.4
-
-  d3-timer@3.0.1: {}
-
-  d3-transition@3.0.1(d3-selection@3.0.0):
-    dependencies:
-      d3-color: 3.1.0
-      d3-dispatch: 3.0.1
-      d3-ease: 3.0.1
-      d3-interpolate: 3.0.1
-      d3-selection: 3.0.0
-      d3-timer: 3.0.1
-
-  d3-zoom@3.0.0:
-    dependencies:
-      d3-dispatch: 3.0.1
-      d3-drag: 3.0.0
-      d3-interpolate: 3.0.1
-      d3-selection: 3.0.0
-      d3-transition: 3.0.1(d3-selection@3.0.0)
 
   data-uri-to-buffer@6.0.2: {}
 
@@ -19307,6 +19122,12 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  gifted-charts-core@0.1.83(react-native-svg@15.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+      react-native: 0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)
+      react-native-svg: 15.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
+
   github-slugger@2.0.0: {}
 
   glob-parent@5.1.2:
@@ -19740,8 +19561,6 @@ snapshots:
       hasown: 2.0.3
       side-channel: 1.1.0
 
-  internmap@2.0.3: {}
-
   invariant@2.2.4:
     dependencies:
       loose-envify: 1.4.0
@@ -19995,13 +19814,6 @@ snapshots:
       get-proto: 1.0.1
       has-symbols: 1.1.0
       set-function-name: 2.0.2
-
-  its-fine@1.2.5(@types/react@19.1.0)(react@19.1.0):
-    dependencies:
-      '@types/react-reconciler': 0.28.9(@types/react@19.1.0)
-      react: 19.1.0
-    transitivePeerDependencies:
-      - '@types/react'
 
   jackspeak@3.4.3:
     dependencies:
@@ -22302,8 +22114,6 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
-  react-fast-compare@3.2.2: {}
-
   react-freeze@1.0.4(react@19.1.0):
     dependencies:
       react: 19.1.0
@@ -22344,6 +22154,13 @@ snapshots:
     dependencies:
       fast-base64-decode: 1.0.0
       react-native: 0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)
+
+  react-native-gifted-charts@1.4.81(react-native-svg@15.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0):
+    dependencies:
+      gifted-charts-core: 0.1.83(react-native-svg@15.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
+      react: 19.1.0
+      react-native: 0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)
+      react-native-svg: 15.14.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
 
   react-native-is-edge-to-edge@1.3.1(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0):
     dependencies:
@@ -22515,11 +22332,6 @@ snapshots:
       - supports-color
       - utf-8-validate
     optional: true
-
-  react-reconciler@0.31.0(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      scheduler: 0.25.0
 
   react-refresh@0.14.2: {}
 
@@ -22941,8 +22753,6 @@ snapshots:
   saxes@6.0.0:
     dependencies:
       xmlchars: 2.2.0
-
-  scheduler@0.25.0: {}
 
   scheduler@0.26.0: {}
 
@@ -24132,21 +23942,6 @@ snapshots:
     dependencies:
       '@types/unist': 3.0.3
       vfile-message: 4.0.3
-
-  victory-native@41.20.1(cwwy4vq2sujnrehjc5aydmrjjm):
-    dependencies:
-      '@shopify/react-native-skia': 2.3.9(react-native-reanimated@4.1.3(@babel/core@7.25.2)(react-native-worklets@0.6.1(@babel/core@7.25.2)(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
-      d3-scale: 4.0.2
-      d3-shape: 3.2.0
-      d3-zoom: 3.0.0
-      its-fine: 1.2.5(@types/react@19.1.0)(react@19.1.0)
-      react: 19.1.0
-      react-fast-compare: 3.2.2
-      react-native: 0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0)
-      react-native-gesture-handler: 2.29.0(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
-      react-native-reanimated: 4.1.3(@babel/core@7.25.2)(react-native-worklets@0.6.1(@babel/core@7.25.2)(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0))(react-native@0.81.1(@babel/core@7.25.2)(@react-native-community/cli@20.0.0(typescript@5.8.3))(@react-native/metro-config@0.81.1(@babel/core@7.25.2))(@types/react@19.1.0)(react@19.1.0))(react@19.1.0)
-    transitivePeerDependencies:
-      - '@types/react'
 
   vite-dev-rpc@1.1.0(vite@7.3.3(@types/node@25.0.3)(jiti@2.7.0)(lightningcss@1.30.1)(terser@5.48.0)(tsx@4.22.3)(yaml@2.9.0)):
     dependencies:

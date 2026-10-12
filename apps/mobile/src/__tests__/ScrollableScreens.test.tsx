@@ -68,18 +68,15 @@ jest.mock("../api", () => ({
   ESPLORA_BASES: {},
 }));
 
-// victory-native renders through @shopify/react-native-skia, whose
-// NativeSkiaModule TurboModule does not exist in Jest. Mock the chart surface
-// the same way App.test.tsx does so importing MarketsScreen does not throw
-// "TurboModuleRegistry.getEnforcing(...): 'RNSkiaModule' could not be found".
-jest.mock("victory-native", () => {
+// react-native-gifted-charts draws through react-native-svg. Mock the chart
+// surface the same way App.test.tsx does so importing MarketsScreen stays
+// hermetic under Jest.
+jest.mock("react-native-gifted-charts", () => {
   const React = require("react");
   const { View } = require("react-native");
   return {
     __esModule: true,
-    CartesianChart: ({ children }: any) =>
-      React.createElement(View, { testID: "mock-cartesian-chart" }, children),
-    Line: "Line",
+    LineChart: () => React.createElement(View, { testID: "mock-line-chart" }),
   };
 });
 

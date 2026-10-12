@@ -162,6 +162,11 @@ jest.mock("react-native-screens", () => {
 });
 
 // react-native-reanimated
+//
+// react-native-css-interop/babel.js unconditionally lists
+// react-native-reanimated/plugin, so NativeWind keeps reanimated as a build
+// dependency even with the Skia chart stack removed. The runtime mock stays
+// because css-interop's runtime integrates with reanimated when present.
 jest.mock("react-native-reanimated", () => {
   const View = require("react-native").View;
   return {
@@ -348,54 +353,17 @@ jest.mock("@react-navigation/native-stack", () => {
   };
 });
 
-// @shopify/react-native-skia
-jest.mock("@shopify/react-native-skia", () => ({
-  Canvas: "Canvas",
-  Circle: "Circle",
-  Path: "Path",
-  Skia: {
-    Path: { Make: jest.fn() },
-    Color: jest.fn(),
-  },
-}));
-
-// victory-native
+// react-native-gifted-charts
 //
-// victory-native 41.x (installed version) does NOT export the v3x
-// VictoryChart/VictoryLine/VictoryBar/VictoryAxis components — the only
-// exports are CartesianChart, PolarChart, Pie, Line, Area, Bar, Scatter, etc.
-// (see node_modules/victory-native/dist/index.d.ts). The mock therefore has to
-// describe the 41.x surface, or a screen that imports { CartesianChart, Line }
-// gets undefined at render time.
-//
-// CartesianChart's children is a FUNCTION ({ points }) => node that renders
-// Skia primitives. The mock invokes it with a fake `points` map (one key per
-// yKeys entry, each an array of {x, y} PointsArray entries) so the chart body
-// is exercised rather than skipped.
-jest.mock("victory-native", () => {
+// MarketsScreen imports { LineChart }; mock it as a plain View so the app
+// shell renders hermetically under Jest (the real component draws through
+// react-native-svg).
+jest.mock("react-native-gifted-charts", () => {
   const React = require("react");
   const View = require("react-native").View;
   return {
     __esModule: true,
-    CartesianChart: ({
-      children,
-      data,
-      yKeys,
-    }: any) => {
-      const keys: string[] = Array.isArray(yKeys) ? yKeys : [];
-      const rows: any[] = Array.isArray(data) ? data : [];
-      const points: Record<string, any[]> = {};
-      for (const k of keys) {
-        points[k] = rows.map((row: any, i: number) => ({
-          x: row?.day ?? i,
-          y: typeof row?.[k] === "number" ? row[k] : 0,
-        }));
-      }
-      const rendered =
-        typeof children === "function" ? children({ points }) : children;
-      return React.createElement(View, { testID: "mock-cartesian-chart" }, rendered);
-    },
-    Line: "Line",
+    LineChart: () => React.createElement(View, { testID: "mock-line-chart" }),
   };
 });
 

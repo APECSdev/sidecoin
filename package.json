@@ -27,8 +27,6 @@
     "type-check": "pnpm -r type-check"
   },
   "pnpm": {
-    "onlyBuiltDependencies": [
-      "@shopify/react-native-skia"
-    ]
+    "onlyBuiltDependencies": []
   }
 }
