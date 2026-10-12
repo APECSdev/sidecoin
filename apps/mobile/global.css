@@ -1,0 +1,15 @@
+/* apps/mobile/global.css
+ *
+ * Tailwind entry point for NativeWind (React Native).
+ *
+ * Metro processes this file through withNativeWind (see metro.config.js),
+ * which runs Tailwind's JIT over the `content` globs in tailwind.config.js
+ * and turns the used utilities into React Native style objects that
+ * react-native-css-interop serves at runtime.
+ *
+ * Imported once from index.js, before App registers.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

@@ -6,10 +6,14 @@
 //   1. Resolve @sidecoin/shared from the workspace (symlinked via pnpm)
 //   2. Watch the shared package source directory for hot-reload
 //   3. Handle Node.js polyfills needed by crypto libraries
-//   4. Support NativeWind (Tailwind CSS) processing
+//   4. Support NativeWind (Tailwind CSS) processing — wired via
+//      withNativeWind at the bottom of this file (26.10.12; the original
+//      scaffold had the babel preset but never this half, so className
+//      could never have resolved styles).
 
 const path = require("path");
 const { getDefaultConfig, mergeConfig } = require("@react-native/metro-config");
+const { withNativeWind } = require("nativewind/metro");
 
 // ──────────────────────────────────────────────────────
 // Paths
@@ -208,5 +212,13 @@ const config = {
 // detectAndroidFlavor is exported for the regression test in
 // src/__tests__/metroFlavor.test.ts. It is a plain property on the config
 // object, which Metro ignores.
-module.exports = mergeConfig(defaultConfig, config);
+//
+// withNativeWind wraps the merged config: it appends "css" to
+// resolver.sourceExts and swaps in the css-interop transformer so the
+// global.css import in index.js is compiled by Tailwind. The wrap returns
+// the config object synchronously, so re-attaching detectAndroidFlavor
+// afterwards is safe.
+module.exports = withNativeWind(mergeConfig(defaultConfig, config), {
+  input: "./global.css",
+});
 module.exports.detectAndroidFlavor = detectAndroidFlavor;

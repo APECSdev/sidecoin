@@ -13,6 +13,12 @@
 // Every screen in apps/mobile/src/screens is built from these, so a styling
 // change made here propagates the way a Tailwind class change did in the
 // Vue app. No behaviour lives here — presentation only.
+//
+// Since 26.10.12 the app ALSO has NativeWind fully wired (metro + babel +
+// global.css), so className is available everywhere; Eyebrow below is the
+// pilot conversion and proves the pipeline end-to-end. Incremental adoption
+// is deliberate: className and style coexist (style wins on conflict), so
+// there is no big-bang rewrite of the existing StyleSheet primitives.
 
 import React from "react";
 import {
@@ -111,7 +117,19 @@ export interface TextRoleProps {
 }
 
 export function Eyebrow({ children, style }: TextRoleProps): React.JSX.Element {
-  return <Text style={[styles.eyebrow, style]}>{children}</Text>;
+  // Pilot NativeWind conversion: this role used to be styles.eyebrow
+  // (fontSize 11, fontWeight 700, uppercase, letterSpacing 1.2, ECASH[500]).
+  // The className below is the exact same spec in Tailwind utilities; the
+  // `style` prop still applies last, so existing call-site overrides keep
+  // winning (className maps to the first entry of the style array).
+  return (
+    <Text
+      className="text-[11px] font-bold uppercase tracking-[1.2px] text-ecash-500"
+      style={style}
+    >
+      {children}
+    </Text>
+  );
 }
 
 export function Title({ children, style }: TextRoleProps): React.JSX.Element {
@@ -577,13 +595,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
-  },
-  eyebrow: {
-    fontSize: 11,
-    fontWeight: "700",
-    textTransform: "uppercase",
-    letterSpacing: 1.2,
-    color: ECASH[500],
   },
   title: {
     fontSize: 28,

@@ -151,6 +151,25 @@ asserts the mock disclosure and the real WebView wiring.
 `DefaultTheme` (`background #f2f2f2`) and paints a white gutter around dark
 screens. `App.test.tsx` guards this.
 
+**Styling: NativeWind (Tailwind className) is wired as of 26.10.12** —
+nativewind 4.2.7 + react-native-css-interop 0.2.7 + tailwindcss 3.4.17
+(same Tailwind major as wallet/explorer; prettier-plugin-tailwindcss is
+deliberately absent: the repo has no prettier config, and 0.5.x peers
+prettier 3 while mobile pins 2.8.8). The chain is `global.css` (imported
+in `index.js`) → `withNativeWind` (`metro.config.js`) → `nativewind/babel`
+preset (excluded under Jest — it injects `_ReactNativeCSSInterop` references
+that break `jest.mock()` hoisting; `nativewindBabel.test.ts` runs the
+transform directly to keep the preset covered). Palette single source of
+truth stays `src/theme/colors.ts`; `tailwind.config.js` MIRRORS it and
+`tailwindParity.test.ts` fails on drift. Adoption is incremental —
+className and `style` coexist (`style` wins); `Eyebrow` in
+`components/ui.tsx` is the pilot conversion. Do NOT rewrite screens
+big-bang. css-interop 0.2.7 also resolves the trigger that motivated the
+original removal: it registers `react-native-safe-area-context`'s
+SafeAreaView (`dist/runtime/components.js:49`), NOT RN core's deprecated
+export, so the dev-only SafeAreaView deprecation badge does not return
+(0.2.1 registered core's; the `2eb9a668` message records that trigger).
+
 ### F-Droid release review checklist (run before every recipe version bump)
 
 These gates were added after findings from MR 50457 reviews (linsui + mezinster).
@@ -216,6 +235,11 @@ pushing a recipe update.
   `components/ui.tsx`) driven by `src/theme/`. Tailwind was dead scaffold
   weight. Mobile styling is StyleSheet, NOT Tailwind — Tailwind lives only
   in `apps/wallet`/`apps/web`/`apps/explorer`/`apps/smarthub`.
+  **Superseded in 26.10.12**: NativeWind was reintroduced, fully wired this
+  time (the scaffold had the babel preset but no `global.css` and no
+  `withNativeWind`, so it could never have functioned). className is now
+  the shared styling language across all five apps; see the "Styling"
+  paragraph in the React Native section above.
 
 ### Network model
 
@@ -337,7 +361,7 @@ must be green before commit.
 
 **Test baselines** (`pnpm --filter <pkg> test`; verify before citing in a PR):
 shared 254 (+1 skip) · wallet 382 · web 118 · explorer 43 · desktop 76 ·
-smarthub 5 · mobile 230 (17 suites) · api-client 12 · observability 17.
+smarthub 5 · mobile 236 (19 suites) · api-client 12 · observability 17.
 
 ## CI (`.github/workflows/`)
 

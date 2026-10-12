@@ -38,6 +38,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.tsx",
+    "nativewind-env.d.ts",
     "index.js",
     "jest.config.ts",
     "metro.config.js",

@@ -26,7 +26,15 @@ import "./src/polyfills";
 import "react-native-gesture-handler";
 
 // ──────────────────────────────────────────────────────
-// 3. App Registration
+// 3. NativeWind (Tailwind)
+//    Imports global.css, which Metro routes through the Tailwind
+//    compiler (see withNativeWind in metro.config.js). This must load
+//    before any component that uses className.
+// ──────────────────────────────────────────────────────
+import "./global.css";
+
+// ──────────────────────────────────────────────────────
+// 4. App Registration
 // ──────────────────────────────────────────────────────
 import { AppRegistry } from "react-native";
 import App from "./src/App";

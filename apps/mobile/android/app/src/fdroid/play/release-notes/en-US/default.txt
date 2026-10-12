@@ -1,11 +1,8 @@
-• Removed the unused native crypto libraries — the APK no longer
-  bundles any third-party prebuilt OpenSSL (the wallet signs with
-  pure-JS @noble/@scure primitives, verified at ~0.7 s per send)
-• Deposit and withdrawal controls are now clearly marked as
-  under development instead of looking like live buttons
-• Fixed unreadable dark-on-dark text on the broadcast receipt and
-  error panels
-• QR scanner now properly asks for camera permission on first use,
-  and the scan action opens the pre-filled send screen directly
-• Honest store listing: test networks (betanet/signet), the Explore
-  browser, and Elements Plus as coming soon are now described
+• Styling infrastructure: the app now shares the Tailwind className
+  styling language with the Sidecoin web apps (NativeWind). No visual
+  change is intended — this is a maintainability foundation for
+  upcoming screen work, and the F-Droid build carries no prebuilt
+  binaries (the whole stack is plain JavaScript)
+• Internal groundwork for optional, privacy-scrubbed crash reporting
+  (GlitchTip). Inactive in the F-Droid build by design: no telemetry
+  code runs and no network calls are made
