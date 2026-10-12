@@ -151,6 +151,72 @@ asserts the mock disclosure and the real WebView wiring.
 `DefaultTheme` (`background #f2f2f2`) and paints a white gutter around dark
 screens. `App.test.tsx` guards this.
 
+### F-Droid release review checklist (run before every recipe version bump)
+
+These gates were added after findings from MR 50457 reviews (linsui + mezinster).
+Every item maps to a comment that cost a review round; run ALL of them before
+pushing a recipe update.
+
+1. **Exactly ONE `Builds` block — the latest.** F-Droid builds and publishes
+   EVERY entry in `Builds:`; a stale block ships a stale (and previously
+   flagged) APK. mezinster's note `3983603322` was exactly this: the 26.10.5
+   update kept the 26.10.1 block, CI built both, and 26.10.1 was the build
+   that still carried prebuilt OpenSSL. After a bump, verify
+   `grep -c 'versionName:' metadata/app.sidecoin.yml` (fdroiddata copy) == 1
+   and that it matches `build.gradle` + the release tag.
+2. **The maintenance copy MUST be bumped in the SAME change as the version
+   bump.** `apps/mobile/metadata/app.sidecoin.yml` was left at 26.10.1 while
+   fdroiddata moved to 26.10.5 — it drifted because nothing enforced the
+   pairing. Verify `versionName`/`versionCode`/`commit`/`CurrentVersion*`
+   match `android/app/build.gradle` + `apps/mobile/package.json` + the
+   peeled release tag (`git rev-parse vX.Y.Z^{}`).
+3. **Re-verify hosted-binary facts against the actual asset each release.**
+   `curl -sL` the `v%v` release's `app-fdroid-release.apk` and record the
+   real byte size + sha256 in the comment — never copy a prior version's
+   numbers. (The 26.10.5 asset is 28,685,558 bytes / `bb1dd147…830a`.)
+4. **`fdroid rewritemeta app.sidecoin` → zero diff** in the fdroiddata
+   checkout before every recipe push (CI enforces it; comments are stripped
+   from the fdroiddata copy by design).
+5. **Cross-check the listing against the app before submitting.** linsui +
+   mezinster found the gap three ways: a "Deposit/withdraw" claim for
+   `Pressable`s with NO `onPress` (`PlatformDetailScreen`), a "10 live
+   sidechains" count that disagreed with `LAUNCH_SIDECHAINS` (11 entries),
+   and an undescribed WebView browser + hardcoded Esplora hosts. Walk
+   `full-description.txt` line by line against the screens and registry.
+6. **The Skia `.a` scanignore question is deferred to the maintainers**
+   (linsui) — it is NOT a blocker and needs no author action. Do not try to
+   "fix" it unilaterally.
+
+### F-Droid past review findings (each cost a round — do not repeat)
+
+- **26.10.1 block kept alongside 26.10.5** (mezinster `3983603322`): F-Droid
+  built and published BOTH; only the latest may stay. Root cause: version
+  bump didn't drop the superseded block.
+- **Maintenance copy drifted** (ours, caught when fixing the above):
+  `apps/mobile/metadata/app.sidecoin.yml` still pointed at 26.10.1 while
+  fdroiddata was at 26.10.5. Root cause: no checklist item forced the pair.
+- **Description promised unwired features** (mezinster `3950001768`):
+  deposit/withdraw `Pressable`s had no `onPress`. Fix shipped: buttons
+  disabled + "under development" notes + listing relabeled "IN DEVELOPMENT".
+- **"10 live sidechains" vs 11 in `LAUNCH_SIDECHAINS`** (mezinster): Elements
+  Plus marked "announced, coming soon" so the count adds up.
+- **Undescribed WebView browser** (mezinster): `ExploreScreen` has an address
+  bar + DuckDuckGo search + bookmarks; now described in the listing.
+- **Undisclosed test-network-only status** (mezinster): listing gained a
+  TEST NETWORKS section (signet/betanet, free test coins).
+- **Undescribed hosted indexers** (mezinster): Esplora hosts + eCash Farm
+  named in the listing; `NonFreeNet` reason added.
+- **Prebuilt OpenSSL via quick-crypto prefab AAR** (mezinster `3950001768`):
+  `io.github.ronickg:openssl` shipped `libcrypto.so`/`libssl.so`;
+  `scandelete: node_modules` could NOT catch it because the binary arrived
+  through Gradle, not npm. Fixed by dropping quick-crypto/nitro entirely
+  (pure-JS `@noble`/`@scure` covers all wallet crypto; 52→44 `.so`).
+- **Tailwind/NativeWind dropped as unused** (`2eb9a668`): zero `className`
+  usage anywhere; styling is React Native `StyleSheet.create` (e.g.
+  `components/ui.tsx`) driven by `src/theme/`. Tailwind was dead scaffold
+  weight. Mobile styling is StyleSheet, NOT Tailwind — Tailwind lives only
+  in `apps/wallet`/`apps/web`/`apps/explorer`/`apps/smarthub`.
+
 ### Network model
 
 - `WalletNetwork = "signet" | "betanet"` (`apps/mobile/src/keystore.ts`).
