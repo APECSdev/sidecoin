@@ -64,16 +64,25 @@
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
 #   publish.py to fetch and compare. The signed release APK is attached to the
-#   v26.10.1 GitHub release (asset app-fdroid-release.apk, 35,187,266 bytes,
-#   SHA-256 9043e1ac28d57df709ebafdeed721b4f3d043945d57d1f677b6bf68f89b747e2),
+#   v26.10.5 GitHub release (asset app-fdroid-release.apk, 28,685,558 bytes,
+#   SHA-256 bb1dd1473b7c1605f594a6b323228984550bbabac08443491ba569d00fdd830a),
 #   so `Binaries:` below resolves to it via %v -> versionName. If verification
 #   ever fails, publish is SKIPPED (publish.py counts it as failed), not
 #   silently re-signed, so an upstream mismatch can never ship a wrong APK.
 #
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
-#   v26.10.1 release, which must be tagged and uploaded before submission.
+#   v26.10.5 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit f42a174 (was ecf636e at 26.9.30).
+#   The binary is REBUILT at commit 2eb9a668 (was f42a174 at 26.10.1).
+#   26.10.5 carries one change on top of the 26.10.1 chain:
+#     • Prebuilt OpenSSL removed — react-native-quick-crypto and
+#       react-native-nitro-modules (unused, inherited from the mobile
+#       scaffold) pulled io.github.ronickg:openssl:3.6.0-1, a prefab AAR
+#       shipping libcrypto.so + libssl.so. The wallet's crypto stack runs on
+#       the pure-JS @noble/@scure primitives, so the pair was dropped along
+#       with the metro `crypto` shim and shared's unused bip39. 52 -> 44
+#       native libraries, 35,187,266 -> 28,685,558 bytes. Flagged by
+#       mezinster in review (MR fdroiddata!50457).
 #   26.10.1 carries one change on top of the 26.9.30 chain:
 #     • Compressed native libraries — packaging.jniLibs.useLegacyPackaging
 #       deflates the bundled .so files, taking the APK from 74,521,086 to
@@ -152,26 +161,31 @@ Repo: https://github.com/APECSdev/sidecoin.git
 # Hosted reference binary: the APK we signed with our own release key, from the
 # SAME commit as the build below, so publish.py (route (a)) can verify F-Droid's
 # source build byte-for-byte against it and then SHIP OURS. %v resolves to
-# versionName (26.10.1), matching the v26.10.1 tag/release. GitHub returns a 302
+# versionName (26.10.5), matching the v26.10.5 tag/release. GitHub returns a 302
 # redirect to the asset; fdroidserver's net.download_file follows it (verified:
-# HTTP 200, content-length 35187266, sha256 9043e1ac28d57df709ebafdeed721b4f3d0
-# 43945d57d1f677b6bf68f89b747e2). 26.10.1 deflates the bundled .so files (see
-# the useLegacyPackaging note in android/app/build.gradle), cutting the APK
-# from 74,521,086 to 35,187,266 bytes.
+# HTTP 200, content-length 28685558, sha256 bb1dd1473b7c1605f594a6b323228984
+# 550bbabac08443491ba569d00fdd830a). 26.10.5 drops the prebuilt OpenSSL chain
+# (quick-crypto/nitro), cutting the APK from 35,187,266 to 28,685,558 bytes
+# (44 native libraries); 26.10.1 had deflated the bundled .so files (see the
+# useLegacyPackaging note in android/app/build.gradle) from 74,521,086 bytes.
 Binaries: 
   https://github.com/APECSdev/sidecoin/releases/download/v%v/app-fdroid-release.apk
 
 Builds:
   # versionCode / versionName MUST match apps/mobile/android/app/build.gradle.
   # If this drifts, F-Droid will build a different APK than the one tested.
-  - versionName: 26.10.1
-    versionCode: 20261001
-    # FULL 40-char hash, not the v26.10.1 tag. Build_Metadata_Reference:
+  # Keep ONLY the latest block: F-Droid builds and publishes every entry, and
+  # mezinster (MR fdroiddata!50457) asked for the 26.10.1 block to be dropped
+  # — it was the build that still shipped prebuilt OpenSSL.
+  - versionName: 26.10.5
+    versionCode: 20261005
+    # FULL 40-char hash, not the v26.10.5 tag. Build_Metadata_Reference:
     # "Don't use branch name or tag name. The full commit hash should be used."
-    # This is the first commit whose native libraries are byte-reproducible
-    # (see the SIGNING note above); earlier commits embed absolute build paths
-    # and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: f42a174837aba9ec98df6809ef502c414151724e
+    # This commit's build is CI-verified byte-identical to the hosted
+    # reference binary (fdroid build: "compared built binary to supplied
+    # reference binary successfully"); earlier commits embed absolute build
+    # paths and the build-machine IP in resources.arsc (see the SIGNING note).
+    commit: 2eb9a668cf019b002195fc8b4c0f07264442652b
     # `subdir` is the MODULE directory, not the Gradle project root. fdroidserver
     # roots both the gradle invocation (build.py) and the APK search at
     # `root_dir = build_dir/subdir` (common.prepare_source), and its default
@@ -324,8 +338,8 @@ AllowedAPKSigningKeys:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 26.10.1
-CurrentVersionCode: 20261001
+CurrentVersion: 26.10.5
+CurrentVersionCode: 20261005
 
 # NonFreeNet: the wallet talks to third-party hosted services that are not
 # free software and cannot be self-hosted by the user from within the app:
