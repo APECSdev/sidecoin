@@ -93,6 +93,11 @@ jobs:
       - name: Type-check Shared
         run: pnpm --filter @sidecoin/shared build
 
+      # ── Observability ───────────────────────────────────────
+
+      - name: Test Observability
+        run: pnpm --filter @sidecoin/observability build && pnpm --filter @sidecoin/observability test
+
       # ── Desktop — Placeholder Dist ──────────────────────────
       #
       # Tauri's generate_context!() proc macro validates that

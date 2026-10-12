@@ -117,10 +117,13 @@ not the filename — use `gh release upload vX.Y.Z /path/to/app-fdroid-release.a
 A wrong asset name makes `%v` 404 and breaks the next update check.
 
 **Current state:** 26.10.5 (`versionCode 20261005`, recipe commit
-`2200761c72`, source commit `2eb9a668cf019b002195fc8b4c0f07264442652b`), MR
+`52b1d37559`, source commit `2eb9a668cf019b002195fc8b4c0f07264442652b`), MR
 pipeline `2915044830` all green including the reproducible `check apk` step
 (28.7 MB, 44 native libs — quick-crypto/nitro/OpenSSL removed). mezinster's
-review was answered with note `3958314135`. `AutoUpdateMode: Version` +
+review was answered with note `3958314135`; their follow-up (note
+`3983603322`) asked for the stale 26.10.1 `Builds` block to be dropped —
+done in `52b1d37559`, the recipe now carries a single entry (the Skia `.a`
+scanignore question is deferred to the maintainers). `AutoUpdateMode: Version` +
 `UpdateCheckMode: Tags` means the next release needs a new tag AND a new
 `app-fdroid-release.apk` upload with that exact filename.
 
@@ -164,7 +167,7 @@ screens. `App.test.tsx` guards this.
 
 ```
 cd apps/mobile
-npx tsc --noEmit && npx jest      # 183 tests, 12 suites
+npx tsc --noEmit && npx jest      # 230 tests, 17 suites
 cd android && ./gradlew assembleFdroidRelease
 adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
@@ -268,7 +271,7 @@ must be green before commit.
 
 **Test baselines** (`pnpm --filter <pkg> test`; verify before citing in a PR):
 shared 254 (+1 skip) · wallet 382 · web 118 · explorer 43 · desktop 76 ·
-smarthub 5 · mobile 228 (16 suites) · api-client 12.
+smarthub 5 · mobile 230 (17 suites) · api-client 12 · observability 17.
 
 ## CI (`.github/workflows/`)
 
