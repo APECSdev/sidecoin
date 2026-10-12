@@ -64,16 +64,31 @@
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
 #   publish.py to fetch and compare. The signed release APK is attached to the
-#   v26.10.5 GitHub release (asset app-fdroid-release.apk, 28,685,558 bytes,
-#   SHA-256 bb1dd1473b7c1605f594a6b323228984550bbabac08443491ba569d00fdd830a),
+#   v26.10.12 GitHub release (asset app-fdroid-release.apk, 20,264,456 bytes,
+#   SHA-256 5c5c90e784749ab2d34a8f982c0566112746ce7ab1b8723a992506e66a83feff),
 #   so `Binaries:` below resolves to it via %v -> versionName. If verification
 #   ever fails, publish is SKIPPED (publish.py counts it as failed), not
 #   silently re-signed, so an upstream mismatch can never ship a wrong APK.
 #
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
-#   v26.10.5 release, which must be tagged and uploaded before submission.
+#   v26.10.12 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit 2eb9a668 (was f42a174 at 26.10.1).
+#   The binary is REBUILT at commit 66a95bb2 (was 2eb9a668 at 26.10.5).
+#   26.10.12 carries two changes on top of the 26.10.5 chain:
+#     • Prebuilt Skia removed — the Markets chart moved from victory-native
+#       to react-native-gifted-charts (pure react-native-svg, which the app
+#       already shipped and which F-Droid already builds from source),
+#       removing @shopify/react-native-skia and its 653 MB of prebuilt
+#       libs/android/*.a static libraries along with the last remaining
+#       library scanignore entry. linsui flagged this in review (MR
+#       fdroiddata!50457: "Please build skia"); removing the dependency
+#       closes it without a scanignore or an srclib source build.
+#       react-native-reanimated stays: react-native-css-interop/babel.js
+#       unconditionally lists react-native-reanimated/plugin, so NativeWind
+#       cannot build without it; it is itself built from source.
+#     • NativeWind reintroduced — Tailwind styling returns to the mobile
+#       app (nativewind 4.2.7 + react-native-css-interop 0.2.7 +
+#       tailwindcss 3.4.17). Pure JS/CSS tooling; no new native binaries.
 #   26.10.5 carries one change on top of the 26.10.1 chain:
 #     • Prebuilt OpenSSL removed — react-native-quick-crypto and
 #       react-native-nitro-modules (unused, inherited from the mobile
@@ -161,12 +176,14 @@ Repo: https://github.com/APECSdev/sidecoin.git
 # Hosted reference binary: the APK we signed with our own release key, from the
 # SAME commit as the build below, so publish.py (route (a)) can verify F-Droid's
 # source build byte-for-byte against it and then SHIP OURS. %v resolves to
-# versionName (26.10.5), matching the v26.10.5 tag/release. GitHub returns a 302
-# redirect to the asset; fdroidserver's net.download_file follows it (verified:
-# HTTP 200, content-length 28685558, sha256 bb1dd1473b7c1605f594a6b323228984
-# 550bbabac08443491ba569d00fdd830a). 26.10.5 drops the prebuilt OpenSSL chain
-# (quick-crypto/nitro), cutting the APK from 35,187,266 to 28,685,558 bytes
-# (44 native libraries); 26.10.1 had deflated the bundled .so files (see the
+# versionName (26.10.12), matching the v26.10.12 tag/release. GitHub returns a
+# 302 redirect to the asset; fdroidserver's net.download_file follows it
+# (verified: HTTP 200, content-length 20264456, sha256 5c5c90e784749ab2d34a8f98
+# 2c0566112746ce7ab1b8723a992506e66a83feff). 26.10.12 drops the prebuilt Skia
+# chain (victory-native -> react-native-gifted-charts), cutting the APK from
+# 28,685,558 to 20,264,456 bytes (42 native libraries, down from 44); 26.10.5
+# had dropped the prebuilt OpenSSL chain (quick-crypto/nitro) from 35,187,266
+# bytes, and 26.10.1 had deflated the bundled .so files (see the
 # useLegacyPackaging note in android/app/build.gradle) from 74,521,086 bytes.
 Binaries: 
   https://github.com/APECSdev/sidecoin/releases/download/v%v/app-fdroid-release.apk
@@ -177,15 +194,15 @@ Builds:
   # Keep ONLY the latest block: F-Droid builds and publishes every entry, and
   # mezinster (MR fdroiddata!50457) asked for the 26.10.1 block to be dropped
   # — it was the build that still shipped prebuilt OpenSSL.
-  - versionName: 26.10.5
-    versionCode: 20261005
-    # FULL 40-char hash, not the v26.10.5 tag. Build_Metadata_Reference:
+  - versionName: 26.10.12
+    versionCode: 20261012
+    # FULL 40-char hash, not the v26.10.12 tag. Build_Metadata_Reference:
     # "Don't use branch name or tag name. The full commit hash should be used."
     # This commit's build is CI-verified byte-identical to the hosted
     # reference binary (fdroid build: "compared built binary to supplied
     # reference binary successfully"); earlier commits embed absolute build
     # paths and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: 2eb9a668cf019b002195fc8b4c0f07264442652b
+    commit: 66a95bb23c9377c510b60bfd4326926bf4d54462
     # `subdir` is the MODULE directory, not the Gradle project root. fdroidserver
     # roots both the gradle invocation (build.py) and the APK search at
     # `root_dir = build_dir/subdir` (common.prepare_source), and its default
@@ -295,7 +312,7 @@ Builds:
       - node_modules/.pnpm/react-native@*/node_modules/react-native/ReactAndroid/publish.gradle
       # ── Build-critical binaries the scanner would otherwise DELETE ────────
       # `scandelete: node_modules` makes the scanner delete every flagged path
-      # under node_modules. Three of those deletions break the from-source build
+      # under node_modules. One of those deletions breaks the from-source build
       # (found by running the real `fdroid build`; see /tmp/fdroid-build3.log):
       #
       # 1. HERMESC — react-native/sdks/hermesc/<abi>-bin/hermesc is the
@@ -303,15 +320,12 @@ Builds:
       #    createBundle<Flavor><BuildType>JsAndAssets shells out to it to turn
       #    the JS bundle into .hbc; with the binary deleted the task fails with
       #    "Couldn't determine Hermesc location".
-      # 2. SKIA STATIC LIBS — @shopify/react-native-skia ships ONLY prebuilt
-      #    libs/android/<abi>/*.a (no externals/skia checkout; its
-      #    CMakeLists.txt imports libskia.a etc. as IMPORTED STATIC targets).
-      #    Deleting them makes :shopify-react-native-skia:buildCMake*
-      #    [arm64-v8a] fail on the missing libsvg.a. The package's only script
-      #    (install-skia.mjs) re-downloads the SAME prebuilt tarball, so
-      #    scanignoring them is the minimum change; building Skia from source
-      #    would need an `srclib` + build-skia.ts, which the published package
-      #    does not contain.
+      #
+      # There is deliberately NO Skia entry. The Markets chart moved from
+      # victory-native to react-native-gifted-charts (pure react-native-svg)
+      # in 26.10.12, removing @shopify/react-native-skia and its 653 MB of
+      # prebuilt libs/android/*.a — the finding linsui raised on
+      # fdroiddata!50457 ("Please build skia").
       #
       # There is deliberately NO SQLite entry. The wallet's history store uses
       # @op-engineering/op-sqlite, which compiles the SQLite amalgamation
@@ -321,7 +335,6 @@ Builds:
       # are covered by `scandelete: node_modules`, and deleting them is safe
       # because Gradle never reads those directories.
       - node_modules/.pnpm/react-native@*/node_modules/react-native/sdks/hermesc/linux64-bin/hermesc
-      - node_modules/.pnpm/@shopify+react-native-skia@*/node_modules/@shopify/react-native-skia/libs/android
 
 # The ONLY signer allowed to have produced the shipped APK. If an APK in the
 # repo carries any other signature, fdroid update drops it (update.py
@@ -338,8 +351,8 @@ AllowedAPKSigningKeys:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 26.10.5
-CurrentVersionCode: 20261005
+CurrentVersion: 26.10.12
+CurrentVersionCode: 20261012
 
 # NonFreeNet: the wallet talks to third-party hosted services that are not
 # free software and cannot be self-hosted by the user from within the app:
