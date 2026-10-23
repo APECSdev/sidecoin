@@ -65,7 +65,13 @@ export function Screen({
   ];
 
   if (!scroll) {
-    return <View style={[styles.screen, contentStyle]}>{children}</View>;
+    return (
+      <View
+        style={[styles.screen, contentStyle, { paddingTop: insets.top + 16 }]}
+      >
+        {children}
+      </View>
+    );
   }
 
   return (
@@ -73,7 +79,10 @@ export function Screen({
       style={styles.screen}
       contentContainerStyle={[
         contentStyle,
-        { paddingBottom: insets.bottom + 24 },
+        // Top inset keeps screen titles out of the status bar (junkerder-
+        // provinz review, fdroiddata!50457 note 4064134145); bottom inset
+        // keeps content clear of gesture navigation.
+        { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 24 },
       ]}
       keyboardShouldPersistTaps="handled"
     >

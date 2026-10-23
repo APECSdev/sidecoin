@@ -18,6 +18,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import { generateMnemonic, validateMnemonic } from "@sidecoin/shared";
@@ -32,6 +33,7 @@ type Mode = "choose" | "generate" | "import";
 export function OnboardingScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
 
   const [mode, setMode] = useState<Mode>("choose");
 
@@ -93,7 +95,7 @@ export function OnboardingScreen(): React.JSX.Element {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingTop: insets.top + 32 }]}>
       <Title style={styles.heading}>Set up your wallet</Title>
       <Body style={styles.sub}>
         eCash Drivechains · Betanet test wallet

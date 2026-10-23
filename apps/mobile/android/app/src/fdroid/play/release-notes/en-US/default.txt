@@ -1,8 +1,7 @@
-• Styling infrastructure: the app now shares the Tailwind className
-  styling language with the Sidecoin web apps (NativeWind). No visual
-  change is intended — this is a maintainability foundation for
-  upcoming screen work, and the F-Droid build carries no prebuilt
-  binaries (the whole stack is plain JavaScript)
-• Internal groundwork for optional, privacy-scrubbed crash reporting
-  (GlitchTip). Inactive in the F-Droid build by design: no telemetry
-  code runs and no network calls are made
+• F-Droid build: every platform and feature is now included free of
+  charge — all ten sidechains plus Coin Control simply work, with no
+  paid tier, no locked features, and no upgrade prompts anywhere
+• The dashboard "Platform Activity" card is now labeled "Network
+  Activity": it aggregates network-wide deposits, not your wallet's
+• Screen titles no longer render underneath the status bar (safe-area
+  top inset applied app-wide)

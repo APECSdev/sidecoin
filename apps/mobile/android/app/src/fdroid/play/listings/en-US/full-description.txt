@@ -31,6 +31,7 @@ Before the eCash fork activates, Sidecoin runs against the public signet and bet
 🪶 LIGHTWEIGHT BY DESIGN
 • No full chain download — talks to public Esplora nodes
 • No accounts, no sign-up, no custodian
+• The F-Droid build includes every platform and feature free of charge — no paid tier, no locked features
 
 🌱 Powered by BIP-300 Hashrate Escrows and BIP-301 Blind Merged Mining — trustless sidechains secured by Bitcoin's full SHA-256d hashrate.
 

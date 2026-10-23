@@ -59,7 +59,11 @@ import {
   ApiError,
   type BroadcastReceipt,
 } from "../api";
-import { canAccessFeature, COIN_CONTROL_FEATURE_ID } from "../entitlements";
+import {
+  canAccessFeature,
+  COIN_CONTROL_FEATURE_ID,
+  isProPlan,
+} from "../entitlements";
 import type { RootStackParamList } from "../navigation/types";
 import { ECASH, GRAY } from "../theme/colors";
 import { Alert, Badge, Button, Card } from "../components/ui";
@@ -128,6 +132,9 @@ export function SendScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<RootStackParamList, "send">>();
+  // F-Droid builds unlock everything (see entitlements.ts): coin control is
+  // included, and no PRO badges or upgrade CTAs render.
+  const pro = isProPlan();
 
   const [selectedTab, setSelectedTab] = useState<SendTab>("simple");
   const [address, setAddress] = useState("");
@@ -456,13 +463,13 @@ export function SendScreen(): React.JSX.Element {
 
             <Card tone="pro" style={styles.panel}>
               <View style={styles.proHeader}>
-                <Badge label="PRO" tone="pro" />
+                {!pro ? <Badge label="PRO" tone="pro" /> : null}
                 <Text style={styles.proEyebrow}>Advanced</Text>
               </View>
               <Text style={styles.panelTitle}>Coin Control preview</Text>
               <Text style={styles.proBody}>
-                Manual UTXO selection lives in Advanced as a Sidecoin PRO power
-                tool preview. Simple sends continue to use automatic coin
+                Manual UTXO selection lives in Advanced as a power-tool
+                preview. Simple sends continue to use automatic coin
                 selection.
               </Text>
               <Button
@@ -480,7 +487,7 @@ export function SendScreen(): React.JSX.Element {
               <View style={styles.advancedHead}>
                 <Text style={styles.panelTitle}>Advanced send tools</Text>
                 <View style={styles.badgeRow}>
-                  <Badge label="PRO" tone="pro" />
+                  {!pro ? <Badge label="PRO" tone="pro" /> : null}
                   <Badge
                     label={hasCoinControlAccess ? "Unlocked" : "Locked"}
                     tone={hasCoinControlAccess ? "active" : "neutral"}
@@ -498,7 +505,7 @@ export function SendScreen(): React.JSX.Element {
                   Manual UTXO selection preview
                 </Text>
                 <Text style={styles.proBody}>
-                  Coin Control will let Sidecoin PRO users inspect coins,
+                  Coin Control lets you inspect coins,
                   select exact UTXOs, review confirmations, and build advanced
                   sends. This preview does not change transaction construction.
                 </Text>
@@ -591,7 +598,7 @@ export function SendScreen(): React.JSX.Element {
                 <Card tone="inset" style={styles.previewNote}>
                   <Text style={styles.smallLabel}>Preview-only safety note</Text>
                   <Text style={styles.proBody}>
-                    This screen is a visual PRO preview. It does not fetch extra
+                    This screen is a visual preview. It does not fetch extra
                     coins, does not persist selections, does not override automatic
                     coin selection, and does not change the Simple Send build/sign
                     path.

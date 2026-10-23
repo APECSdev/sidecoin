@@ -21,6 +21,7 @@
 
 import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import Clipboard from "@react-native-clipboard/clipboard";
@@ -32,7 +33,7 @@ import {
 import { getSidechains, type SidechainSummary } from "../api";
 import { loadWallet } from "../keystore";
 import { PLATFORMS, getPlatformById } from "../data/platforms";
-import { canAccessPlatform, isProPlatform } from "../entitlements";
+import { canAccessPlatform, isProPlan, isProPlatform } from "../entitlements";
 import { ProBadge } from "../components/pro/ProBadge";
 import type { RootStackParamList } from "../navigation/types";
 import { ECASH, GRAY } from "../theme/colors";
@@ -154,6 +155,10 @@ function slotLabel(slot: number | null): string {
 export function SidechainsScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
+  // F-Droid builds unlock everything (see entitlements.ts): no PRO upsell
+  // hero and no PRO tier badges — every platform simply works.
+  const pro = isProPlan();
 
   const [sidechains, setSidechains] = useState<WalletSidechainSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -283,21 +288,28 @@ export function SidechainsScreen(): React.JSX.Element {
   );
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.rootContent}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.rootContent, { paddingTop: insets.top + 20 }]}
+    >
       <Card style={styles.hero}>
         <Eyebrow>Drivechains Financial Hub</Eyebrow>
         <Title>Platforms</Title>
-        <Body style={styles.heroBody}>
-          Basic includes L1, Thunder, and BitNames. Sidecoin PRO unlocks the
-          complete platform suite, historical analysis, hardware signing
-          workflows, and early access to proposed platforms like RISCy.
-        </Body>
-        <Button
-          label="Go PRO!"
-          variant="pro"
-          onPress={() => navigation.navigate("pro")}
-          style={styles.goPro}
-        />
+        {!pro ? (
+          <>
+            <Body style={styles.heroBody}>
+              Basic includes L1, Thunder, and BitNames. Sidecoin PRO unlocks the
+              complete platform suite, historical analysis, hardware signing
+              workflows, and early access to proposed platforms like RISCy.
+            </Body>
+            <Button
+              label="Go PRO!"
+              variant="pro"
+              onPress={() => navigation.navigate("pro")}
+              style={styles.goPro}
+            />
+          </>
+        ) : null}
       </Card>
 
       {addressError ? (
@@ -331,7 +343,7 @@ export function SidechainsScreen(): React.JSX.Element {
                   </Muted>
                 </View>
                 <View style={styles.platformBadges}>
-                  {isProPlatform(sc.id) ? <ProBadge /> : null}
+                  {isProPlatform(sc.id) && !pro ? <ProBadge /> : null}
                   <Badge
                     label={platformStatusLabel(sc.status)}
                     tone={sc.status === "active" ? "active" : "proposed"}

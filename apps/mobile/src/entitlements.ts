@@ -8,6 +8,8 @@
 // - Re-lock features when backend returns inactive/expired.
 // - Keep Basic defaults local so the wallet remains usable offline.
 
+import { IS_FDROID_BUILD } from "./buildFlavor";
+
 export type Plan = "basic" | "pro" | "founder" | "alpha";
 export type EntitlementStatus = "active" | "inactive" | "grace" | "unknown";
 
@@ -65,13 +67,32 @@ export const PRO_FEATURES = [
   COIN_CONTROL_FEATURE_ID,
 ];
 
-export const CURRENT_ENTITLEMENTS: EntitlementState = {
+const BASIC_ENTITLEMENTS: EntitlementState = {
   plan: "basic",
   status: "active",
   features: BASIC_FEATURES,
   expiresAt: null,
   checkedAt: null,
 };
+
+// F-Droid builds ship every feature free of charge: no paid tier, no
+// upgrade CTA, no PRO mention anywhere in the UI (user decision after
+// junkerderprovinz's review on fdroiddata!50457, note 4064134145 — the
+// hardcoded Basic plan made the Upgrade button a purchase no build could
+// honour). IS_FDROID_BUILD is flipped by metro.config.js only while bundling
+// the fdroid flavor; playstore and Jest resolve the base flag (false) and
+// keep the Basic constant above.
+const FDROID_ENTITLEMENTS: EntitlementState = {
+  plan: "founder",
+  status: "active",
+  features: [...BASIC_FEATURES, ...PRO_FEATURES],
+  expiresAt: null,
+  checkedAt: null,
+};
+
+export const CURRENT_ENTITLEMENTS: EntitlementState = IS_FDROID_BUILD
+  ? FDROID_ENTITLEMENTS
+  : BASIC_ENTITLEMENTS;
 
 export function platformFeatureId(platformId: string): string {
   return `platform:${platformId}`;

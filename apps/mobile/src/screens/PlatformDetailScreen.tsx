@@ -30,7 +30,7 @@ import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { getPlatformById } from "../data/platforms";
 import type { PlatformFeatureTab } from "../data/platforms";
-import { canAccessPlatform, isProPlatform } from "../entitlements";
+import { canAccessPlatform, isProPlan, isProPlatform } from "../entitlements";
 import { ProBadge } from "../components/pro/ProBadge";
 import { ProGate } from "../components/pro/ProGate";
 import { BitMessagesPreview } from "../components/bitnames/BitMessagesPreview";
@@ -120,6 +120,9 @@ type Nav = NativeStackNavigationProp<RootStackParamList>;
 export function PlatformDetailScreen(): React.JSX.Element {
   const navigation = useNavigation<Nav>();
   const route = useRoute<PlatformDetailRoute>();
+  // F-Droid builds unlock everything (see entitlements.ts): no PRO tier
+  // badges — every platform simply works.
+  const pro = isProPlan();
   const [selectedTabId, setSelectedTabId] = useState("");
   const [selectedBitNamesContact, setSelectedBitNamesContact] = useState("");
 
@@ -294,16 +297,16 @@ export function PlatformDetailScreen(): React.JSX.Element {
         {
           label: "Shielded Balance",
           value: "—",
-          caption: "PRO analytics",
+          caption: "analytics preview",
         },
-        { label: "Privacy Set", value: "—", caption: "PRO review" },
-        { label: "Private Activity", value: "—", caption: "PRO history" },
+        { label: "Privacy Set", value: "—", caption: "privacy metrics" },
+        { label: "Private Activity", value: "—", caption: "activity history" },
       ];
     }
 
     if (id === "bitassets") {
       return [
-        { label: "Asset Portfolio", value: "—", caption: "PRO analytics" },
+        { label: "Asset Portfolio", value: "—", caption: "portfolio analytics" },
         { label: "Issued Assets", value: "—", caption: "issuer tools" },
         { label: "Transfers", value: "—", caption: "activity history" },
         { label: "Metadata", value: "—", caption: "asset records" },
@@ -312,7 +315,7 @@ export function PlatformDetailScreen(): React.JSX.Element {
 
     if (id === "photon") {
       return [
-        { label: "Photon Balance", value: "—", caption: "PRO analytics" },
+        { label: "Photon Balance", value: "—", caption: "balance analytics" },
         { label: "Address Types", value: "—", caption: "security review" },
         { label: "Migration", value: "—", caption: "guided workflow" },
         { label: "Security", value: "—", caption: "post-quantum posture" },
@@ -340,7 +343,7 @@ export function PlatformDetailScreen(): React.JSX.Element {
     return [
       {
         label: "Early Access",
-        value: "PRO",
+        value: "—",
         caption: "proposed platform preview",
       },
       { label: "Apps", value: "—", caption: "application launcher" },
@@ -452,7 +455,7 @@ export function PlatformDetailScreen(): React.JSX.Element {
           </Text>
           <View style={styles.heroTitleRow}>
             <Text style={styles.heroTitle}>{platform.displayName}</Text>
-            {isProPlatform(platform.id) ? <ProBadge /> : null}
+            {isProPlatform(platform.id) && !pro ? <ProBadge /> : null}
           </View>
           <Text style={styles.heroTagline}>{platform.tagline}</Text>
         </View>

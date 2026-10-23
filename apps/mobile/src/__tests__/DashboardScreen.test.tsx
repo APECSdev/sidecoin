@@ -24,6 +24,13 @@ jest.mock("@react-navigation/native", () => ({
   },
 }));
 
+// The dashboard's own ScrollView pads its content by the safe-area top
+// inset (fdroiddata!50457 note 4064134145 — titles rendered under the
+// status bar). Zero insets keep layout assertions deterministic.
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 // ---------------------------------------------------------------------------
 // Mock the API module
 //
@@ -249,7 +256,7 @@ describe("DashboardScreen", () => {
   it("should display the platform activity label", async () => {
     render(<DashboardScreen />);
     await waitFor(() => {
-      expect(screen.getByText("Platform Activity")).toBeTruthy();
+      expect(screen.getByText("Network Activity")).toBeTruthy();
     });
   });
 

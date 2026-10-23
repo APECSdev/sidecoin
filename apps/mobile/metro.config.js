@@ -136,6 +136,19 @@ const config = {
           platform,
         );
       }
+      // F-Droid entitlement switch (26.10.22, fdroiddata!50457 note
+      // 4064134145): only the `fdroid` flavor resolves the build-flavor flag
+      // to its `true` variant, which makes entitlements.ts unlock every
+      // platform and feature free of charge. Playstore, dev, and Jest keep
+      // the base module (IS_FDROID_BUILD=false). The ".fdroid" specifier
+      // itself never matches: it ends with ".fdroid", not "/buildFlavor".
+      if (androidFlavor === "fdroid" && moduleName.endsWith("/buildFlavor")) {
+        return context.resolveRequest(
+          context,
+          path.resolve(projectRoot, "src/buildFlavor.fdroid.ts"),
+          platform,
+        );
+      }
       return context.resolveRequest(context, moduleName, platform);
     },
 

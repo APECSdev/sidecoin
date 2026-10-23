@@ -125,3 +125,64 @@ describe("Sentry resolveRequest gate", () => {
     expect(result.resolved).toBe("react-native");
   });
 });
+
+describe("buildFlavor resolveRequest gate", () => {
+  // The F-Droid free-everything posture (fdroiddata!50457 note 4064134145)
+  // depends on the `fdroid` bundle resolving "./buildFlavor" to the `true`
+  // variant — and on NOTHING else doing so. Same echo-stub approach as the
+  // Sentry gate above: the assertion is on OUR redirect.
+  const makeContext = () => ({
+    resolveRequest: (_ctx: unknown, resolved: string) => ({ resolved }),
+  });
+
+  const loadConfigWithArgv = (argv: string[]) => {
+    const originalArgv = process.argv;
+    process.argv = [...argv];
+    let reloaded: typeof metroConfig;
+    jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      reloaded = require("../../metro.config.js");
+    });
+    process.argv = originalArgv;
+    return reloaded!;
+  };
+
+  it("maps ./buildFlavor to buildFlavor.fdroid.ts for the fdroid flavor", () => {
+    const fdroid = loadConfigWithArgv(["node", "cli.js", FDROID_TASK]);
+    const result = fdroid.resolver.resolveRequest(
+      makeContext(),
+      "./buildFlavor",
+      "android",
+    );
+    expect(result.resolved).toContain("buildFlavor.fdroid");
+  });
+
+  it("does NOT remap ./buildFlavor for the playstore flavor", () => {
+    const playstore = loadConfigWithArgv(["node", "cli.js", PLAYSTORE_TASK]);
+    const result = playstore.resolver.resolveRequest(
+      makeContext(),
+      "./buildFlavor",
+      "android",
+    );
+    expect(result.resolved).toBe("./buildFlavor");
+  });
+
+  it("does NOT remap ./buildFlavor when no flavor is detected", () => {
+    const result = metroConfig.resolver.resolveRequest(
+      makeContext(),
+      "./buildFlavor",
+      "android",
+    );
+    expect(result.resolved).toBe("./buildFlavor");
+  });
+
+  it("never remaps the buildFlavor.fdroid specifier itself", () => {
+    const fdroid = loadConfigWithArgv(["node", "cli.js", FDROID_TASK]);
+    const result = fdroid.resolver.resolveRequest(
+      makeContext(),
+      "./buildFlavor.fdroid",
+      "android",
+    );
+    expect(result.resolved).toBe("./buildFlavor.fdroid");
+  });
+});

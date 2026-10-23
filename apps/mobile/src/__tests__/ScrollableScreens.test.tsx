@@ -22,6 +22,13 @@ jest.mock("@react-navigation/native", () => ({
   },
 }));
 
+// Screens pad their root ScrollViews by the safe-area top inset (fdroiddata
+// !50457 note 4064134145 — titles rendered under the status bar). Zero
+// insets keep the layout assertions deterministic.
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 // ReceiveScreen reads the local history store, which imports
 // @op-engineering/op-sqlite; the package's native entry point throws under
 // Jest, so use the manual in-memory mock.

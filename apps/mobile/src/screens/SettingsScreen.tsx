@@ -562,7 +562,7 @@ export function SettingsScreen(): React.JSX.Element {
                 <Text style={styles.modalTitle}>Demo Mode is now active</Text>
                 <Body style={styles.modalIntro}>
                   You can explore Sidecoin with sample balances, platform
-                  activity, and PRO previews across the Drivechains Financial
+                  activity, and feature previews across the Drivechains Financial
                   Hub.
                 </Body>
               </View>
@@ -582,7 +582,7 @@ export function SettingsScreen(): React.JSX.Element {
                 {[
                   "Dashboard balances and platform activity use sample data.",
                   "Platform portfolio cards show screenshot-ready activity.",
-                  "PRO previews stay visible so you can explore the full hub.",
+                  "Feature previews stay visible so you can explore the full hub.",
                   "The sidebar and Dashboard clearly show Demo Mode is enabled.",
                 ].map((item) => (
                   <View key={item} style={styles.checkRow}>
@@ -600,7 +600,7 @@ export function SettingsScreen(): React.JSX.Element {
                   "Your wallet keys, seed phrase, and identity key are unchanged.",
                   "Send, receive, swap, split, signing, and broadcast logic are unchanged.",
                   "Hardware wallet operations are not simulated or bypassed.",
-                  "Entitlements, PRO checks, and wallet security rules stay intact.",
+                  "Entitlements and wallet security rules stay intact.",
                 ].map((item) => (
                   <View key={item} style={styles.checkRow}>
                     <Text style={styles.checkAmber}>✓</Text>

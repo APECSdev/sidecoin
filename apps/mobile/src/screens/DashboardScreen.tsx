@@ -31,6 +31,7 @@ import {
   Text,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
@@ -92,6 +93,7 @@ function formatLocalTime(iso: string): string {
 export function DashboardScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
 
   const [rows, setRows] = useState<ChainRow[]>([]);
   const [totalSats, setTotalSats] = useState<bigint>(0n);
@@ -326,7 +328,7 @@ export function DashboardScreen(): React.JSX.Element {
   return (
     <ScrollView
       style={styles.screen}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}
     >
       <View style={styles.heading}>
         <Eyebrow style={styles.eyebrow}>Drivechains Financial Hub</Eyebrow>
@@ -478,7 +480,7 @@ export function DashboardScreen(): React.JSX.Element {
             </View>
           ) : (
             <Card style={styles.balanceCard}>
-              <Text style={styles.smallLabel}>Platform Activity</Text>
+              <Text style={styles.smallLabel}>Network Activity</Text>
               <Text style={styles.balanceValue}>
                 {formatSats(totalSats)}{" "}
                 <Text style={styles.balanceUnit}>eCash</Text>
