@@ -1,8 +1,14 @@
 <!-- infra/glitchtip/README.md -->
 
-# GlitchTip — self-hosted error tracking for the Sidecoin monorepo
+# GlitchTip — self-hosted error tracking (SHARED APECS Dev resource)
 
-Self-hosted, Sentry-SDK-compatible error tracking. Error data stays on
+Self-hosted, Sentry-SDK-compatible error tracking, **shared across APECS Dev
+products**. Namespacing: one GlitchTip **organization per product** — the
+Sidecoin monorepo uses org `sidecoin` with projects `web` / `api` / `wallet` /
+`mobile`; other products get their own orgs. The service lives on the
+product-neutral `glitchtip.apecs.dev` so no product's domain appears in
+another's crash payloads. Hosted on the dedicated `glitchtip` LunaNode VPS
+(m.4, Toronto, `172.81.177.158`). Error data stays on
 infrastructure we control — critical for a crypto wallet, where a crash payload
 can accidentally contain a mnemonic, xprv, or address. The SDKs are pointed at
 this server; the privacy scrubber (`@sidecoin/observability`) is the first line
@@ -67,7 +73,7 @@ cp .env.example .env
 # 3. Create the tunnel (one time, from any machine with cloudflared).
 cloudflared tunnel login
 cloudflared tunnel create glitchtip
-cloudflared tunnel route dns glitchtip glitchtip.sidecoin.app
+cloudflared tunnel route dns glitchtip glitchtip.apecs.dev
 cloudflared tunnel token glitchtip   # → put this in .env as TUNNEL_TOKEN
 
 # 4. Start.
@@ -77,13 +83,35 @@ docker compose up -d
 docker compose exec web python manage.py createsuperuser
 ```
 
-Then browse to `https://glitchtip.sidecoin.app`, create an organization, and
+Then browse to `https://glitchtip.apecs.dev`, create an organization, and
 create one project per app (`web`, `api`, `wallet`, `mobile`). Copy each
 project's DSN into the corresponding env var (see "App wiring" below).
 
+### Provisioned 2026-10-23 — live instance
+
+- VPS: LunaNode `glitchtip` (m.4 / plan 88, Toronto, `172.81.177.158`,
+  vm_id `c70c547d-f55b-4716-b915-1e03dc18548a`), deploy root `/opt/glitchtip`.
+- Cloudflare tunnel `glitchtip` (id `8112ecfe-134d-4ac9-aaee-2b42fe8d2bf2`),
+  remotely-managed; ingress `glitchtip.apecs.dev → http://web:8000`.
+- Admin UI login: `admin@apecs.dev` (password issued to the operator).
+- Org `sidecoin`, team `sidecoin`, projects (DSN public keys are **not**
+  secrets — they only permit event submission and are embedded in clients):
+
+| Project | DSN |
+| --- | --- |
+| `web` (id 1) | `https://d82d1c9b-05ec-49a1-b8e5-341416cdce24@glitchtip.apecs.dev/1` |
+| `api` (id 2) | `https://f2ee588c-43c3-4b76-a44e-053ad1e3cb57@glitchtip.apecs.dev/2` |
+| `wallet` (id 3) | `https://06817167-1ddf-4b30-9f29-196b51e51f5b@glitchtip.apecs.dev/3` |
+| `mobile` (id 4) | `https://c9192428-dec7-4da9-8422-10cdaa506b73@glitchtip.apecs.dev/4` |
+
+- New product = new org (one per product); add projects under it the same way
+  (`docker compose exec web python manage.py shell`, see git history for the
+  bootstrap script). Ingest verified 2026-10-23 via a live store-endpoint
+  event against project 1.
+
 ### Optional: gate the login UI with Cloudflare Access
 
-Zero Trust → Access → Applications → add `glitchtip.sidecoin.app`. **Scope the
+Zero Trust → Access → Applications → add `glitchtip.apecs.dev`. **Scope the
 policy to the UI only.** The SDK ingest endpoints must stay open so apps can
 report errors — do not put `/api/*/store/` or `/api/*/envelope/` behind Access.
 
@@ -147,5 +175,5 @@ flavor reports.
 ```bash
 # Reachable only via the tunnel; no public app port on the VPS.
 ss -tlnp | grep 8000        # → should show 127.0.0.1:8000 only
-curl -s https://glitchtip.sidecoin.app/_health/   # → 200 through the tunnel
+curl -s https://glitchtip.apecs.dev/_health/   # → 200 through the tunnel
 ```

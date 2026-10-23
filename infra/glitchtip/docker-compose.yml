@@ -1,7 +1,7 @@
 name: glitchtip
 
-# GlitchTip for the Sidecoin monorepo — Postgres-only, fronted by a Cloudflare
-# Tunnel. The web container is bound to 127.0.0.1 ONLY; cloudflared is the sole
+# GlitchTip — SHARED APECS Dev error tracking (one org per product: sidecoin,
+# …) — Postgres-only, fronted by a Cloudflare Tunnel. The web container is bound to 127.0.0.1 ONLY; cloudflared is the sole
 # ingress. No inbound port is exposed to the public internet.
 #
 # Image is pinned to a specific tag (no :latest in prod). See README.md.
@@ -44,6 +44,9 @@ services:
       # Behind the Cloudflare Tunnel (edge TLS). Trust the forwarded proto so
       # Django builds correct https:// redirect / cookie URLs.
       SECURE_PROXY_SSL_HEADER: "('HTTP_X_FORWARDED_PROTO', 'https')"
+      # Django ALLOWED_HOSTS — comma-separated. Wildcard default triggers a
+      # runtime warning and accepts any Host header; restrict to our hostnames.
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
     # localhost ONLY — cloudflared is the sole ingress. No public app port.
     ports:
       - "127.0.0.1:8000:8000"

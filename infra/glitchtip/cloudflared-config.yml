@@ -8,14 +8,14 @@
 # If you manage the tunnel LOCALLY instead, use the ingress below and mount your
 # tunnel credentials JSON + this file into the container.
 #
-#   hostname: glitchtip.sidecoin.app
+#   hostname: glitchtip.apecs.dev
 #   service:  http://web:8000        # the compose service, NOT a public port
 #   originRequest:
 #     noTLSVerify: false
 #
-# DNS: create a proxied (orange-cloud) CNAME for glitchtip.sidecoin.app pointing
+# DNS: create a proxied (orange-cloud) CNAME for glitchtip.apecs.dev pointing
 # at <tunnel-id>.cfargotunnel.com. cloudflared does this automatically with
-#   cloudflared tunnel route dns <tunnel> glitchtip.sidecoin.app
+#   cloudflared tunnel route dns <tunnel> glitchtip.apecs.dev
 #
 # Optional hardening: gate the login UI with Cloudflare Access (Zero Trust →
 # Access → Applications) so only your team can reach the dashboard. The Sentry
