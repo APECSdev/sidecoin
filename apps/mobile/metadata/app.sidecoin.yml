@@ -64,16 +64,24 @@
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
 #   publish.py to fetch and compare. The signed release APK is attached to the
-#   v26.10.12 GitHub release (asset app-fdroid-release.apk, 20,264,456 bytes,
-#   SHA-256 5c5c90e784749ab2d34a8f982c0566112746ce7ab1b8723a992506e66a83feff),
+#   v26.10.22 GitHub release (asset app-fdroid-release.apk, 20,265,036 bytes,
+#   SHA-256 a21c8b3d52328fecce3bdf893b81a72553fc616c3b68d18bbb69df7c891ede8c),
 #   so `Binaries:` below resolves to it via %v -> versionName. If verification
 #   ever fails, publish is SKIPPED (publish.py counts it as failed), not
 #   silently re-signed, so an upstream mismatch can never ship a wrong APK.
 #
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
-#   v26.10.12 release, which must be tagged and uploaded before submission.
+#   v26.10.22 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit 66a95bb2 (was 2eb9a668 at 26.10.5).
+#   The binary is REBUILT at commit 06745903 (was 66a95bb2 at 26.10.12,
+#   2eb9a668 at 26.10.5). 26.10.22 answers junkerderprovinz's review (note
+#   4064134145): the fdroid flavor now unlocks every platform and feature
+#   free of charge — no paid tier, no upgrade CTAs, no PRO mention in the UI
+#   — via a Metro build-flavor flag module (src/buildFlavor.ts, swapped to
+#   buildFlavor.fdroid.ts only while bundling the fdroid flavor), plus the
+#   "Network Activity" relabel and the safe-area top inset. Pure JS-layer
+#   changes: the native library set is identical to 26.10.12 (42 libs, no
+#   prebuilt binaries).
 #   26.10.12 carries two changes on top of the 26.10.5 chain:
 #     • Prebuilt Skia removed — the Markets chart moved from victory-native
 #       to react-native-gifted-charts (pure react-native-svg, which the app
@@ -176,15 +184,20 @@ Repo: https://github.com/APECSdev/sidecoin.git
 # Hosted reference binary: the APK we signed with our own release key, from the
 # SAME commit as the build below, so publish.py (route (a)) can verify F-Droid's
 # source build byte-for-byte against it and then SHIP OURS. %v resolves to
-# versionName (26.10.12), matching the v26.10.12 tag/release. GitHub returns a
+# versionName (26.10.22), matching the v26.10.22 tag/release. GitHub returns a
 # 302 redirect to the asset; fdroidserver's net.download_file follows it
-# (verified: HTTP 200, content-length 20264456, sha256 5c5c90e784749ab2d34a8f98
-# 2c0566112746ce7ab1b8723a992506e66a83feff). 26.10.12 drops the prebuilt Skia
-# chain (victory-native -> react-native-gifted-charts), cutting the APK from
-# 28,685,558 to 20,264,456 bytes (42 native libraries, down from 44); 26.10.5
-# had dropped the prebuilt OpenSSL chain (quick-crypto/nitro) from 35,187,266
-# bytes, and 26.10.1 had deflated the bundled .so files (see the
-# useLegacyPackaging note in android/app/build.gradle) from 74,521,086 bytes.
+# (verified: HTTP 200, content-length 20265036, sha256 a21c8b3d52328fecce3bdf893
+# b81a72553fc616c3b68d18bbb69df7c891ede8c). 26.10.22 answers junkerderprovinz's
+# review on this MR (note 4064134145): the fdroid build now unlocks every
+# platform and feature free of charge (no paid tier, no upgrade CTAs, no PRO
+# mention in the UI) via a Metro build-flavor flag, the "Platform Activity"
+# card is relabeled "Network Activity", and screen titles get the safe-area
+# top inset. 26.10.12 dropped the prebuilt Skia chain (victory-native ->
+# react-native-gifted-charts), cutting the APK from 28,685,558 to 20,264,456
+# bytes (42 native libraries, down from 44); 26.10.5 had dropped the prebuilt
+# OpenSSL chain (quick-crypto/nitro) from 35,187,266 bytes, and 26.10.1 had
+# deflated the bundled .so files (see the useLegacyPackaging note in
+# android/app/build.gradle) from 74,521,086 bytes.
 Binaries: 
   https://github.com/APECSdev/sidecoin/releases/download/v%v/app-fdroid-release.apk
 
@@ -194,15 +207,15 @@ Builds:
   # Keep ONLY the latest block: F-Droid builds and publishes every entry, and
   # mezinster (MR fdroiddata!50457) asked for the 26.10.1 block to be dropped
   # — it was the build that still shipped prebuilt OpenSSL.
-  - versionName: 26.10.12
-    versionCode: 20261012
-    # FULL 40-char hash, not the v26.10.12 tag. Build_Metadata_Reference:
+  - versionName: 26.10.22
+    versionCode: 20261022
+    # FULL 40-char hash, not the v26.10.22 tag. Build_Metadata_Reference:
     # "Don't use branch name or tag name. The full commit hash should be used."
     # This commit's build is CI-verified byte-identical to the hosted
     # reference binary (fdroid build: "compared built binary to supplied
     # reference binary successfully"); earlier commits embed absolute build
     # paths and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: 66a95bb23c9377c510b60bfd4326926bf4d54462
+    commit: 06745903f6e6195165dbaa8a49a0263adc5d4f2c
     # `subdir` is the MODULE directory, not the Gradle project root. fdroidserver
     # roots both the gradle invocation (build.py) and the APK search at
     # `root_dir = build_dir/subdir` (common.prepare_source), and its default
@@ -351,8 +364,8 @@ AllowedAPKSigningKeys:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 26.10.12
-CurrentVersionCode: 20261012
+CurrentVersion: 26.10.22
+CurrentVersionCode: 20261022
 
 # NonFreeNet: the wallet talks to third-party hosted services that are not
 # free software and cannot be self-hosted by the user from within the app:
