@@ -494,6 +494,13 @@ jobs:
 
       - name: Build Web
         run: pnpm --filter @sidecoin/web build
+        env:
+          # GlitchTip DSN (public key, non-secret — embedded in the client
+          # bundle by design). Empty here would disable error tracking.
+          PUBLIC_GLITCHTIP_DSN: https://d82d1c9b-05ec-49a1-b8e5-341416cdce24@glitchtip.apecs.dev/1
+          # Tagged on every event as `dist` so GlitchTip can attribute errors
+          # to the exact deploy commit.
+          PUBLIC_GLITCHTIP_DIST: ${{ github.sha }}
 
       - name: Deploy to Cloudflare Pages
         run: npx wrangler pages deploy apps/web/dist --project-name=sidecoin --commit-dirty=true
