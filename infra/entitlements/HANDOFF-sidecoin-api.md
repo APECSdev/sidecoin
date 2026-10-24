@@ -8,6 +8,14 @@ returns `404 no route for /v1/me/entitlements` (verified 2026-10-23).
 entitlement the wallet can verify, cache, and enforce — on launch, on
 demand, and before gated actions.
 
+**Cross-review:** the API team's response lives at `sidecoin-api`
+`docs/HANDOFF-entitlements.md` (2026-10-23). All of its client-side and
+server-side claims were re-verified against source on 26.10.24 (see its
+own addendum for the one it got stale: the Lifetime wire enum is
+`"diamond"`, not `"alpha"`, post-rename). Its four corrections to THIS
+document are applied inline (§2 plan mapping, §2 `"grace"` ban, §3
+identity/store, §4 success page, §9.4 renewal obsolescence).
+
 ---
 
 ## 1. Product shape (source of truth: `apps/web`)
@@ -64,13 +72,24 @@ the user's cached entitlement.
   pricing copy), `diamond` for Diamond Circle members, `pro` for monthly.
   (The tier was renamed from "Alpha Circle"/`alpha` on 26.10.24 when the
   **Alpha meter** claimed the word — see §11.)
+  **Correction (API-team review, 2026-10-23):** the founders table mints a
+  row on the FIRST confirmed payment regardless of plan — monthly buyers
+  get rows too (`INSERT ... ON CONFLICT(identity) DO NOTHING`). The payload
+  `plan` must therefore NOT be derived from founders-table membership.
+  Recommended mapping (their doc §2.3): `is_alpha = 1` ⇒ `diamond` +
+  `expiresAt: null`; `now < paid_through` ⇒ `pro`; expired ⇒ `pro` +
+  `inactive`. A yearly ⇒ `founder` mapping remains a one-line product
+  choice in the route handler, never a schema read.
 - `status`: `"active" | "inactive" | "grace" | "unknown"`.
-  `active` and `grace` unlock; everything else re-locks.
+  `active` and `grace` unlock; everything else re-locks. **The server
+  must NOT emit `"grace"`** — the D1 schema has no grace concept
+  (one-shot payments, `paid_through` only) and the client treats `grace`
+  as a full unlock, so emitting it would over-entitle.
 - `features`: string array. Feature ids are owned by
   `apps/mobile/src/entitlements.ts` (`platform:<id>`, `wallet:coin-control`,
   `analytics:historical`, `platforms:early-access`, `l1`, `swap`,
   `toolbox`, `hardware:read`, `hardware:signing`). For paid tiers the
-  client short-circuits (pro/founder/alpha + active/grace unlock
+  client short-circuits (pro/founder/diamond + active/grace unlock
   everything), so the list is authoritative mainly for `basic` and for
   forward-compat granular grants.
 - `expiresAt`: ISO 8601 or `null` (lifetime). **The client enforces expiry
@@ -88,16 +107,26 @@ this shape.
 ## 3. Entitlement key (the bearer token)
 
 - **Proposed format:** `sc_ent_` + 32 lowercase hex chars (16 random
-  bytes), issued once per completed payment, shown on the
-  `sidecoin.app/pro/success` page (already designed as the "receipt key"
-  — see `apps/web/src/pages/pro/success.astro`) and restorable by
-  purchaser email.
+  bytes), issued once per completed payment. **Correction (API-team
+  review, 2026-10-23):** `apps/web/src/pages/pro/success.astro` does NOT
+  exist — the web checkout is the inline `PaymentFlow.vue` on
+  `apps/web/src/pages/pro.astro` polling `/v1/pay/status`, and no
+  receipt-key UI is built anywhere in `apps/web`. Key disclosure is the
+  API team's open decision 3 (their doc §3.4; recommended: extend
+  `/v1/pay/status` to return the key when `confirmed: true`, gated on a
+  mandatory `orderId` query param). Email restore is blocked on the
+  disabled Resend wiring (`PaymentFlow.vue:64`).
 - The mobile client treats the key as an opaque string (trimmed,
   non-empty) — no format validation client-side, so the API team owns the
   final format.
-- One key = one subscription. Store: key hash → { NOWPayments payment id,
-  plan, status, period end, purchaser email, created/revoked timestamps }.
-  Hash at rest; the key is a bearer secret.
+- One key = one PAYMENT (stacking issues further keys for the same
+  identity). **Correction (API-team review, 2026-10-23):** identity is
+  the wallet public key (`payments.identity`, embedded in `order_id`),
+  NOT email — email is an optional restore convenience. Entitlement state
+  is derived from `founders.paid_through` / `is_alpha`, never duplicated;
+  the only new table is `entitlement_keys(key_hash → identity,
+  payment_id, email?, created_at, revoked_at)` (their §3.1). Hash at
+  rest; the key is a bearer secret.
 - **Multi-device:** the same key pasted on N devices entitles them all.
   If per-device limits are ever wanted, that is a v2 concern — do not
   block v1 on it.
@@ -110,10 +139,13 @@ this shape.
    NOWPayments invoice → pays on-chain.
 2. NOWPayments IPN confirms the payment (webhook handler lives in
    sidecoin-api).
-3. User lands on `sidecoin.app/pro/success?payment_id=…`, which polls
-   `/v1/pay/status`.
-4. **(NEW)** On confirmed payment, issue/return the entitlement key and
-   render it on the success page with copy-to-clipboard.
+3. User pays; the inline `PaymentFlow.vue` on `/pro` polls
+   `/v1/pay/status?paymentId=…` until `confirmed` (there is no
+   `pro/success` page — API-team correction 2026-10-23).
+4. **(NEW)** On confirmed payment, issue the entitlement key in the
+   webhook and disclose it (pending API-team decision 3 — recommended:
+   `/v1/pay/status` returns it when `confirmed: true` AND the caller
+   supplies `orderId`); the web "receipt key" UI is unbuilt.
 5. User pastes the key in the app: **Settings → Sidecoin PRO → Activate
    PRO key** (mobile, shipped). The app calls
    `GET /v1/me/entitlements`, applies the payload, caches it.
@@ -184,13 +216,21 @@ monorepo; it needs no contract change.
 ## 9. Decisions the API team owns
 
 1. Key format + entropy (proposal in §3).
-2. Where keys surface: success page rendering + email restore flow.
+2. Where keys surface: no success page exists (see §4) — pick a
+   disclosure path (their §3.4: (i) `/v1/pay/status` + mandatory
+   `orderId`, recommended; (iii) email restore needs Resend wiring first).
 3. Plan mapping: monthly→`pro`, yearly→`founder`, Diamond Circle→`diamond`
    (matches the pricing copy; adjust if product wants different slugs —
-   the client validates against the four values above only).
-4. Renewal handling: NOWPayments is one-shot invoicing — decide how a
-   renewal payment extends `expiresAt` for the same key (re-issue vs.
-   extend), and the grace-period length for failed renewals.
+   the client validates against the four values above only). Per the
+   API-team review, founders-table membership is NOT a mapping input
+   (monthly mints rows too); their recommended derived mapping is in §2.
+4. ~~Renewal handling~~ **OBSOLETE (API-team review, 2026-10-23):** no
+   auto-renew exists — the money model is one purchase = plan × quantity,
+   paid up front; a repeat purchase extends
+   `paid_through = MAX(now, paid_through) + duration` on the same identity
+   (verified in the IPN webhook) and issues a second key row that resolves
+   to the same derived state. No grace period exists and `"grace"` must
+   never be emitted (see §2).
 5. Rate limiting on `/v1/me/entitlements` (it is a bearer-token endpoint;
    launch + manual refresh + locked-screen mounts are the call drivers).
 
