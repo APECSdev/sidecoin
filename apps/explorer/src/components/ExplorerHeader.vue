@@ -22,8 +22,10 @@ const activeChain = computed(() => {
             class="grid h-10 w-10 place-items-center rounded-xl border border-yellow-500/70 bg-yellow-500/10 p-1 shadow-lg shadow-yellow-500/10"
             aria-hidden="true"
           >
+            <!-- Bound dynamically: a literal root-absolute src is rewritten
+                 into an asset import that breaks vitest on Windows. -->
             <img
-              src="/favicon-48x48.png"
+              :src="'/favicon-48x48.png'"
               alt=""
               class="h-8 w-8 rounded-lg"
             />
