@@ -67,7 +67,7 @@ const founderEligibility = [
         Sidecoin PRO
       </p>
       <h2 class="mt-4 text-4xl font-black tracking-tight text-white md:text-5xl">
-        Unlock the UNLIMITED Drivechains Financial Hub
+        Unlock Your UNLIMITED Drivechains Experience
       </h2>
       <p class="mt-4 max-w-3xl text-lg leading-8 text-gray-300">
         Basic gives you L1, Thunder, BitNames, Swap, and Coin Split tools.

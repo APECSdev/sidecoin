@@ -295,15 +295,15 @@ describe("Pro Page — FAQ Contracts", () => {
 // ---------------------------------------------------------------------------
 
 describe("Pro Page — Diamond Circle", () => {
-  it("should define Diamond Circle as top 10%", () => {
-    const topPercent = 10;
-    expect(topPercent).toBe(10);
+  it("should define Diamond Circle as top 20%", () => {
+    const topPercent = 20;
+    expect(topPercent).toBe(20);
   });
 
   it("should compute cut line from total founders", () => {
     const totalFounders = 100;
-    const cutLine = Math.ceil(totalFounders * 0.10);
-    expect(cutLine).toBe(10);
+    const cutLine = Math.ceil(totalFounders * 0.20);
+    expect(cutLine).toBe(20);
   });
 
   it("should compute cut line for larger numbers", () => {

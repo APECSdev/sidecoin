@@ -101,7 +101,7 @@ export function ProBenefitsScreen(): React.JSX.Element {
       <Card tone="pro" style={styles.hero}>
         <Eyebrow style={styles.heroEyebrow}>Sidecoin PRO</Eyebrow>
         <Text style={styles.heroTitle}>
-          Unlock the UNLIMITED Drivechains Financial Hub
+          Unlock Your UNLIMITED Drivechains Experience
         </Text>
         <Body style={styles.heroBody}>
           Basic gives you L1, Thunder, BitNames, Swap, and Coin Split tools.
