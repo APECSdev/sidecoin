@@ -167,7 +167,7 @@ shared scrubber every app uses.
 | mobile | build-time string          | `src/lib/sentry.ts`| last (fdroid stays no-op) |
 
 The **wallet** DSN may be intentionally left unset until the scrubber is signed
-off. **Mobile** must keep the F-Droid flavor no-op (policy); only the playstore
+off. **Mobile** must keep the F-Droid flavor no-op (policy); only the appstore
 flavor reports.
 
 ## Verify acceptance

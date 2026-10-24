@@ -7,6 +7,22 @@ extracted from this monorepo into the `sidecoin-api` repo. **The Worker init
 cannot be done from this monorepo** — it is a companion PR in your repo. This
 document is the contract.
 
+## Status: DELIVERED + DEPLOYED (2026-10-23)
+
+Everything below was executed in `sidecoin-api` and shipped to production the
+same day: scrubber vendored (`src/lib/observability.ts` + 9 tests),
+`withSentry` wrap with the `dataCollection` deny-list + local
+`x-nowpayments-sig` wrapper, `nodejs_compat` flag, `@sentry/cloudflare`
+11.5.0, `GLITCHTIP_DSN` in `src/lib/env.ts`. 33/33 tests + clean typecheck.
+Deployed from the `apecsdev` VM (version
+`592ffd89-3d2e-4138-966f-c7da9343783c`) and the `GLITCHTIP_DSN` secret set
+(value in step 2). All route groups verified 200 post-deploy; D1 migrations
+already applied. Ingest proven via a direct envelope POST; the first live
+Worker error completes the acceptance loop (no prod route throws on demand —
+IPN parse failures are caught 400s). The `sidecoin-api` working tree is
+deployed-but-uncommitted at time of writing — committing is its top next
+item.
+
 ## Goal
 
 Report Worker errors to the self-hosted GlitchTip server
