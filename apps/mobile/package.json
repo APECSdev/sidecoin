@@ -5,7 +5,7 @@
   "scripts": {
     "android": "react-native run-android",
     "android:fdroid": "react-native run-android --variant=fdroidDebug",
-    "android:playstore": "react-native run-android --variant=playstoreDebug",
+    "android:appstore": "react-native run-android --variant=appstoreDebug",
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "type-check": "tsc --noEmit",

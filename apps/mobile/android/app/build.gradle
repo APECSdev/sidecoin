@@ -187,14 +187,14 @@ android {
     /**
      * Distribution flavors:
      *   - fdroid:    Clean FOSS build, no proprietary SDKs (Sentry, etc.)
-     *   - playstore: Full build with Sentry crash reporting + analytics
+     *   - appstore: Full build with Sentry crash reporting + analytics
      */
     flavorDimensions "distribution"
     productFlavors {
         fdroid {
             dimension "distribution"
         }
-        playstore {
+        appstore {
             dimension "distribution"
         }
     }
@@ -233,8 +233,8 @@ dependencies {
         implementation jscFlavor
     }
 
-    // Sentry — playstore builds only (excluded from F-Droid)
-    playstoreImplementation 'io.sentry:sentry-android:7.14.0'
+    // Sentry — appstore builds only (excluded from F-Droid)
+    appstoreImplementation 'io.sentry:sentry-android:7.14.0'
 
     // ─── FOSS QR scanner (CameraX + ZXing) ────────────────────────────────
     // Replaces react-native-vision-camera, whose Kotlin core hard-imports
@@ -257,12 +257,12 @@ dependencies {
 
 /**
  * Once Gradle has evaluated every project, the `installDebug` shorthand
- * would be ambiguous because the `fdroid` and `playstore` product flavors
+ * would be ambiguous because the `fdroid` and `appstore` product flavors
  * each generate their own install task. Tools like the React Native CLI
  * (`react-native run-android`) still invoke `./gradlew installDebug`,
  * so we register a non-ambiguous alias that forwards to the F-Droid
- * flavor — the default development build. The Play Store flavor can
- * still be installed directly with `./gradlew installPlaystoreDebug`.
+ * flavor — the default development build. The appstore flavor can
+ * still be installed directly with `./gradlew installAppstoreDebug`.
  */
 gradle.projectsEvaluated {
     def fdroidInstallDebug = tasks.findByName('installFdroidDebug')

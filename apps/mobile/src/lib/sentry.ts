@@ -1,7 +1,7 @@
 // apps/mobile/src/lib/sentry.ts
 
 /**
- * GlitchTip (Sentry-compatible) error tracking — playstore flavor only.
+ * GlitchTip (Sentry-compatible) error tracking — appstore flavor only.
  *
  * Metro rewrites `@sentry/react-native` to `./sentry-noop` for the fdroid
  * flavor (see metro.config.js), so F-Droid builds have NO crash reporting by
@@ -26,7 +26,7 @@ try {
     // F-Droid build — Sentry not available, all exports become no-ops
 }
 
-// Build-time DSN. Overridden at bundle time for the playstore flavor; empty
+// Build-time DSN. Overridden at bundle time for the appstore flavor; empty
 // otherwise. RN has no import.meta.env; use a placeholder replaced by the
 // build, or read a global injected via the app config. Empty => disabled.
 const DSN: string = (globalThis as any).__GLITCHTIP_DSN__ ?? '';

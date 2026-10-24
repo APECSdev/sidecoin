@@ -12,7 +12,7 @@
 //
 // The kept `import` statements document the two behaviours under test: the
 // helper is a pure function, and the config it feeds redirects Sentry to the
-// local no-op shim for every flavor except playstore.
+// local no-op shim for every flavor except appstore.
 
 // Metro's real config loader is ESM-only and cannot be required from Jest, so
 // it is stubbed with the minimal surface metro.config.js actually uses.
@@ -28,17 +28,17 @@ const { detectAndroidFlavor } = metroConfig;
 // The exact Gradle task names observed by capturing process.argv from inside a
 // probe metro.config.js under :app:createBundleFdroidReleaseJsAndAssets.
 const FDROID_TASK = "createBundleFdroidReleaseJsAndAssets";
-const PLAYSTORE_TASK = "createBundlePlaystoreReleaseJsAndAssets";
+const APPSTORE_TASK = "createBundleAppstoreReleaseJsAndAssets";
 
 describe("detectAndroidFlavor", () => {
   it("recognises the fdroid release bundle task", () => {
     expect(detectAndroidFlavor(["node", "cli.js", FDROID_TASK])).toBe("fdroid");
   });
 
-  it("recognises the playstore release bundle task", () => {
+  it("recognises the appstore release bundle task", () => {
     expect(
-      detectAndroidFlavor(["node", "cli.js", PLAYSTORE_TASK]),
-    ).toBe("playstore");
+      detectAndroidFlavor(["node", "cli.js", APPSTORE_TASK]),
+    ).toBe("appstore");
   });
 
   it("recognises the fdroid debug bundle task", () => {
@@ -105,9 +105,9 @@ describe("Sentry resolveRequest gate", () => {
     expect(result.resolved).toContain("sentry-noop");
   });
 
-  it("does NOT redirect @sentry/react-native for the playstore flavor", () => {
-    const playstore = loadConfigWithArgv(["node", "cli.js", PLAYSTORE_TASK]);
-    const result = playstore.resolver.resolveRequest(
+  it("does NOT redirect @sentry/react-native for the appstore flavor", () => {
+    const appstore = loadConfigWithArgv(["node", "cli.js", APPSTORE_TASK]);
+    const result = appstore.resolver.resolveRequest(
       makeContext(),
       "@sentry/react-native",
       "android",
@@ -157,9 +157,9 @@ describe("buildFlavor resolveRequest gate", () => {
     expect(result.resolved).toContain("buildFlavor.fdroid");
   });
 
-  it("does NOT remap ./buildFlavor for the playstore flavor", () => {
-    const playstore = loadConfigWithArgv(["node", "cli.js", PLAYSTORE_TASK]);
-    const result = playstore.resolver.resolveRequest(
+  it("does NOT remap ./buildFlavor for the appstore flavor", () => {
+    const appstore = loadConfigWithArgv(["node", "cli.js", APPSTORE_TASK]);
+    const result = appstore.resolver.resolveRequest(
       makeContext(),
       "./buildFlavor",
       "android",

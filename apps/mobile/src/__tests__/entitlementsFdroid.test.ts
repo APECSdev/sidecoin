@@ -11,7 +11,7 @@ import { IS_FDROID_BUILD as baseFlag } from "../buildFlavor";
 import { IS_FDROID_BUILD as fdroidFlag } from "../buildFlavor.fdroid";
 
 describe("buildFlavor flag modules", () => {
-  it("base module ships IS_FDROID_BUILD=false (playstore / dev / Jest)", () => {
+  it("base module ships IS_FDROID_BUILD=false (appstore / dev / Jest)", () => {
     expect(baseFlag).toBe(false);
   });
 

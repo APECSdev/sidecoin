@@ -229,8 +229,8 @@ Builds:
     # "Failed to find any output apks", because the module's output sits one
     # level below the directory fdroidserver was searching.
     subdir: apps/mobile/android/app
-    # `fdroid` is the FOSS flavor: it excludes the playstore-only Sentry
-    # dependency (see android/app/build.gradle `playstoreImplementation`).
+    # `fdroid` is the FOSS flavor: it excludes the appstore-only Sentry
+    # dependency (see android/app/build.gradle `appstoreImplementation`).
     gradle:
       - fdroid
     # The buildserver VM runs Debian trixie, which no longer ships a JDK 17.

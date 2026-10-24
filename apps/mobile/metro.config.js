@@ -36,14 +36,14 @@ const observabilityPackage = path.resolve(monorepoRoot, "packages/observability"
 // flag (verified by capturing process.argv/process.env from inside a probe
 // metro.config.js run under :app:createBundleFdroidReleaseJsAndAssets).
 //
-// Only the `playstore` flavor bundles the real @sentry/react-native. Every
+// Only the `appstore` flavor bundles the real @sentry/react-native. Every
 // other invocation — the `fdroid` flavor, `react-native start`, Jest, and any
 // unknown context — is treated as FOSS and gets the no-op shim, so an APK we
 // hand to F-Droid can never carry the proprietary crash reporter.
 function detectAndroidFlavor(argv) {
   const commandLine = argv.join(" ");
-  if (/createBundlePlaystore[A-Za-z]*JsAndAssets/.test(commandLine)) {
-    return "playstore";
+  if (/createBundleAppstore[A-Za-z]*JsAndAssets/.test(commandLine)) {
+    return "appstore";
   }
   if (/createBundleFdroid[A-Za-z]*JsAndAssets/.test(commandLine)) {
     return "fdroid";
@@ -116,19 +116,19 @@ const config = {
     // ──────────────────────────────────────────────────
     // resolveRequest:
     //   Redirect @sentry/react-native to a local no-op
-    //   module unless we are bundling the playstore
+    //   module unless we are bundling the appstore
     //   flavor. Sentry is an optionalDependency and is
     //   absent from F-Droid builds; without this alias
     //   Metro would fail to resolve the import there.
     //
     //   The flavor gate is what keeps the FOSS
-    //   guarantee: only `playstore` resolves the real
+    //   guarantee: only `appstore` resolves the real
     //   package (see detectAndroidFlavor above).
     // ──────────────────────────────────────────────────
     resolveRequest: (context, moduleName, platform) => {
       if (
         moduleName === "@sentry/react-native" &&
-        androidFlavor !== "playstore"
+        androidFlavor !== "appstore"
       ) {
         return context.resolveRequest(
           context,
@@ -139,7 +139,7 @@ const config = {
       // F-Droid entitlement switch (26.10.22, fdroiddata!50457 note
       // 4064134145): only the `fdroid` flavor resolves the build-flavor flag
       // to its `true` variant, which makes entitlements.ts unlock every
-      // platform and feature free of charge. Playstore, dev, and Jest keep
+      // platform and feature free of charge. Appstore, dev, and Jest keep
       // the base module (IS_FDROID_BUILD=false). The ".fdroid" specifier
       // itself never matches: it ends with ".fdroid", not "/buildFlavor".
       if (androidFlavor === "fdroid" && moduleName.endsWith("/buildFlavor")) {

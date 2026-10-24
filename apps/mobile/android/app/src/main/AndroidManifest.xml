@@ -21,6 +21,17 @@
         android:networkSecurityConfig="@xml/network_security_config">
 
         <!--
+            Sentry's native SDK ships only in the appstore flavor
+            (appstoreImplementation in build.gradle) and auto-initializes via
+            its SentryInitProvider ContentProvider — which crashes at startup
+            with "DSN is required" unless a manifest DSN is set. Disable the
+            native auto-init: the JS layer owns initialization through
+            initSentry() (src/lib/sentry.ts) with the shared placeholder DSN.
+            Inert on the fdroid flavor, which ships no Sentry classes.
+        -->
+        <meta-data android:name="io.sentry.auto-init" android:value="false" />
+
+        <!--
             FOSS QR scanner (CameraX + ZXing). Launched by the ZxingQrScanner
             native module via startActivityForResult; hosted inside our own task
             and never exported, so no other app can invoke it.
