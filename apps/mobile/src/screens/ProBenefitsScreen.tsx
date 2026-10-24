@@ -101,7 +101,8 @@ export function ProBenefitsScreen(): React.JSX.Element {
       <Card tone="pro" style={styles.hero}>
         <Eyebrow style={styles.heroEyebrow}>Sidecoin PRO</Eyebrow>
         <Text style={styles.heroTitle}>
-          Unlock Your UNLIMITED Drivechains Experience
+          Unlock Your <Text style={styles.heroTitleAccent}>UNLIMITED</Text>{" "}
+          Drivechains Experience
         </Text>
         <Body style={styles.heroBody}>
           Basic gives you L1, Thunder, BitNames, Swap, and Coin Split tools.
@@ -110,8 +111,13 @@ export function ProBenefitsScreen(): React.JSX.Element {
         </Body>
 
         <View style={styles.heroCtas}>
+          {/* Plain-text pill, NOT a Pressable — appstore builds must not
+              steer users to external purchase (see header note). */}
+          <View style={styles.heroUrlPill}>
+            <Text style={styles.heroUrlText}>sidecoin.app/pro</Text>
+          </View>
           <Muted style={styles.heroMention}>
-            Upgrade at sidecoin.app/pro, then activate your entitlement key
+            Upgrade at the address above, then activate your entitlement key
             under Settings → Sidecoin PRO.
           </Muted>
           <Button
@@ -224,6 +230,26 @@ const styles = StyleSheet.create({
   heroMention: {
     fontSize: 13,
     lineHeight: 20,
+  },
+  heroTitleAccent: {
+    color: ECASH[400],
+  },
+  heroUrlPill: {
+    alignSelf: "center",
+    marginBottom: 12,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: ECASH[500],
+    borderRadius: 999,
+    backgroundColor: "rgba(249, 115, 22, 0.10)",
+  },
+  heroUrlText: {
+    color: ECASH[400],
+    fontFamily: "monospace",
+    fontSize: 17,
+    fontWeight: "800",
+    letterSpacing: 0.5,
   },
   highlights: {
     gap: 16,

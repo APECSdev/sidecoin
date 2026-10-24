@@ -146,7 +146,7 @@ export function AlphaMeter({
 
             <Text style={styles.sheetFooter}>
               Sidecoin PRO subscribers get unlimited Alpha — PRO features never
-              drain. Upgrade at sidecoin.app/pro, then activate your key under
+              drain. Upgrade at <Text style={styles.sheetFooterUrl}>sidecoin.app/pro</Text>, then activate your key under
               Settings → Sidecoin PRO.
             </Text>
           </Pressable>
@@ -248,6 +248,10 @@ const styles = StyleSheet.create({
     color: GRAY[600],
     fontSize: 11,
     fontStyle: "italic",
+  },
+  sheetFooterUrl: {
+    color: ECASH[400],
+    fontWeight: "700",
   },
   sheetFooter: {
     color: GRAY[500],
