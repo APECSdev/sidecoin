@@ -2,7 +2,8 @@
 // apps/web/src/components/pro/UrgencyBanner.astro
 //
 // Urgency section with countdown timer to Founding Member pricing deadline.
-// Reuses the same fork date as ForkCountdown.vue.
+// Targets the Founders deadline (Dec 31, 2026 end-of-day UTC) — DECOUPLED
+// from the consensus fork date in ForkCountdown.vue (Oct 31, 2026).
 ---
 
 <section class="border-t border-gray-800">
@@ -13,11 +14,11 @@
     </p>
 
     <h2 class="mt-4 text-2xl font-bold md:text-3xl">
-      Founding Member pricing ends August 21, 2026
+      Founding Member pricing ends December 31, 2026
     </h2>
 
     <p class="mx-auto mt-3 max-w-xl text-gray-400">
-      After Drivechain activation, Pro pricing will increase.
+      After December 31, Pro pricing will increase.
       Secure your Founder number and lock in the lowest rate.
     </p>
 
@@ -61,7 +62,7 @@
 
 <!-- Countdown script — vanilla JS, no framework dependency -->
 <script>
-  const FORK_DATE = new Date("2026-10-31T15:00:00Z").getTime();
+  const FOUNDERS_DEADLINE = new Date("2027-01-01T00:00:00Z").getTime();
 
   const $days = document.getElementById("urgency-days");
   const $hours = document.getElementById("urgency-hours");
@@ -73,7 +74,7 @@
   }
 
   function tick(): void {
-    const diff = FORK_DATE - Date.now();
+    const diff = FOUNDERS_DEADLINE - Date.now();
 
     if (diff <= 0) {
       if ($days) $days.textContent = "00";

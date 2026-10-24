@@ -503,6 +503,16 @@ smarthub 5 · mobile 289 (23 suites) · api-client 12 · observability 17.
    (`apps/desktop/src-tauri/src/lib.rs`). Regtest forks at block 0; betanet at
    967,680. On a date change, grep `2026-10-31` and `973_728` / `973,728` and
    update every hit.
+   **The Founders / Diamond Circle deadline is a PRODUCT date, decoupled from
+   the consensus fork date: December 31, 2026, end of day UTC** (countdown
+   components target `2027-01-01T00:00:00Z`). `is_alpha` locks at THAT
+   deadline, not at the fork. It lives in `apps/web` (`UrgencyBanner.astro`,
+   `LiveStatsBar.astro`, `FAQ.astro`, `ProHero.astro`, `DiamondCircle.astro`,
+   `DiamondCircleExplainer.astro`, `FoundersFooterCTA.astro`) and in
+   sidecoin-api (`founders.ts` + `0001_founders.sql` comments). On a deadline
+   change, grep `December 31` + `2027-01-01` in both repos. Never conflate the
+   two dates: the fork countdown (`ForkCountdown.vue` et al.) always tracks
+   consensus.
 7. **External sources for eCash/ECX facts** (check before changing consensus
    params, address formats, or fork values):
    - [ecash.com](https://ecash.com) — official site + live fork countdown

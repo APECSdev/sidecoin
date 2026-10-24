@@ -4,7 +4,7 @@
 // Displays three live stats:
 //   1. Total Founders (fetched client-side from our API)
 //   2. Diamond Circle Cut Line (top 20%, computed server-side)
-//   3. Countdown to August 21, 2026
+//   3. Countdown to December 31, 2026 (Founders deadline)
 //
 // Values are populated by client-side JavaScript on mount
 // and fall back to placeholder text ("—") if JS is disabled
@@ -51,7 +51,7 @@
 
 <!-- Stats bar script — vanilla JS, no framework dependency -->
 <script>
-  const FORK_DATE = new Date("2026-10-31T15:00:00Z").getTime();
+  const FOUNDERS_DEADLINE = new Date("2027-01-01T00:00:00Z").getTime();
 
   // Same-origin API by default; override with PUBLIC_API_BASE in dev.
   const API_BASE = import.meta.env.PUBLIC_API_BASE || "/v1";
@@ -67,7 +67,7 @@
   }
 
   function tickCountdown(): void {
-    const diff = FORK_DATE - Date.now();
+    const diff = FOUNDERS_DEADLINE - Date.now();
 
     if (diff <= 0) {
       if ($countdown) $countdown.textContent = "LIVE";

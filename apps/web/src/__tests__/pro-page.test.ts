@@ -10,10 +10,16 @@ import { describe, it, expect } from "vitest";
 import { PLANS, FEATURED_CURRENCIES } from "../lib/nowpayments";
 
 // ---------------------------------------------------------------------------
-// Fork Date Constant — must match ForkCountdown.vue and UrgencyBanner.astro
+// Fork Date Constant — must match ForkCountdown.vue (consensus fork date).
+// The Founders deadline is DECOUPLED from the fork: UrgencyBanner.astro and
+// LiveStatsBar.astro count down to FOUNDERS_DEADLINE below.
 // ---------------------------------------------------------------------------
 
 const FORK_DATE = new Date("2026-10-31T15:00:00Z");
+
+// Founders / Diamond Circle deadline: end of December 31, 2026 UTC
+// (countdown components target midnight Jan 1, 2027).
+const FOUNDERS_DEADLINE = new Date("2027-01-01T00:00:00Z");
 
 // ---------------------------------------------------------------------------
 // Pricing Integrity
@@ -211,6 +217,29 @@ describe("Pro Page — Fork Date & Countdown", () => {
     expect(hours).toBe(3);
     expect(minutes).toBe(45);
     expect(seconds).toBe(30);
+  });
+});
+
+describe("Pro Page — Founders Deadline & Countdown", () => {
+  it("should target the end of December 31, 2026 UTC", () => {
+    expect(FOUNDERS_DEADLINE.getTime()).toBe(
+      new Date("2027-01-01T00:00:00Z").getTime()
+    );
+    expect(FOUNDERS_DEADLINE.getUTCFullYear()).toBe(2027);
+    expect(FOUNDERS_DEADLINE.getUTCMonth()).toBe(0);  // January (0-indexed)
+    expect(FOUNDERS_DEADLINE.getUTCDate()).toBe(1);
+    expect(FOUNDERS_DEADLINE.getUTCHours()).toBe(0);
+    expect(FOUNDERS_DEADLINE.getUTCMinutes()).toBe(0);
+    expect(FOUNDERS_DEADLINE.getUTCSeconds()).toBe(0);
+  });
+
+  it("should fall after the fork date (deadline decoupled from fork)", () => {
+    expect(FOUNDERS_DEADLINE.getTime()).toBeGreaterThan(FORK_DATE.getTime());
+  });
+
+  it("should be in the future (test written before the deadline)", () => {
+    const now = new Date("2026-10-24T00:00:00Z");
+    expect(FOUNDERS_DEADLINE.getTime()).toBeGreaterThan(now.getTime());
   });
 });
 
