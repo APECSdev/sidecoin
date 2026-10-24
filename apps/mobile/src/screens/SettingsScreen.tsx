@@ -50,6 +50,14 @@ import {
 } from "../keystore";
 import { isDemoModeEnabled, setDemoMode } from "../demo";
 import {
+  getEntitlementKey,
+  isProPlan,
+  refreshEntitlements,
+  setEntitlementKey,
+  useEntitlements,
+} from "../entitlements";
+import { IS_FDROID_BUILD } from "../buildFlavor";
+import {
   WALLET_THEMES,
   getWalletTheme,
   setWalletTheme,
@@ -106,6 +114,89 @@ export function SettingsScreen(): React.JSX.Element {
   const [biometricSaved, setBiometricSaved] = useState(false);
   const biometricTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // ─── Sidecoin PRO entitlement key ──────────────────────
+  // Hidden entirely on F-Droid builds (no paid tier there by policy,
+  // fdroiddata!50457 note 4064134145). The key is issued after the crypto
+  // checkout at sidecoin.app/pro — mentioned in the UI as plain text, never
+  // linked, so store builds carry no external-purchase CTA.
+  const entitlements = useEntitlements();
+  const [proKeyInput, setProKeyInput] = useState("");
+  const [proKeyStored, setProKeyStored] = useState(false);
+  const [proBusy, setProBusy] = useState(false);
+  const [proMessage, setProMessage] = useState<string | null>(null);
+
+  const activateProKey = useCallback(async () => {
+    const key = proKeyInput.trim();
+    if (key.length === 0 || proBusy) return;
+    setProBusy(true);
+    setProMessage(null);
+    try {
+      await setEntitlementKey(key);
+      const result = await refreshEntitlements();
+      setProKeyInput("");
+      setProKeyStored((await getEntitlementKey()) !== null);
+      if (result.source === "network") {
+        setProMessage(
+          isProPlan(result.state)
+            ? `PRO active — plan: ${result.state.plan}.`
+            : "Key accepted, but the plan is not active yet.",
+        );
+      } else if (result.source === "cache") {
+        setProMessage("Offline — kept your last known entitlement status.");
+      } else {
+        setProMessage(
+          "Key saved. The entitlements service is unreachable right now — it re-checks on every launch.",
+        );
+      }
+    } catch (err) {
+      setProMessage(
+        `Activation failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setProBusy(false);
+    }
+  }, [proKeyInput, proBusy]);
+
+  const refreshProStatus = useCallback(async () => {
+    if (proBusy) return;
+    setProBusy(true);
+    setProMessage(null);
+    try {
+      const result = await refreshEntitlements();
+      setProKeyStored((await getEntitlementKey()) !== null);
+      setProMessage(
+        result.source === "network"
+          ? "Status refreshed from sidecoin.app."
+          : result.source === "cache"
+            ? "Offline — showing your last known status."
+            : "No entitlement key stored — Basic plan.",
+      );
+    } catch (err) {
+      setProMessage(
+        `Refresh failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setProBusy(false);
+    }
+  }, [proBusy]);
+
+  const clearProKey = useCallback(async () => {
+    if (proBusy) return;
+    setProBusy(true);
+    setProMessage(null);
+    try {
+      await setEntitlementKey(null);
+      setProKeyStored(false);
+      setProMessage("Entitlement key removed — Basic plan active.");
+    } catch (err) {
+      setProMessage(
+        `Could not remove the key: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    } finally {
+      setProBusy(false);
+    }
+  }, [proBusy]);
+
   // ─── Founder Identity Key (NIP-06 Nostr key) ────────────────
   // Derived locally from the wallet mnemonic at m/44'/1237'/0'/0/0. This is the
   // canonical Founder identity: copy it here and paste it at sidecoin.app/pro.
@@ -138,6 +229,7 @@ export function SettingsScreen(): React.JSX.Element {
         setNodeUrl(currentUrl);
       }
       setUsingDefault(getApiBaseUrl() === "");
+      setProKeyStored((await getEntitlementKey()) !== null);
       setDemoModeState(await isDemoModeEnabled());
       if (cancelled) return;
       setSelectedTheme(await getWalletTheme());
@@ -541,6 +633,80 @@ export function SettingsScreen(): React.JSX.Element {
         )}
       </Card>
 
+      {/* ─── Sidecoin PRO ────────────────────────────────
+          Appstore/dev builds only: F-Droid ships every feature free and must
+          carry no paid tier or upgrade CTA (fdroiddata!50457 note
+          4064134145). sidecoin.app/pro is MENTIONED as plain text, never
+          linked — store builds must not steer users to an external purchase
+          flow (Apple/Google policy). */}
+      {!IS_FDROID_BUILD ? (
+        <Card style={styles.section}>
+          <Text style={styles.labelStrong}>Sidecoin PRO</Text>
+          <Muted style={styles.hint}>
+            Upgrade at <Text style={styles.ecashText}>sidecoin.app/pro</Text>,
+            then paste the entitlement key from your payment receipt to unlock
+            PRO platforms on this device.
+          </Muted>
+
+          <View style={styles.proStatusRow}>
+            <Badge
+              label={`Plan: ${entitlements.plan}`}
+              tone={isProPlan(entitlements) ? "pro" : "neutral"}
+            />
+            <Muted style={styles.hint}>Status: {entitlements.status}</Muted>
+          </View>
+          {entitlements.expiresAt ? (
+            <Muted style={styles.hint}>Expires: {entitlements.expiresAt}</Muted>
+          ) : null}
+          {proKeyStored ? (
+            <Muted style={styles.hint}>
+              An entitlement key is stored on this device.
+            </Muted>
+          ) : null}
+
+          <TextInput
+            style={[styles.input, styles.proKeyInput]}
+            value={proKeyInput}
+            onChangeText={setProKeyInput}
+            placeholder={
+              proKeyStored ? "Replace entitlement key" : "Paste entitlement key"
+            }
+            placeholderTextColor={GRAY[600]}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          <View style={styles.proButtonRow}>
+            <Button
+              label="Activate PRO key"
+              variant="pro"
+              size="sm"
+              loading={proBusy}
+              onPress={() => void activateProKey()}
+            />
+            <Button
+              label="Refresh status"
+              variant="secondary"
+              size="sm"
+              disabled={proBusy}
+              onPress={() => void refreshProStatus()}
+            />
+            {proKeyStored ? (
+              <Button
+                label="Remove key"
+                variant="ghost"
+                size="sm"
+                disabled={proBusy}
+                onPress={() => void clearProKey()}
+              />
+            ) : null}
+          </View>
+
+          {proMessage ? (
+            <Muted style={styles.proMessage}>{proMessage}</Muted>
+          ) : null}
+        </Card>
+      ) : null}
+
       {/* Debug info hidden by default for a cleaner user-facing settings page. */}
       <DebugInfo usingDefault={usingDefault} />
 
@@ -852,6 +1018,26 @@ const styles = StyleSheet.create({
   identityText: {
     fontSize: 11,
     color: GRAY[300],
+  },
+  proStatusRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  proKeyInput: {
+    marginTop: 12,
+  },
+  proButtonRow: {
+    marginTop: 12,
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  proMessage: {
+    marginTop: 12,
+    fontSize: 12,
+    lineHeight: 18,
   },
   amberText: {
     marginTop: 4,

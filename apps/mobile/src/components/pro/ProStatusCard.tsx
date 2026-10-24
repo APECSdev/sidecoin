@@ -7,13 +7,14 @@
 //   • else -> white "Sidecoin Basic" + a link to the PRO screen.
 //
 // The `router-link to="/pro"` becomes an optional onUpgrade callback; the
-// entitlement decision itself is unchanged (isProPlan(CURRENT_ENTITLEMENTS)).
+// entitlement decision itself is unchanged (isProPlan), now fed by the live
+// useEntitlements() hook so a key activation re-renders this card.
 
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
 import { GRAY } from "../../theme/colors";
-import { CURRENT_ENTITLEMENTS, isProPlan } from "../../entitlements";
+import { isProPlan, useEntitlements } from "../../entitlements";
 import { Button } from "../ui";
 
 export interface ProStatusCardProps {
@@ -24,7 +25,7 @@ export interface ProStatusCardProps {
 export function ProStatusCard({
   onUpgrade,
 }: ProStatusCardProps): React.JSX.Element {
-  const pro = isProPlan(CURRENT_ENTITLEMENTS);
+  const pro = isProPlan(useEntitlements());
 
   return (
     <View style={styles.card}>

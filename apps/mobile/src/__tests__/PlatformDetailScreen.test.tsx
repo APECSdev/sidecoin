@@ -16,8 +16,13 @@
 // (e.g. "Payments" is both a tab label and an overview action title).
 
 import React from "react";
-import { fireEvent, render } from "@testing-library/react-native";
+import { act, fireEvent, render } from "@testing-library/react-native";
 import type { ReactTestRendererJSON } from "react-test-renderer";
+import {
+  beginProSession,
+  endProSession,
+  getAlphaBalance,
+} from "../alpha";
 
 const mockGoBack = jest.fn();
 let mockPlatformId = "thunder";
@@ -25,6 +30,9 @@ let mockPlatformId = "thunder";
 jest.mock("@react-navigation/native", () => ({
   useNavigation: () => ({ goBack: mockGoBack, navigate: jest.fn() }),
   useRoute: () => ({ params: { platformId: mockPlatformId } }),
+  // PlatformDetailScreen opens/closes its Alpha drain session from
+  // useFocusEffect; the gate tests drive the meter directly instead.
+  useFocusEffect: () => {},
 }));
 
 // Screen (components/ui.tsx) reads useSafeAreaInsets; give it zero insets so
@@ -141,6 +149,32 @@ beforeEach(() => {
   mockPlatformId = "thunder";
 });
 
+// Alpha meter control for the gate tests. Draining runs the real engine
+// (begin/end session over mocked time); refilling runs the real regen so no
+// later test inherits an empty tank from a drained one.
+function drainAlphaToZero(): void {
+  const realNow = Date.now();
+  let fakeNow = realNow;
+  const spy = jest.spyOn(Date, "now").mockImplementation(() => fakeNow);
+  act(() => beginProSession("platform:zside"));
+  fakeNow = realNow + 600 * 60_000; // 10 hours: any tank empties
+  act(() => endProSession());
+  spy.mockRestore();
+}
+
+function refillAlpha(): void {
+  const realNow = Date.now();
+  const spy = jest
+    .spyOn(Date, "now")
+    .mockImplementation(() => realNow + 26 * 60 * 60_000);
+  act(() => getAlphaBalance()); // idle regen settles to the cap
+  spy.mockRestore();
+}
+
+afterEach(() => {
+  refillAlpha();
+});
+
 describe("PlatformDetailScreen", () => {
   it("renders Thunder as a dedicated platform page", () => {
     const text = mountPlatform("thunder");
@@ -208,7 +242,17 @@ describe("PlatformDetailScreen", () => {
     expect(text).not.toContain("Display-only liquidity view");
   });
 
-  it("renders a clear PRO CTA for gated platforms", () => {
+  it("opens gated platforms to metered users while Alpha remains", () => {
+    // Fresh tank (100 Alpha): the free tier rides the meter instead of a
+    // hard lock, so zSide renders its real tabs, not the PRO gate.
+    const text = mountPlatform("zside");
+    expect(text).not.toContain("Unlock zSide with Sidecoin PRO");
+    expect(getAlphaBalance()).toBeGreaterThan(0);
+  });
+
+  it("renders a clear PRO CTA for gated platforms at 0 Alpha", () => {
+    drainAlphaToZero();
+    expect(getAlphaBalance()).toBe(0);
     const text = mountPlatform("zside");
     expect(text).toContain("Unlock zSide with Sidecoin PRO");
     expect(text).toContain("Historical analysis across platforms");
@@ -246,7 +290,9 @@ describe("PlatformDetailScreen", () => {
     expect(text).toContain("Elements Plus");
     expect(text).toContain("Platform · Slot TBD");
     expect(text).toContain("Coming Soon");
-    expect(text).toContain("Unlock Elements Plus with Sidecoin PRO");
+    // Metered free tier (fresh Alpha tank): the coming-soon page renders
+    // without the hard PRO gate.
+    expect(text).not.toContain("Unlock Elements Plus with Sidecoin PRO");
   });
 
   it("shows a not-found state for unknown platforms", () => {

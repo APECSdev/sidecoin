@@ -60,10 +60,16 @@ import {
   type BroadcastReceipt,
 } from "../api";
 import {
-  canAccessFeature,
   COIN_CONTROL_FEATURE_ID,
   isProPlan,
+  useEntitlements,
 } from "../entitlements";
+import {
+  canUseProFeature,
+  claimAlphaGrant,
+  spendAlpha,
+  useAlpha,
+} from "../alpha";
 import type { RootStackParamList } from "../navigation/types";
 import { ECASH, GRAY } from "../theme/colors";
 import { Alert, Badge, Button, Card } from "../components/ui";
@@ -134,7 +140,8 @@ export function SendScreen(): React.JSX.Element {
   const route = useRoute<RouteProp<RootStackParamList, "send">>();
   // F-Droid builds unlock everything (see entitlements.ts): coin control is
   // included, and no PRO badges or upgrade CTAs render.
-  const pro = isProPlan();
+  const entitlements = useEntitlements();
+  const pro = isProPlan(entitlements);
 
   const [selectedTab, setSelectedTab] = useState<SendTab>("simple");
   const [address, setAddress] = useState("");
@@ -173,9 +180,13 @@ export function SendScreen(): React.JSX.Element {
     };
   }, []);
 
+  // Alpha-metered access: free-tier users reach coin control while their
+  // balance is non-empty and are charged the declared cost per broadcast.
+  // useAlpha subscribes so the gate flips live when the tank empties.
+  const alphaState = useAlpha();
   const hasCoinControlAccess = useMemo(
-    () => canAccessFeature(COIN_CONTROL_FEATURE_ID),
-    [],
+    () => canUseProFeature(COIN_CONTROL_FEATURE_ID, entitlements),
+    [entitlements, alphaState],
   );
 
   const previewSelectedTotal = useMemo(
@@ -297,6 +308,16 @@ export function SendScreen(): React.JSX.Element {
         });
       } catch (e) {
         console.error("[SendScreen] Failed to record history entry:", e);
+      }
+      // Alpha ledger (metered users only): charge the declared coin-control
+      // cost when the broadcast went through the PRO coin-control path, and
+      // record the one-time first-broadcast grant. Alpha bookkeeping must
+      // never mask a successful broadcast, so it is logged, not thrown.
+      try {
+        if (hasCoinControlAccess) spendAlpha("wallet:coin-control:send");
+        claimAlphaGrant("grant:first-broadcast");
+      } catch (e) {
+        console.error("[SendScreen] Alpha ledger update failed:", e);
       }
     } catch (e) {
       if (e instanceof ApiError) {

@@ -54,7 +54,12 @@ import {
   isDemoModeEnabled,
   subscribeDemoMode,
 } from "../demo";
-import { canAccessPlatform, isProPlatform } from "../entitlements";
+import {
+  isProPlatform,
+  useEntitlements,
+} from "../entitlements";
+import { canUseProPlatform, claimAlphaGrant, useAlpha } from "../alpha";
+import { AlphaMeter } from "../components/AlphaMeter";
 import { getPlatformById } from "../data/platforms";
 import { CoinNewsPreview } from "../components/bitnames/CoinNewsPreview";
 import { ECASH, GRAY } from "../theme/colors";
@@ -241,7 +246,11 @@ export function DashboardScreen(): React.JSX.Element {
       // betanet). Reads from the public Esplora endpoint so balances work
       // even while the sidecoin.app/v1 adapter is offline. An unseen address
       // is not an error: it comes back totalSats 0n with seen=false.
-      setL1Balance(await getL1Balance(address, wallet.network));
+      const balance = await getL1Balance(address, wallet.network);
+      setL1Balance(balance);
+      // Alpha earn-back: a confirmed on-chain L1 balance is verifiable
+      // evidence of a first deposit (one-time grant, see alpha.ts).
+      if (balance.totalSats > 0n) claimAlphaGrant("grant:first-l1-deposit");
     } catch (e) {
       // Keep the real error for developers; show users a friendly message.
       console.error("[DashboardScreen] Failed to load L1 balance:", e);
@@ -297,8 +306,15 @@ export function DashboardScreen(): React.JSX.Element {
     }, [loadL1Balance]),
   );
 
+  // Live entitlement state: activating/removing a PRO key in Settings
+  // re-locks/unlocks platform cards on this screen without a restart.
+  const entitlements = useEntitlements();
+  // Subscribe to the Alpha meter so PRO cards re-lock the moment a metered
+  // user's tank hits 0, without leaving the screen.
+  useAlpha();
+
   function isDashboardPlatformLocked(platformId: string): boolean {
-    return isProPlatform(platformId) && !canAccessPlatform(platformId);
+    return isProPlatform(platformId) && !canUseProPlatform(platformId, entitlements);
   }
 
   function platformTagline(platformId: string): string {
@@ -331,7 +347,10 @@ export function DashboardScreen(): React.JSX.Element {
       contentContainerStyle={[styles.content, { paddingTop: insets.top + 20 }]}
     >
       <View style={styles.heading}>
-        <Eyebrow style={styles.eyebrow}>Drivechains Financial Hub</Eyebrow>
+        <View style={styles.headingRow}>
+          <Eyebrow style={styles.eyebrow}>Drivechains Financial Hub</Eyebrow>
+          <AlphaMeter style={styles.headingMeter} />
+        </View>
         <Title style={styles.title}>Dashboard</Title>
       </View>
 
@@ -609,6 +628,14 @@ const styles = StyleSheet.create({
   },
   heading: {
     marginBottom: 8,
+  },
+  headingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  headingMeter: {
+    marginRight: 0,
   },
   eyebrow: {
     color: ECASH[500],

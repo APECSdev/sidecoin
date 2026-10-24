@@ -170,6 +170,63 @@ SafeAreaView (`dist/runtime/components.js:49`), NOT RN core's deprecated
 export, so the dev-only SafeAreaView deprecation badge does not return
 (0.2.1 registered core's; the `2eb9a668` message records that trigger).
 
+**Entitlements engine is live client-side as of 26.10.23**
+(`src/entitlements.ts`). `CURRENT_ENTITLEMENTS` is now the mutable snapshot:
+`refreshEntitlements()` queries `GET /v1/me/entitlements` (Bearer
+entitlement key, server route still undeployed — contract in
+`infra/entitlements/HANDOFF-sidecoin-api.md`) on launch (App.tsx), on key
+activation/removal/refresh (Settings → Sidecoin PRO, appstore/dev only via
+`IS_FDROID_BUILD`), and when a locked platform screen mounts. 200 applies +
+caches (AsyncStorage `sidecoin.entitlementsCache.v1`), 401 wipes key + cache
+and re-locks, anything else falls back cache → Basic. Local expiry
+collapses the feature list to `BASIC_FEATURES` — an inactive paid plan is
+the free tier. All gates (`useEntitlements()` hook + subscription bus)
+re-render live. `entitlementsApi.test.ts` (16 tests) covers every response
+class; `entitlementsFdroid.test.ts` pins the F-Droid all-unlocked
+short-circuit (which never touches the network). **The app never links to
+the checkout**: `sidecoin.app/pro` is plain-text mention only (store
+policy); activation is key-paste. A shared in-memory AsyncStorage manual
+mock lives at `__mocks__/@react-native-async-storage/async-storage.js`
+because entitlements imports storage at module top. Web wallet
+(`apps/wallet`) still uses the hardcoded constant — port tracked as
+follow-up.
+
+**The free tier is Alpha-metered, not hard-locked (26.10.24).**
+`src/alpha.ts` is a Duolingo-Energy-style meter: basic-plan users
+(appstore/dev flavors only) spend **Alpha** to use PRO features instead
+of hitting a ProGate outright — cap 100, drain 100/hour while a PRO
+screen is foregrounded (`useFocusEffect` → `beginProSession` in
+`PlatformDetailScreen`), regen 8/hour while idle (full refill ~12.5 h),
+plus an explicit per-action cost table (`ALPHA_ACTION_COSTS`) charged on
+use (`spendAlpha` after a coin-control broadcast) and one-time,
+daily-capped earn-back grants (`claimAlphaGrant`) tied to
+on-chain-observable events (first L1 deposit, first broadcast, first
+platform deposit — the caller verifies, the engine records). The
+combined gates `canUseProFeature/Platform` replace hard-lock calls at UI
+sites: plan-unlimited OR (metered AND `floor(balance) > 0`) — the floor
+matches the displayed integer, so a sub-1 regen residue gates as "0"
+(regression-pinned). Paid plans and the F-Droid flavor are unmetered and
+see ZERO meter UI (`components/AlphaMeter.tsx` renders null; pill rides
+the stack header next to `HeaderAvatar` + the dashboard heading,
+tap-to-explain sheet with regen ETA + grant list). In-flight actions are
+never hard-blocked: spends floor at 0, only starting at 0 is refused.
+Low/critical banners at 25/10 (`alphaBalanceWarning`) render on metered
+PRO screens. Client-side only for now (gameable; accepted — testnet
+coins are worthless and no purchase path exists yet); the server-side
+ledger is a pre-mainnet hard requirement specified in
+`infra/entitlements/HANDOFF-sidecoin-api.md` §11. The word "Alpha" was
+freed for the meter by renaming the top tier **Alpha Circle → Diamond
+Circle** (`Plan` `"alpha"` → `"diamond"` in BOTH wallets, pricing/FAQ/
+founders copy, leaderboard badge). Web port of the meter (like the
+entitlements engine) is a follow-up. Tests: `alpha.test.ts` (17) plus
+metered-model updates in the Send/Dashboard/PlatformDetail suites —
+their helpers drain/refill through the REAL engine over mocked
+`Date.now`, and each suite's `afterEach` refills so no test inherits an
+empty tank. `AlphaMeter.test.tsx` (6 tests) covers the pill: the
+`ALPHA_TICK_MS`/`tickAlpha()` live countdown (see gotcha 16), explainer
+sheet, and the unlimited-plan null render. `ProBenefitsScreen`'s first
+highlight card ("Sidecoin Alpha, unlimited") sells the meter removal.
+
 ### F-Droid release review checklist (run before every recipe version bump)
 
 These gates were added after findings from MR 50457 reviews (linsui + mezinster).
@@ -257,7 +314,7 @@ pushing a recipe update.
 
 ```
 cd apps/mobile
-npx tsc --noEmit && npx jest      # 230 tests, 17 suites
+npx tsc --noEmit && npx jest      # 259 tests, 21 suites
 cd android && ./gradlew assembleFdroidRelease
 adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-release.apk
 ```
@@ -268,9 +325,12 @@ adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-relea
   after dropping quick-crypto/nitro/OpenSSL and NativeWind; earlier: 35 MB in
   26.10.1, ~148 MB before `reactNativeArchitectures` limited it to
   arm64-v8a + armeabi-v7a).
-- Flavors `fdroid` / `playstore`. Sentry is `optionalDependencies`-scoped and
+- Flavors `fdroid` / `appstore` (renamed from `playstore` in 26.10.23 — the
+  same build targets Apple App Store and Google Play, so the name stays
+  store-neutral; task names became `assembleAppstoreDebug` etc.). Sentry is
+  `optionalDependencies`-scoped and
   `metro.config.js` resolves it to `src/lib/sentry-noop.ts` for every flavor
-  EXCEPT `playstore`, so `fdroid` builds have no crash reporting (intentional,
+  EXCEPT `appstore`, so `fdroid` builds have no crash reporting (intentional,
   and required by the F-Droid inclusion policy). The flavor is read from
   `process.argv` because Gradle's per-variant
   `createBundle<Flavor><BuildType>JsAndAssets` task name is the only place RN
@@ -335,11 +395,32 @@ adb -s <serial> install -r app/build/outputs/apk/fdroid/release/app-fdroid-relea
     patched by an explicit keep in `android/app/proguard-rules.pro`:
     `-keep class com.reactnativecommunity.webview.** { *; }`. If a WebView
     screen ever crashes **in release only**, check that keep first.
-14. **`onStateChange` belongs to `NavigationContainer`, not a navigator.**
+14. **The appstore flavor crashed at startup until 26.10.23 with
+    `IllegalArgumentException: DSN is required`.** `appstoreImplementation
+    'io.sentry:sentry-android:7.14.0'` ships Sentry's `SentryInitProvider`
+    ContentProvider, which auto-initializes at process start and throws when
+    the manifest carries no `io.sentry.dsn` meta-data. Fixed by
+    `<meta-data android:name="io.sentry.auto-init" android:value="false" />`
+    in the MAIN `AndroidManifest.xml` (inert on fdroid — no Sentry classes):
+    the JS layer owns initialization via `initSentry()` (`src/lib/sentry.ts`)
+    with the shared placeholder DSN until GlitchTip lands
+    (`infra/glitchtip/`). The crash only ever affected the appstore flavor;
+    it surfaced on first appstore on-device run because every prior device
+    install was fdroid.
+15. **`onStateChange` belongs to `NavigationContainer`, not a navigator.**
     The root FAB lives *outside* `Stack.Navigator` and needs the focused
     route, so the container ref is shared through
     `src/navigation/ref.ts` (`createNavigationContainerRef`); `RootNavigator`
     subscribes via `navigationRef.addListener("state", …)`.
+16. **Reads of the Alpha engine never notify subscribers.** `getAlphaState`/
+    `getAlphaBalance` settle lazily but deliberately do NOT emit (they run
+    during renders — emitting would setState mid-render). Any UI that must
+    change over time without a user action must drive `tickAlpha()`
+    (settle + persist + emit) on an interval — `AlphaMeter` does this at
+    `ALPHA_TICK_MS` (20 s). A meter that only reads freezes at its mount
+    value until a blur/navigation forces a settle: found on-device, the
+    header showed 98 while the engine had already drained to 92. Regression-
+    pinned by `AlphaMeter.test.tsx`'s fake-timer countdown test.
 
 ## Commands
 
@@ -361,7 +442,7 @@ must be green before commit.
 
 **Test baselines** (`pnpm --filter <pkg> test`; verify before citing in a PR):
 shared 254 (+1 skip) · wallet 382 · web 118 · explorer 43 · desktop 76 ·
-smarthub 5 · mobile 236 (19 suites) · api-client 12 · observability 17.
+smarthub 5 · mobile 289 (23 suites) · api-client 12 · observability 17.
 
 ## CI (`.github/workflows/`)
 

@@ -8,7 +8,7 @@
 // - Re-lock features when backend returns inactive/expired.
 // - Keep Basic defaults local so the wallet remains usable offline.
 
-export type Plan = "basic" | "pro" | "founder" | "alpha";
+export type Plan = "basic" | "pro" | "founder" | "diamond";
 export type EntitlementStatus = "active" | "inactive" | "grace" | "unknown";
 
 export interface EntitlementState {
@@ -78,7 +78,7 @@ export function platformFeatureId(platformId: string): string {
 }
 
 export function isProPlan(entitlements = CURRENT_ENTITLEMENTS): boolean {
-  return ["pro", "founder", "alpha"].includes(entitlements.plan)
+  return ["pro", "founder", "diamond"].includes(entitlements.plan)
     && ["active", "grace"].includes(entitlements.status);
 }
 

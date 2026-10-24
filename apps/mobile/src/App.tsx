@@ -9,6 +9,9 @@
 //   3. NavigationContainer — React Navigation context
 //   4. QueryClientProvider — TanStack Query for async state
 //
+// It also refreshes entitlements from the adapter once per launch
+// (no-op on F-Droid, offline, or without a stored entitlement key).
+//
 // The navigator itself (bottom tabs + native stack) lives in
 // ./navigation/RootNavigator.tsx.
 //
@@ -17,7 +20,7 @@
 // idiomatic bottom tab bar + native stack instead; that shell is the
 // equivalent surface.
 
-import React from "react";
+import React, { useEffect } from "react";
 import { StatusBar } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -28,6 +31,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // Sentry — conditional init (no-ops on F-Droid builds)
 // ──────────────────────────────────────────────────────
 import { initSentry } from "./lib/sentry";
+
+// ──────────────────────────────────────────────────────
+// Entitlements — live plan state (Basic until a key activates)
+// ──────────────────────────────────────────────────────
+import { refreshEntitlements } from "./entitlements";
 
 // ──────────────────────────────────────────────────────
 // Navigation shell
@@ -60,6 +68,12 @@ const queryClient = new QueryClient({
 });
 
 function App(): React.JSX.Element {
+  // Query /v1/me/entitlements on launch. With no stored key this short-
+  // circuits to the local Basic default; offline it falls back to the cache.
+  useEffect(() => {
+    void refreshEntitlements();
+  }, []);
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

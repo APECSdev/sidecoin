@@ -43,13 +43,13 @@ describe("ProBenefitsView.vue", () => {
     });
 
     expect(wrapper.text()).toContain("Founder eligibility");
-    expect(wrapper.text()).toContain("Leaderboard and Alpha Circle require Yearly PRO");
+    expect(wrapper.text()).toContain("Leaderboard and Diamond Circle require Yearly PRO");
     expect(wrapper.text()).toContain(
-      "Monthly subscriptions do not qualify for Founder Leaderboard placement or Alpha Circle eligibility.",
+      "Monthly subscriptions do not qualify for Founder Leaderboard placement or Diamond Circle eligibility.",
     );
     expect(wrapper.text()).toContain("Yearly PRO");
     expect(wrapper.text()).toContain(
-      "Unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Alpha Circle eligibility.",
+      "Unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Diamond Circle eligibility.",
     );
   });
 });

@@ -8,6 +8,7 @@
 
 import React from "react";
 import {
+  act,
   fireEvent,
   render,
   screen,
@@ -15,6 +16,7 @@ import {
 } from "@testing-library/react-native";
 
 import { SendScreen } from "../screens/SendScreen";
+import { beginProSession, endProSession, getAlphaBalance } from "../alpha";
 
 // ---------------------------------------------------------------------------
 // Module mocks (declared before importing the component under test)
@@ -167,6 +169,32 @@ function pressBroadcast(): void {
   fireEvent.press(screen.getByText("Broadcast"));
 }
 
+// Alpha meter control for the gating tests. Draining runs the real engine
+// (begin/end session over mocked time); refilling runs the real regen so no
+// later test inherits an empty tank from a drained one.
+function drainAlphaToZero(): void {
+  const realNow = Date.now();
+  let fakeNow = realNow;
+  const spy = jest.spyOn(Date, "now").mockImplementation(() => fakeNow);
+  act(() => beginProSession("wallet:coin-control"));
+  fakeNow = realNow + 600 * 60_000; // 10 hours: any tank empties
+  act(() => endProSession());
+  spy.mockRestore();
+}
+
+function refillAlpha(): void {
+  const realNow = Date.now();
+  const spy = jest
+    .spyOn(Date, "now")
+    .mockImplementation(() => realNow + 26 * 60 * 60_000);
+  act(() => getAlphaBalance()); // idle regen settles to the cap
+  spy.mockRestore();
+}
+
+afterEach(() => {
+  refillAlpha();
+});
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockLoadWallet.mockResolvedValue({
@@ -279,7 +307,18 @@ describe("SendScreen", () => {
     expect(screen.getByText("Advanced send tools")).toBeTruthy();
     expect(screen.getByText("Coin Control")).toBeTruthy();
     expect(screen.getByText("Manual UTXO selection preview")).toBeTruthy();
-    expect(screen.getByText("Sidecoin PRO required")).toBeTruthy();
+  });
+
+  it("should open Coin Control to metered users while Alpha remains", () => {
+    // Fresh tank (100 Alpha): the free tier rides the meter, so the preview
+    // is live and no hard-lock copy renders.
+    render(<SendScreen />);
+    pressTab("advanced");
+
+    expect(getAlphaBalance()).toBeGreaterThan(0);
+    expect(screen.getByText("Coin Control")).toBeTruthy();
+    expect(screen.queryByText("Sidecoin PRO required")).toBeNull();
+    expect(screen.queryByText("Unlock advanced Coin Control")).toBeNull();
   });
 
   it("should render the richer Coin Control preview rows", () => {
@@ -293,10 +332,13 @@ describe("SendScreen", () => {
     expect(screen.getByText("Small coin")).toBeTruthy();
   });
 
-  it("should show Coin Control as locked for the Basic entitlement state", () => {
+  it("should lock Coin Control for the Basic entitlement state at 0 Alpha", () => {
+    drainAlphaToZero();
     render(<SendScreen />);
     pressTab("advanced");
 
+    // Sub-1 regen residue displays as "0" and gates as "0" (floored).
+    expect(Math.floor(getAlphaBalance())).toBe(0);
     expect(screen.getByText("Locked")).toBeTruthy();
     expect(screen.getByText("Unlock advanced Coin Control")).toBeTruthy();
     expect(screen.getByText("Upgrade to PRO")).toBeTruthy();

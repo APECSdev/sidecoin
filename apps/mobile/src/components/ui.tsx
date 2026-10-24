@@ -345,6 +345,7 @@ export interface AlertProps {
   title?: string;
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }
 
 const ALERT_TONE: Record<AlertTone, { bg: string; border: string; fg: string }> = {
@@ -359,10 +360,12 @@ export function Alert({
   title,
   children,
   style,
+  testID,
 }: AlertProps): React.JSX.Element {
   const colors = ALERT_TONE[tone];
   return (
     <View
+      testID={testID}
       style={[
         styles.alert,
         { backgroundColor: colors.bg, borderColor: colors.border },

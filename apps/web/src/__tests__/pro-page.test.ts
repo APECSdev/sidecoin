@@ -67,22 +67,22 @@ describe("Pro Page — Pricing Integrity", () => {
 
 describe("Pro Page — Founder Eligibility", () => {
   const monthlyEligibility =
-    "Monthly PRO unlocks Sidecoin PRO wallet features, but does not qualify for Founder Leaderboard placement or Alpha Circle eligibility.";
+    "Monthly PRO unlocks Sidecoin PRO wallet features, but does not qualify for Founder Leaderboard placement or Diamond Circle eligibility.";
   const yearlyEligibility =
-    "Yearly PRO unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Alpha Circle eligibility.";
+    "Yearly PRO unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Diamond Circle eligibility.";
 
   it("should clarify that monthly PRO does not qualify for Founder Leaderboard", () => {
     expect(monthlyEligibility).toContain("Monthly PRO");
     expect(monthlyEligibility).toContain("does not qualify");
     expect(monthlyEligibility).toContain("Founder Leaderboard");
-    expect(monthlyEligibility).toContain("Alpha Circle");
+    expect(monthlyEligibility).toContain("Diamond Circle");
   });
 
   it("should clarify that yearly PRO qualifies for Founder Leaderboard", () => {
     expect(yearlyEligibility).toContain("Yearly PRO");
     expect(yearlyEligibility).toContain("qualifies");
     expect(yearlyEligibility).toContain("Founder Leaderboard");
-    expect(yearlyEligibility).toContain("Alpha Circle");
+    expect(yearlyEligibility).toContain("Diamond Circle");
   });
 
   it("should keep monthly as PRO features only and yearly as Founder eligible", () => {
@@ -223,7 +223,7 @@ describe("Pro Page — FAQ Contracts", () => {
     "What is Sidecoin Pro?",
     "What is a Founding Member?",
     "Does Monthly PRO qualify for the Founder Leaderboard?",
-    "What is Alpha Circle?",
+    "What is Diamond Circle?",
     "How do crypto payments work?",
     "When does Founding Member pricing end?",
     "Will prices increase after launch?",
@@ -246,8 +246,8 @@ describe("Pro Page — FAQ Contracts", () => {
     expect(expectedQuestions.some((q) => q.includes("Founder Leaderboard"))).toBe(true);
   });
 
-  it("should include a question about Alpha Circle", () => {
-    expect(expectedQuestions.some((q) => q.includes("Alpha Circle"))).toBe(true);
+  it("should include a question about Diamond Circle", () => {
+    expect(expectedQuestions.some((q) => q.includes("Diamond Circle"))).toBe(true);
   });
 
   it("should include a question about crypto payments", () => {
@@ -262,11 +262,11 @@ describe("Pro Page — FAQ Contracts", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Alpha Circle Logic
+// Diamond Circle Logic
 // ---------------------------------------------------------------------------
 
-describe("Pro Page — Alpha Circle", () => {
-  it("should define Alpha Circle as top 10%", () => {
+describe("Pro Page — Diamond Circle", () => {
+  it("should define Diamond Circle as top 10%", () => {
     const topPercent = 10;
     expect(topPercent).toBe(10);
   });

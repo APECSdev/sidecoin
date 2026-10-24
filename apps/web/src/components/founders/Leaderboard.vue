@@ -3,7 +3,7 @@
   Leaderboard component for the /founders page.
 
   Displays a cursor-paginated, scrollable list of Founding Members
-  with Alpha Circle cut-line visualization.
+  with Diamond Circle cut-line visualization.
 
   Data source: GET /v1/founders?limit=50&sort=asc|desc&cursor=<lastFounderNumber>
   Highlight:   GET /v1/founders/by-key/:pubkey  ("find my position")
@@ -11,7 +11,7 @@
   Features:
     - Sort toggle: oldest first (default) / newest first — TRUE server-side
       keyset sort (re-queries page 1), not just a reorder of loaded rows
-    - Alpha Circle zone highlight, driven by the server's aboveCutLine flag
+    - Diamond Circle zone highlight, driven by the server's aboveCutLine flag
     - Visual cut-line separator at the live 20% cut line
     - Cursor "Load More" pagination (50 per page)
     - "Find my position" via the Nostr/identity public key
@@ -253,7 +253,7 @@ function nostrUrl(identity: string): string {
 }
 
 /** Row sits in the Alpha zone (server-computed: live 20% OR locked is_alpha). */
-function isAlphaCircle(founder: Founder): boolean {
+function isDiamondCircle(founder: Founder): boolean {
   return founder.aboveCutLine;
 }
 
@@ -363,7 +363,7 @@ onMounted(() => {
             <p class="text-xs text-gray-400">
               {{ displayName(myResult.founder) }}
               <span v-if="myResult.founder.aboveCutLine" class="text-amber-400">
-                · In the Alpha Circle
+                · In the Diamond Circle
               </span>
               <span v-else class="text-gray-500">
                 · {{ (cutLineNum && myResult.founder.founderNumber - cutLineNum).toLocaleString() }}
@@ -474,7 +474,7 @@ onMounted(() => {
           <div
             :class="[
               'grid grid-cols-1 sm:grid-cols-12 gap-2 sm:gap-4 px-6 py-4 transition-colors',
-              isAlphaCircle(founder)
+              isDiamondCircle(founder)
                 ? 'bg-amber-950/10 hover:bg-amber-950/20 border-l-2 border-l-amber-500/40'
                 : 'bg-gray-950 hover:bg-gray-900/40 border-l-2 border-l-transparent',
               idx > 0 ? 'border-t border-gray-800/50' : '',
@@ -486,7 +486,7 @@ onMounted(() => {
               <span
                 :class="[
                   'font-mono text-lg font-bold',
-                  isAlphaCircle(founder) ? 'text-amber-400' : 'text-gray-300',
+                  isDiamondCircle(founder) ? 'text-amber-400' : 'text-gray-300',
                 ]"
               >
                 #{{ founder.founderNumber.toLocaleString() }}
@@ -505,7 +505,7 @@ onMounted(() => {
               <div
                 :class="[
                   'h-8 w-8 flex-shrink-0 overflow-hidden rounded-full',
-                  isAlphaCircle(founder)
+                  isDiamondCircle(founder)
                     ? 'border border-amber-700/50 bg-amber-950/40'
                     : 'border border-gray-700 bg-gray-800',
                 ]"
@@ -546,13 +546,13 @@ onMounted(() => {
             <!-- Status -->
             <div class="sm:col-span-2 flex items-center justify-end">
               <span
-                v-if="isAlphaCircle(founder)"
+                v-if="isDiamondCircle(founder)"
                 class="inline-flex items-center gap-1 rounded-full border border-amber-700/30 bg-amber-950/20 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-amber-400"
               >
                 <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                 </svg>
-                Alpha
+                Diamond
               </span>
               <span
                 v-else
@@ -563,7 +563,7 @@ onMounted(() => {
             </div>
           </div>
 
-          <!-- ─── Alpha Circle Cut Line Separator ──────────── -->
+          <!-- ─── Diamond Circle Cut Line Separator ──────────── -->
           <div
             v-if="idx === cutLineIndex()"
             class="relative flex items-center gap-4 bg-gray-950 px-6 py-3 border-t border-b border-dashed border-amber-600/40"
@@ -574,7 +574,7 @@ onMounted(() => {
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
               </svg>
               <span class="text-xs font-bold uppercase tracking-widest text-amber-400">
-                Alpha Circle Cut Line — #{{ cutLineNum.toLocaleString() }}
+                Diamond Circle Cut Line — #{{ cutLineNum.toLocaleString() }}
               </span>
               <svg class="h-3.5 w-3.5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />

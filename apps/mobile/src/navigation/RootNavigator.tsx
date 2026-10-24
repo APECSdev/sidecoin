@@ -48,6 +48,7 @@ import type { RootStackParamList, TabParamList } from "./types";
 import { SC, ECASH, GRAY } from "../theme/colors";
 import { hasWallet } from "../keystore";
 import { FabMenu } from "../components/FabMenu";
+import { AlphaMeter } from "../components/AlphaMeter";
 import { HeaderAvatar } from "../components/HeaderAvatar";
 import { navigationRef } from "./ref";
 
@@ -251,7 +252,13 @@ export function RootNavigator(): React.JSX.Element {
           // Every stack screen carries the Profile avatar in the top right.
           // The four tab screens set headerShown:false and reach Profile via
           // the FAB instead, so this header applies only where a header exists.
-          headerRight: () => <HeaderAvatar />,
+          // The Alpha meter rides the same header row (metered users only).
+          headerRight: () => (
+            <View style={styles.headerRight}>
+              <AlphaMeter />
+              <HeaderAvatar />
+            </View>
+          ),
         }}
         initialRouteName={walletPresent ? "main" : "onboarding"}
       >
@@ -338,6 +345,10 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "700",
     color: SC.primary,
+  },
+  headerRight: {
+    flexDirection: "row",
+    alignItems: "center",
   },
   header: {
     backgroundColor: SC.bg,

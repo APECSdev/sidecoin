@@ -1,11 +1,11 @@
 ---
-// apps/web/src/components/pro/AlphaCircle.astro
+// apps/web/src/components/pro/DiamondCircle.astro
 //
-// Alpha Circle section — explains the top 10% tier
+// Diamond Circle section — explains the top 10% tier
 // and shows dynamic cut-line messaging.
 
 const benefits = [
-  "Upgraded Founder badge (Alpha variant)",
+  "Upgraded Founder badge (Diamond variant)",
   "Exclusive access to Nightly builds",
   "Earliest access to new features and sidechains",
   "Access to a private, wallet-gated discussion relay",
@@ -28,19 +28,19 @@ const currentCutLine = "XXX";
 
       <h2 class="text-3xl font-bold md:text-4xl">
         <span class="bg-gradient-to-r from-amber-300 to-orange-400 bg-clip-text text-transparent">
-          Alpha Circle
+          Diamond Circle
         </span>
       </h2>
 
       <p class="mx-auto mt-4 max-w-2xl text-gray-400 leading-relaxed">
         The top 10% of Founding Members at the time of Drivechain activation
-        (August 21, 2026) will be inducted into the Alpha Circle —
+        (August 21, 2026) will be inducted into the Diamond Circle —
         an exclusive group of Sidecoin's earliest and most committed supporters.
       </p>
 
       <p class="mx-auto mt-4 max-w-2xl rounded-xl border border-amber-500/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100">
-        Alpha Circle eligibility requires Yearly PRO. Monthly PRO unlocks
-        Sidecoin PRO wallet features, but does not qualify for Alpha Circle or
+        Diamond Circle eligibility requires Yearly PRO. Monthly PRO unlocks
+        Sidecoin PRO wallet features, but does not qualify for Diamond Circle or
         Founder Leaderboard placement.
       </p>
     </div>
@@ -62,7 +62,7 @@ const currentCutLine = "XXX";
       <p class="text-xs uppercase tracking-widest text-gray-500">
         Current Cut Line
       </p>
-      <p class="font-mono text-3xl font-bold text-amber-400" id="alpha-cut-line">
+      <p class="font-mono text-3xl font-bold text-amber-400" id="diamond-cut-line">
         #{currentCutLine}
       </p>
       <p class="text-xs text-gray-500">

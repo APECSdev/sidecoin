@@ -4,22 +4,23 @@
 //
 // All copy, the five benefit lists, and the four PRO highlights are carried
 // over verbatim. Two platform substitutions:
-//   • `<a href="https://sidecoin.app/pro">` → Linking.openURL (same URL).
+//   • `<a href="https://sidecoin.app/pro">` → plain-text MENTION of
+//     sidecoin.app/pro, no Linking: appstore builds must not steer users to
+//     an external purchase flow (Apple/Google store policy), so the upgrade
+//     CTA is informational copy pointing at Settings → Sidecoin PRO.
 //   • `<router-link to="/platforms">` → navigation.navigate("main") is not
 //     reachable from a stack screen as a tab jump, so the primary stack
 //     navigator's parent tab list is targeted via getParent(). The Vue target
 //     was the /platforms route, which is the "platforms" tab here.
 
 import React from "react";
-import { Linking, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ECASH, GRAY } from "../theme/colors";
 import type { RootStackParamList } from "../navigation/types";
 import { Body, Button, Card, Eyebrow, Muted } from "../components/ui";
-
-const UPGRADE_URL = "https://sidecoin.app/pro";
 
 const platformBenefits = [
   "Unlock zSide, BitAssets, Photon, Truthcoin, CoinShift, and RISCy",
@@ -44,6 +45,13 @@ const basicIncludes = [
 ];
 
 const proHighlights = [
+  {
+    title: "Sidecoin Alpha, unlimited",
+    body:
+      "The free tier runs PRO features on the Alpha meter: it drains while " +
+      "you use them and replenishes slowly. PRO never drains — no meter, " +
+      "no waiting.",
+  },
   {
     title: "All Platforms",
     body:
@@ -70,22 +78,18 @@ const founderEligibility = [
   {
     title: "Monthly PRO",
     body:
-      "Unlocks Sidecoin PRO wallet features. Monthly subscriptions do not qualify for Founder Leaderboard placement or Alpha Circle eligibility.",
+      "Unlocks Sidecoin PRO wallet features. Monthly subscriptions do not qualify for Founder Leaderboard placement or Diamond Circle eligibility.",
   },
   {
     title: "Yearly PRO",
     body:
-      "Unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Alpha Circle eligibility.",
+      "Unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Diamond Circle eligibility.",
   },
 ];
 
 export function ProBenefitsScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-
-  function openUpgrade(): void {
-    void Linking.openURL(UPGRADE_URL);
-  }
 
   function openPlatforms(): void {
     // "/platforms" is the "platforms" tab inside the tab shell ("main").
@@ -97,7 +101,7 @@ export function ProBenefitsScreen(): React.JSX.Element {
       <Card tone="pro" style={styles.hero}>
         <Eyebrow style={styles.heroEyebrow}>Sidecoin PRO</Eyebrow>
         <Text style={styles.heroTitle}>
-          Unlock the full Drivechains Financial Hub
+          Unlock the UNLIMITED Drivechains Financial Hub
         </Text>
         <Body style={styles.heroBody}>
           Basic gives you L1, Thunder, BitNames, Swap, and Coin Split tools.
@@ -106,7 +110,10 @@ export function ProBenefitsScreen(): React.JSX.Element {
         </Body>
 
         <View style={styles.heroCtas}>
-          <Button label="Upgrade to PRO" variant="pro" onPress={openUpgrade} />
+          <Muted style={styles.heroMention}>
+            Upgrade at sidecoin.app/pro, then activate your entitlement key
+            under Settings → Sidecoin PRO.
+          </Muted>
           <Button
             label="Explore platforms"
             variant="secondary"
@@ -127,12 +134,12 @@ export function ProBenefitsScreen(): React.JSX.Element {
       <Card tone="pro" style={styles.founder}>
         <Eyebrow style={styles.amberEyebrow}>Founder eligibility</Eyebrow>
         <Text style={styles.founderTitle}>
-          Leaderboard and Alpha Circle require Yearly PRO
+          Leaderboard and Diamond Circle require Yearly PRO
         </Text>
         <Body style={styles.founderBody}>
           Monthly PRO unlocks Sidecoin PRO wallet features. Yearly PRO unlocks
           those features and qualifies for Founder Leaderboard placement and
-          Alpha Circle eligibility.
+          Diamond Circle eligibility.
         </Body>
 
         <View style={styles.founderGrid}>
@@ -213,6 +220,10 @@ const styles = StyleSheet.create({
   heroCtas: {
     marginTop: 28,
     gap: 12,
+  },
+  heroMention: {
+    fontSize: 13,
+    lineHeight: 20,
   },
   highlights: {
     gap: 16,

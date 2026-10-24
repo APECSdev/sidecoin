@@ -7,9 +7,10 @@
 // Mode, the bigint formatSats helper, and the L1 wallet balance card.
 
 import React from "react";
-import { render, screen, waitFor } from "@testing-library/react-native";
+import { act, render, screen, waitFor } from "@testing-library/react-native";
 
 import { DashboardScreen } from "../screens/DashboardScreen";
+import { beginProSession, endProSession, getAlphaBalance } from "../alpha";
 
 // ---------------------------------------------------------------------------
 // Navigation — the dashboard navigates on its links and re-fetches the L1
@@ -162,6 +163,32 @@ function chainBalance(totalSats: bigint, seen: boolean) {
   };
 }
 
+// Alpha meter control for the gating tests. Draining runs the real engine
+// (begin/end session over mocked time); refilling runs the real regen so no
+// later test inherits an empty tank from a drained one.
+function drainAlphaToZero(): void {
+  const realNow = Date.now();
+  let fakeNow = realNow;
+  const spy = jest.spyOn(Date, "now").mockImplementation(() => fakeNow);
+  act(() => beginProSession("platform:zside"));
+  fakeNow = realNow + 600 * 60_000; // 10 hours: any tank empties
+  act(() => endProSession());
+  spy.mockRestore();
+}
+
+function refillAlpha(): void {
+  const realNow = Date.now();
+  const spy = jest
+    .spyOn(Date, "now")
+    .mockImplementation(() => realNow + 26 * 60 * 60_000);
+  act(() => getAlphaBalance()); // idle regen settles to the cap
+  spy.mockRestore();
+}
+
+afterEach(() => {
+  refillAlpha();
+});
+
 beforeEach(async () => {
   jest.clearAllMocks();
   await AsyncStorage.clear(); // ensure the no-wallet (setup-required) L1 state
@@ -217,6 +244,8 @@ describe("DashboardScreen", () => {
     // exceed when the runner is under parallel load (observed as a flake in
     // CI while an unrelated host build was saturating the machine). 10 s is
     // still fast for a passing run and gives a generous margin under load.
+    // The TEST timeout must clear the waitFor timeout (default 5 s does
+    // not), so this test carries an explicit 15 s budget.
     await waitFor(
       () => {
         expect(mockGetSidechains).toHaveBeenCalled();
@@ -224,7 +253,7 @@ describe("DashboardScreen", () => {
       { timeout: 10000 },
     );
     expect(toJSON()).not.toBeNull();
-  });
+  }, 15000);
 
   it("should render the Dashboard heading", async () => {
     render(<DashboardScreen />);
@@ -307,18 +336,42 @@ describe("DashboardScreen", () => {
   it("should display open Basic platform activity and slot data", async () => {
     render(<DashboardScreen />);
     await waitFor(() => {
-      expect(screen.getByText(/1 event · slot 9/)).toBeTruthy();
+      // The activity feed AND the portfolio card both render the slot row
+      // once Alpha-metered access opens the PRO platform cards.
+      expect(screen.getAllByText(/1 event · slot 9/).length).toBeGreaterThan(0);
     });
-    expect(screen.getByText(/1 event · slot 2/)).toBeTruthy();
+    expect(screen.getAllByText(/1 event · slot 2/).length).toBeGreaterThan(0);
   });
 
-  it("should show PRO treatment for premium platform analytics", async () => {
+  it("should open premium platform analytics while Alpha remains", async () => {
+    // Fresh tank (100 Alpha): the free tier rides the meter instead of a
+    // hard lock, so PRO platform cards show live analytics, not a gate.
     render(<DashboardScreen />);
+    await waitFor(() => {
+      expect(mockGetSidechains).toHaveBeenCalled();
+    });
+    expect(getAlphaBalance()).toBeGreaterThan(0);
+    expect(
+      screen.queryByText("Unlock platform analytics with Sidecoin PRO."),
+    ).toBeNull();
+    expect(screen.getAllByText(/slot 9/).length).toBeGreaterThan(0);
+  });
+
+  it("should show PRO treatment for premium platform analytics at 0 Alpha", async () => {
+    // Render FIRST so the one-time first-L1-deposit grant (fired by the
+    // positive mocked balance) is already claimed, then drain the tank:
+    // the useAlpha subscription flips the cards to the locked treatment.
+    render(<DashboardScreen />);
+    await waitFor(() => {
+      expect(mockGetSidechains).toHaveBeenCalled();
+    });
+    drainAlphaToZero();
     await waitFor(() => {
       expect(
         screen.getAllByText("Unlock platform analytics with Sidecoin PRO.").length,
       ).toBeGreaterThan(0);
     });
+    expect(Math.floor(getAlphaBalance())).toBe(0);
     expect(screen.getAllByText("Unlock analytics").length).toBeGreaterThan(0);
   });
 

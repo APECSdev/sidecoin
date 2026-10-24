@@ -36,7 +36,7 @@ const foundersHref =
         Sidecoin Pro is the path to reduced fees, advanced features, and
         Founding Member access. The Founder Leaderboard tracks who joined
         early, and the top 10% of Founding Members at Drivechain activation
-        become the Alpha Circle.
+        become the Diamond Circle.
       </p>
 
       <div class="mt-4 flex flex-col gap-3 sm:flex-row">

@@ -50,12 +50,12 @@ const founderEligibility = [
   {
     title: "Monthly PRO",
     body:
-      "Unlocks Sidecoin PRO wallet features. Monthly subscriptions do not qualify for Founder Leaderboard placement or Alpha Circle eligibility.",
+      "Unlocks Sidecoin PRO wallet features. Monthly subscriptions do not qualify for Founder Leaderboard placement or Diamond Circle eligibility.",
   },
   {
     title: "Yearly PRO",
     body:
-      "Unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Alpha Circle eligibility.",
+      "Unlocks Sidecoin PRO wallet features and qualifies for Founder Leaderboard placement and Diamond Circle eligibility.",
   },
 ];
 </script>
@@ -67,7 +67,7 @@ const founderEligibility = [
         Sidecoin PRO
       </p>
       <h2 class="mt-4 text-4xl font-black tracking-tight text-white md:text-5xl">
-        Unlock the full Drivechains Financial Hub
+        Unlock the UNLIMITED Drivechains Financial Hub
       </h2>
       <p class="mt-4 max-w-3xl text-lg leading-8 text-gray-300">
         Basic gives you L1, Thunder, BitNames, Swap, and Coin Split tools.
@@ -109,12 +109,12 @@ const founderEligibility = [
         Founder eligibility
       </p>
       <h3 class="mt-2 text-2xl font-black text-white">
-        Leaderboard and Alpha Circle require Yearly PRO
+        Leaderboard and Diamond Circle require Yearly PRO
       </h3>
       <p class="mt-3 max-w-3xl text-sm leading-6 text-gray-300">
         Monthly PRO unlocks Sidecoin PRO wallet features. Yearly PRO unlocks
-        those features and qualifies for Founder Leaderboard placement and Alpha
-        Circle eligibility.
+        those features and qualifies for Founder Leaderboard placement and
+        Diamond Circle eligibility.
       </p>
 
       <div class="mt-5 grid gap-4 md:grid-cols-2">

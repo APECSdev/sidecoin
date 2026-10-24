@@ -22,21 +22,36 @@
 //   • `v-model:selected-contact-name` -> `selectedContactName` + setter.
 //   • The `xl` two-column layouts stack, since a phone is always < xl.
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
+import { useFocusEffect, useNavigation, useRoute } from "@react-navigation/native";
 import type { RouteProp } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { getPlatformById } from "../data/platforms";
 import type { PlatformFeatureTab } from "../data/platforms";
-import { canAccessPlatform, isProPlan, isProPlatform } from "../entitlements";
+import {
+  isProPlan,
+  isProPlatform,
+  platformFeatureId,
+  refreshEntitlements,
+  useEntitlements,
+} from "../entitlements";
+import {
+  alphaBalanceWarning,
+  beginProSession,
+  canUseProPlatform,
+  endProSession,
+  formatAlphaBalance,
+  isAlphaMetered,
+  useAlpha,
+} from "../alpha";
 import { ProBadge } from "../components/pro/ProBadge";
 import { ProGate } from "../components/pro/ProGate";
 import { BitMessagesPreview } from "../components/bitnames/BitMessagesPreview";
 import type { RootStackParamList } from "../navigation/types";
 import { ECASH, GRAY } from "../theme/colors";
-import { Screen } from "../components/ui";
+import { Alert, Screen } from "../components/ui";
 
 interface PlatformTab extends PlatformFeatureTab {
   kind?:
@@ -122,7 +137,8 @@ export function PlatformDetailScreen(): React.JSX.Element {
   const route = useRoute<PlatformDetailRoute>();
   // F-Droid builds unlock everything (see entitlements.ts): no PRO tier
   // badges — every platform simply works.
-  const pro = isProPlan();
+  const entitlements = useEntitlements();
+  const pro = isProPlan(entitlements);
   const [selectedTabId, setSelectedTabId] = useState("");
   const [selectedBitNamesContact, setSelectedBitNamesContact] = useState("");
 
@@ -131,7 +147,30 @@ export function PlatformDetailScreen(): React.JSX.Element {
     return getPlatformById(id);
   }, [route.params]);
 
-  const locked = platform ? !canAccessPlatform(platform.id) : false;
+  const locked = platform ? !canUseProPlatform(platform.id, entitlements) : false;
+
+  // Re-check entitlements before a gated action: a key activated in Settings
+  // (or a backend status change) unlocks this screen without an app restart.
+  useEffect(() => {
+    if (locked) void refreshEntitlements();
+  }, [locked]);
+
+  // Alpha meter: a metered (free-tier) user on a PRO screen drains Alpha
+  // while the screen is foregrounded; the session (and drain) ends on
+  // blur/unmount. Unlimited plans and the F-Droid flavor never drain.
+  const alphaState = useAlpha();
+  const meteredProScreen =
+    platform != null && isProPlatform(platform.id) && !locked && isAlphaMetered();
+  const alphaWarning = meteredProScreen
+    ? alphaBalanceWarning(alphaState.balance)
+    : null;
+  useFocusEffect(
+    useCallback(() => {
+      if (!meteredProScreen || !platform) return undefined;
+      beginProSession(platformFeatureId(platform.id));
+      return () => endProSession();
+    }, [meteredProScreen, platform]),
+  );
 
   const platformSlotLabel = useMemo(() => {
     return platform?.slot == null ? "Slot TBD" : `Slot ${platform.slot}`;
@@ -516,10 +555,25 @@ export function PlatformDetailScreen(): React.JSX.Element {
             description={`${platform.displayName} is part of the complete Drivechains Financial Hub. Upgrade to access premium platform workflows, analytics, and early platform features.`}
             benefits={proBenefits}
             cta="Unlock with PRO"
+            onUpgrade={() => navigation.navigate("pro")}
           />
         </View>
       ) : (
         <>
+          {alphaWarning ? (
+            <Alert
+              tone={alphaWarning === "critical" ? "error" : "warning"}
+              title={
+                alphaWarning === "critical"
+                  ? "Alpha critically low"
+                  : "Alpha low"
+              }
+              style={styles.alphaWarning}
+              testID="alpha-low-warning"
+            >
+              {`${formatAlphaBalance(alphaState.balance)} Alpha left. The meter drains while PRO screens are open and replenishes slowly while they are closed. PRO subscribers never drain.`}
+            </Alert>
+          ) : null}
           <View style={styles.tabsCard}>
             <View style={styles.tabRow}>
               {platformTabs.map((tab) => (
@@ -1517,6 +1571,9 @@ const styles = StyleSheet.create({
   },
   gateWrap: {
     marginTop: 24,
+  },
+  alphaWarning: {
+    marginBottom: 12,
   },
   tabsCard: {
     marginTop: 24,

@@ -33,7 +33,12 @@ import {
 import { getSidechains, type SidechainSummary } from "../api";
 import { loadWallet } from "../keystore";
 import { PLATFORMS, getPlatformById } from "../data/platforms";
-import { canAccessPlatform, isProPlan, isProPlatform } from "../entitlements";
+import {
+  isProPlan,
+  isProPlatform,
+  useEntitlements,
+} from "../entitlements";
+import { canUseProPlatform, useAlpha } from "../alpha";
 import { ProBadge } from "../components/pro/ProBadge";
 import type { RootStackParamList } from "../navigation/types";
 import { ECASH, GRAY } from "../theme/colors";
@@ -158,7 +163,10 @@ export function SidechainsScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
   // F-Droid builds unlock everything (see entitlements.ts): no PRO upsell
   // hero and no PRO tier badges — every platform simply works.
-  const pro = isProPlan();
+  const entitlements = useEntitlements();
+  // Subscribe to the Alpha meter so lock labels flip live at 0 Alpha.
+  useAlpha();
+  const pro = isProPlan(entitlements);
 
   const [sidechains, setSidechains] = useState<WalletSidechainSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -359,7 +367,7 @@ export function SidechainsScreen(): React.JSX.Element {
               </View>
 
               <Button
-                label={canAccessPlatform(sc.id) ? "Open platform" : "Unlock platform"}
+                label={canUseProPlatform(sc.id, entitlements) ? "Open platform" : "Unlock platform"}
                 variant="secondary"
                 size="sm"
                 onPress={() =>
