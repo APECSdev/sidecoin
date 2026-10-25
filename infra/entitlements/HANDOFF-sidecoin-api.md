@@ -8,6 +8,15 @@ returns `404 no route for /v1/me/entitlements` (verified 2026-10-23).
 entitlement the wallet can verify, cache, and enforce — on launch, on
 demand, and before gated actions.
 
+**2026-10-25 re-verification:** the server work is still entirely PENDING
+(repo `c9f588c` unchanged; live `/v1/me/entitlements` still 404; live
+`/v1/pay/status` still has no `entitlementKey`). The actionable runbook +
+status of record is now `sidecoin-api` **`docs/HANDOFF-entitlements-v2.md`**
+(2026-10-25). It also resolves two stale notes in the API team's v1
+handoff: its §4 parity rule is moot (`packages/api` no longer exists here)
+and its §5.1 correction is overtaken (the web receipt-key UI shipped
+26.10-24 in `e21e784`).
+
 **Cross-review:** the API team's response lives at `sidecoin-api`
 `docs/HANDOFF-entitlements.md` (2026-10-23). All of its client-side and
 server-side claims were re-verified against source on 26.10.24 (see its
