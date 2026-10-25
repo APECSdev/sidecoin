@@ -12,6 +12,7 @@ import {
   walletThemeClass,
 } from "./theme";
 import { loadWallet, WALLET_NETWORK_EVENT, type WalletNetwork } from "./keystore";
+import { refreshEntitlements } from "./entitlements";
 
 const links = [
   { to: "/", label: "Home" },
@@ -56,6 +57,10 @@ onMounted(() => {
   demoMode.value = isDemoModeEnabled();
   walletTheme.value = getWalletTheme();
   refreshWalletNetwork();
+  // Apply any stored entitlement key (Sidecoin PRO receipt) against the
+  // adapter — mirrors the mobile launch refresh. Fire-and-forget: a
+  // failure falls back to the cached/Basic state inside the refresh.
+  void refreshEntitlements();
   window.addEventListener(DEMO_MODE_EVENT, handleDemoModeChanged);
   window.addEventListener(THEME_EVENT, handleThemeChanged);
   window.addEventListener(WALLET_NETWORK_EVENT, refreshWalletNetwork);

@@ -204,11 +204,17 @@ adopt it without a contract change. Not required for v1.
 | `apps/mobile/src/components/AlphaMeter.tsx` | Header/dashboard pill (balance gauge, tap-to-explain sheet, regen ETA, grant list); renders `null` for unlimited users |
 | `apps/mobile/src/__tests__/alpha.test.ts` | 17 tests: settle/drain/regen math, floor-gating regression (sub-1 residue displays "0" and gates as "0"), action costs, grant one-time + daily cap, persistence, F-Droid/pro short-circuits |
 | `apps/mobile/src/__tests__/AlphaMeter.test.tsx` | 6 tests: live countdown via the `ALPHA_TICK_MS` → `tickAlpha()` interval (reads deliberately never emit), explainer sheet, unlimited-plan null render |
+| `apps/wallet/src/entitlements.ts` | **Web-wallet entitlements port** (26.10.24): the full mobile surface — key storage, cache, `refreshEntitlements` (network/cache/basic sources; no fdroid branch — no store flavors on the web), expiry re-lock, subscribers + `useEntitlements()` Vue ref. Persists to `localStorage`; public API keeps mobile's async signatures |
+| `apps/wallet/src/alpha.ts` + `components/AlphaMeter.vue` | **Web-wallet Alpha port** (26.10.24): the engine 1:1 (`localStorage`, sync `loadAlphaState()`, Vue-ref `useAlpha()`) + the meter pill as a Vue/Tailwind SFC. `isAlphaMetered` drops the F-Droid check. The explainer LINKS sidecoin.app/pro — the no-link rule is mobile-appstore-only |
+| `apps/wallet/src/{App.vue,views/{DashboardView,SendView,PlatformDetailView,SettingsView}.vue}` | Wiring: boot `refreshEntitlements()`; dashboard meter + `grant:first-l1-deposit` on observed balance; SendView `spendAlpha` (coin-control path) + `grant:first-broadcast` after broadcast; PlatformDetailView `beginProSession`/`endProSession` on an unlocked PRO platform; Settings “Sidecoin PRO” section (activate/refresh/remove, plan + status badges) |
+| `apps/wallet/src/__tests__/{alpha,entitlements,AlphaMeter}.test.ts` | 17 + 16 + 6 tests — the mobile suites 1:1 minus the F-Droid cases (vitest + @vue/test-utils, `localStorage`, `vi.resetModules` seam) |
 
 Note: the client pins entitlements to `DEFAULT_BASE_URL`
 (`https://sidecoin.app/v1` from `@sidecoin/api-client`) rather than the
 debug-overridable API base, so billing state always comes from one
-authority. Flag if the API team wants staging support.
+authority. Flag if the API team wants staging support. (The WEB wallet is
+the exception: it follows its configurable `getApiBaseUrl()`, which
+defaults to the same `https://sidecoin.app/v1`.)
 
 **Web wallet (`apps/wallet`) note:** it consumes the same hardcoded
 `CURRENT_ENTITLEMENTS` pattern via the Vue originals these screens were

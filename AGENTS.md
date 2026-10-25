@@ -441,7 +441,7 @@ Always re-run the affected package's `test` + `type-check` after edits; both
 must be green before commit.
 
 **Test baselines** (`pnpm --filter <pkg> test`; verify before citing in a PR):
-shared 254 (+1 skip) · wallet 382 · web 118 · explorer 43 · desktop 76 ·
+shared 254 (+1 skip) · wallet 422 · web 126 · explorer 43 · desktop 76 ·
 smarthub 5 · mobile 289 (23 suites) · api-client 12 · observability 17.
 
 ## CI (`.github/workflows/`)

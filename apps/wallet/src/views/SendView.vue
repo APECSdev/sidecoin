@@ -23,6 +23,7 @@ import {
   canAccessFeature,
   COIN_CONTROL_FEATURE_ID,
 } from "../entitlements";
+import { claimAlphaGrant, spendAlpha } from "../alpha";
 
 // The scanner is loaded lazily (only when opened) so the camera library
 // (qr-scanner) — which pulls in browser-only getUserMedia APIs — is never
@@ -201,6 +202,16 @@ async function broadcast() {
     const wallet = loadWallet();
     const network = wallet?.network ?? "signet";
     receipt.value = await broadcastTransaction(L1_CHAIN_ID, built.value.hex, network);
+    // Alpha bookkeeping (mirrors SendScreen on mobile): charge the action
+    // cost when the broadcast went through the PRO coin-control path, and
+    // record the one-time first-broadcast grant. Alpha bookkeeping must
+    // never mask a successful broadcast, so it is logged, not thrown.
+    try {
+      if (hasCoinControlAccess.value) spendAlpha("wallet:coin-control:send");
+      claimAlphaGrant("grant:first-broadcast");
+    } catch (alphaError) {
+      console.error("[SendView] Alpha ledger update failed:", alphaError);
+    }
   } catch (e) {
     if (e instanceof ApiError) {
       error.value = `Broadcast failed (${e.code}): ${e.message}`;

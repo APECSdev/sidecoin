@@ -1,11 +1,12 @@
 <!-- apps/wallet/src/views/PlatformDetailView.vue -->
 
 <script setup lang="ts">
-import { computed, ref, watchEffect } from "vue";
+import { computed, onBeforeUnmount, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import { getPlatformById } from "../data/platforms";
 import type { PlatformFeatureTab } from "../data/platforms";
-import { canAccessPlatform, isProPlatform } from "../entitlements";
+import { canAccessPlatform, isProPlatform, platformFeatureId } from "../entitlements";
+import { beginProSession, endProSession, isAlphaMetered } from "../alpha";
 import ProBadge from "../components/pro/ProBadge.vue";
 import ProGate from "../components/pro/ProGate.vue";
 import BitMessagesPreview from "../components/bitnames/BitMessagesPreview.vue";
@@ -89,6 +90,24 @@ const platform = computed(() => {
 const locked = computed(() => {
   return platform.value ? !canAccessPlatform(platform.value.id) : false;
 });
+
+// Alpha foreground session: an open, unlocked PRO platform drains the tank
+// for metered (free-tier) users — mirrors PlatformDetailScreen on mobile
+// (begin on focus, end on blur/unmount; unlimited plans never drain).
+const meteredProScreen = computed(() => {
+  return platform.value != null
+    && isProPlatform(platform.value.id)
+    && !locked.value
+    && isAlphaMetered();
+});
+watch(meteredProScreen, (active) => {
+  if (active && platform.value) {
+    beginProSession(platformFeatureId(platform.value.id));
+  } else {
+    endProSession();
+  }
+});
+onBeforeUnmount(() => endProSession());
 
 const platformSlotLabel = computed(() => {
   return platform.value?.slot == null ? "Slot TBD" : `Slot ${platform.value.slot}`;

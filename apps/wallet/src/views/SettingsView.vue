@@ -13,6 +13,89 @@ import {
   setWalletTheme,
 } from "../theme";
 import type { WalletTheme } from "../theme";
+import {
+  getEntitlementKey,
+  isProPlan,
+  refreshEntitlements,
+  setEntitlementKey,
+  useEntitlements,
+} from "../entitlements";
+
+// ─── Sidecoin PRO entitlement key ──────────────────────
+// The key is issued after the crypto checkout at sidecoin.app/pro (shown
+// once in the PaymentFlow receipt panel). Web wallet: sidecoin.app/pro is
+// a real link here — the no-link plain-text rule is mobile-appstore-only
+// (fdroiddata!50457 note 4064134145).
+const entitlements = useEntitlements();
+const proKeyInput = ref("");
+const proKeyStored = ref(false);
+const proBusy = ref(false);
+const proMessage = ref<string | null>(null);
+
+async function activateProKey() {
+  const key = proKeyInput.value.trim();
+  if (key.length === 0 || proBusy.value) return;
+  proBusy.value = true;
+  proMessage.value = null;
+  try {
+    await setEntitlementKey(key);
+    const result = await refreshEntitlements();
+    proKeyInput.value = "";
+    proKeyStored.value = (await getEntitlementKey()) !== null;
+    if (result.source === "network") {
+      proMessage.value = isProPlan(result.state)
+        ? `PRO active — plan: ${result.state.plan}.`
+        : "Key accepted, but the plan is not active yet.";
+    } else if (result.source === "cache") {
+      proMessage.value = "Offline — kept your last known entitlement status.";
+    } else {
+      proMessage.value =
+        "Key saved. The entitlements service is unreachable right now — it re-checks on every launch.";
+    }
+  } catch (err) {
+    proMessage.value =
+      `Activation failed: ${err instanceof Error ? err.message : String(err)}`;
+  } finally {
+    proBusy.value = false;
+  }
+}
+
+async function refreshProStatus() {
+  if (proBusy.value) return;
+  proBusy.value = true;
+  proMessage.value = null;
+  try {
+    const result = await refreshEntitlements();
+    proKeyStored.value = (await getEntitlementKey()) !== null;
+    proMessage.value =
+      result.source === "network"
+        ? "Status refreshed from sidecoin.app."
+        : result.source === "cache"
+          ? "Offline — showing your last known status."
+          : "No entitlement key stored — Basic plan.";
+  } catch (err) {
+    proMessage.value =
+      `Refresh failed: ${err instanceof Error ? err.message : String(err)}`;
+  } finally {
+    proBusy.value = false;
+  }
+}
+
+async function clearProKey() {
+  if (proBusy.value) return;
+  proBusy.value = true;
+  proMessage.value = null;
+  try {
+    await setEntitlementKey(null);
+    proKeyStored.value = false;
+    proMessage.value = "Entitlement key removed — Basic plan active.";
+  } catch (err) {
+    proMessage.value =
+      `Could not remove the key: ${err instanceof Error ? err.message : String(err)}`;
+  } finally {
+    proBusy.value = false;
+  }
+}
 
 const nodeUrl = ref("");
 const electrumUrl = ref("tcp://127.0.0.1:50001");
@@ -52,6 +135,9 @@ onMounted(() => {
   usingDefault.value = getApiBaseUrl() === "";
   demoMode.value = isDemoModeEnabled();
   selectedTheme.value = getWalletTheme();
+  void getEntitlementKey().then((key) => {
+    proKeyStored.value = key !== null;
+  });
 
   try {
     const wallet = loadWallet();
@@ -262,6 +348,86 @@ function handleNetworkChange(network: WalletNetwork) {
           </p>
         </button>
       </div>
+    </section>
+
+    <!-- ─── Sidecoin PRO ────────────────────────────────
+         Web wallet: sidecoin.app/pro is a real link (the no-link rule is
+         mobile-appstore-only, fdroiddata!50457 note 4064134145). -->
+    <section class="mt-8 max-w-3xl rounded border border-gray-800 bg-gray-900 p-4">
+      <p class="text-sm font-semibold text-gray-300">Sidecoin PRO</p>
+      <p class="mt-2 text-xs leading-5 text-gray-500">
+        Upgrade at
+        <a
+          href="https://sidecoin.app/pro"
+          target="_blank"
+          rel="noreferrer"
+          class="font-semibold text-ecash-400 underline"
+        >sidecoin.app/pro</a>,
+        then paste the entitlement key from your payment receipt to unlock
+        PRO platforms in this wallet.
+      </p>
+
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <span
+          class="rounded-full px-2.5 py-1 text-xs font-black uppercase tracking-wide"
+          :class="isProPlan(entitlements) ? 'bg-amber-400 text-gray-950' : 'bg-gray-800 text-gray-300'"
+          data-test="pro-plan-badge"
+        >
+          Plan: {{ entitlements.plan }}
+        </span>
+        <span class="text-xs text-gray-500">Status: {{ entitlements.status }}</span>
+      </div>
+      <p v-if="entitlements.expiresAt" class="mt-2 text-xs text-gray-500">
+        Expires: {{ entitlements.expiresAt }}
+      </p>
+      <p v-if="proKeyStored" class="mt-2 text-xs text-gray-500">
+        An entitlement key is stored in this browser.
+      </p>
+
+      <input
+        v-model="proKeyInput"
+        type="text"
+        class="mt-4 w-full rounded border border-gray-700 bg-gray-950 px-3 py-2 font-mono text-sm text-white placeholder-gray-600"
+        :placeholder="proKeyStored ? 'Replace entitlement key' : 'Paste entitlement key'"
+        autocapitalize="none"
+        autocomplete="off"
+        spellcheck="false"
+        data-test="pro-key-input"
+      />
+      <div class="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          class="rounded bg-amber-400 px-3 py-1.5 text-sm font-bold text-gray-950 disabled:opacity-50"
+          :disabled="proBusy"
+          data-test="pro-activate"
+          @click="activateProKey"
+        >
+          Activate PRO key
+        </button>
+        <button
+          type="button"
+          class="rounded border border-gray-700 px-3 py-1.5 text-sm font-bold text-gray-300 disabled:opacity-50"
+          :disabled="proBusy"
+          data-test="pro-refresh"
+          @click="refreshProStatus"
+        >
+          Refresh status
+        </button>
+        <button
+          v-if="proKeyStored"
+          type="button"
+          class="rounded px-3 py-1.5 text-sm font-bold text-gray-500 disabled:opacity-50"
+          :disabled="proBusy"
+          data-test="pro-remove"
+          @click="clearProKey"
+        >
+          Remove key
+        </button>
+      </div>
+
+      <p v-if="proMessage" class="mt-3 text-xs leading-5 text-gray-400" data-test="pro-message">
+        {{ proMessage }}
+      </p>
     </section>
 
     <!-- Demo Mode is display-only. It must never affect signing, sending,

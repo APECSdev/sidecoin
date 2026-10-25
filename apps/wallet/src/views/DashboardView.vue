@@ -15,7 +15,9 @@ import {
   isDemoModeEnabled,
 } from "../demo";
 import { canAccessPlatform, isProPlatform } from "../entitlements";
+import { claimAlphaGrant } from "../alpha";
 import { getPlatformById } from "../data/platforms";
+import AlphaMeter from "../components/AlphaMeter.vue";
 import CoinNewsPreview from "../components/bitnames/CoinNewsPreview.vue";
 
 interface ChainRow {
@@ -170,6 +172,17 @@ async function loadL1Balance() {
     // even while the sidecoin.app/v1 adapter is offline. An unseen address
     // is not an error: it comes back totalSats 0n with seen=false.
     l1Balance.value = await getL1Balance(address, wallet.network);
+    // Earn-back grant: the first observed L1 balance is the on-chain
+    // evidence for `grant:first-l1-deposit` (one-time; the engine records
+    // the claim). Logged, never thrown — Alpha bookkeeping must not mask
+    // a successful balance load.
+    try {
+      if (l1Balance.value.totalSats > 0n) {
+        claimAlphaGrant("grant:first-l1-deposit");
+      }
+    } catch (grantError) {
+      console.error("[DashboardView] Alpha grant failed:", grantError);
+    }
   } catch (e) {
     // Keep the real error for developers; show users a friendly message.
     console.error("[DashboardView] Failed to load L1 balance:", e);
@@ -266,13 +279,14 @@ function platformHref(platformId: string): string {
 
 <template>
   <div>
-    <div class="mb-6">
+    <div class="mb-6 flex items-start justify-between">
       <div>
         <p class="text-xs uppercase tracking-widest text-ecash-500">
           Drivechains Financial Hub
         </p>
         <h2 class="mt-1 text-3xl font-black">Dashboard</h2>
       </div>
+      <AlphaMeter class="mt-2" />
     </div>
 
     <section
