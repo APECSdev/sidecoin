@@ -122,6 +122,14 @@ export interface PaymentStatus {
   payCurrency: string | null;
   confirmed: boolean;
   founderNumber: number | null;
+  /**
+   * PRO entitlement receipt key. Present ONLY when the payment is confirmed
+   * AND the caller supplied the matching orderId (key disclosure per approved
+   * decision 3-i in sidecoin-api docs/HANDOFF-entitlements.md §3.4). Absent
+   * (undefined/null) while the server-side disclosure is undeployed — the UI
+   * renders the receipt-key panel purely on presence.
+   */
+  entitlementKey?: string | null;
 }
 
 interface ApiErrorBody {
@@ -210,14 +218,22 @@ export async function createPayment(
   }
 }
 
-/** Check payment status via our Worker (live status + founder number). */
+/**
+ * Check payment status via our Worker (live status + founder number).
+ * Pass the orderId from the create response: the server requires it for
+ * entitlement-key disclosure (decision 3-i) and ignores it otherwise.
+ */
 export async function getPaymentStatus(
   paymentId: string,
+  orderId?: string,
 ): Promise<PaymentStatus> {
   debug("Checking payment status", paymentId);
 
   try {
     const params = new URLSearchParams({ paymentId });
+    if (orderId) {
+      params.set("orderId", orderId);
+    }
     const res = await fetch(`${API_BASE}/pay/status?${params}`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },

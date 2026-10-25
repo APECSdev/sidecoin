@@ -374,6 +374,53 @@ describe("getPaymentStatus", () => {
     expect(call![0]).toContain("paymentId=pay-xyz-789");
   });
 
+  it("should include the orderId in the query string when supplied (key disclosure)", async () => {
+    mockFetchResponse({
+      paymentId: "pay-abc-123",
+      orderId: "monthly-1699999999999-ab12",
+      paymentStatus: "finished",
+      payAmount: 0.00042,
+      actuallyPaid: 0.00042,
+      payCurrency: "btc",
+      confirmed: true,
+      founderNumber: 42,
+      entitlementKey: "sc_ent_0123456789abcdef0123456789abcdef",
+    });
+
+    const result = await getPaymentStatus(
+      "pay-abc-123",
+      "monthly-1699999999999-ab12",
+    );
+
+    const call = findCall("/pay/status");
+    expect(call).toBeDefined();
+    expect(call![0]).toContain("paymentId=pay-abc-123");
+    expect(call![0]).toContain("orderId=monthly-1699999999999-ab12");
+    expect(result.entitlementKey).toBe(
+      "sc_ent_0123456789abcdef0123456789abcdef",
+    );
+  });
+
+  it("should omit the orderId param when not supplied (backward compatible)", async () => {
+    mockFetchResponse({
+      paymentId: "pay-no-order",
+      orderId: null,
+      paymentStatus: "waiting",
+      payAmount: 1,
+      actuallyPaid: 0,
+      payCurrency: "xmr",
+      confirmed: false,
+      founderNumber: null,
+    });
+
+    const result = await getPaymentStatus("pay-no-order");
+
+    const call = findCall("/pay/status");
+    expect(call).toBeDefined();
+    expect(call![0]).not.toContain("orderId=");
+    expect(result.entitlementKey).toBeUndefined();
+  });
+
   it("should throw on HTTP error", async () => {
     mockFetchResponse({ message: "Not found" }, 404);
 

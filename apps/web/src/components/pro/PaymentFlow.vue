@@ -74,6 +74,7 @@ const paymentData = ref<PaymentResponse | null>(null);
 const paymentStatus = ref<PaymentStatus | null>(null);
 const paymentError = ref<string | null>(null);
 const paymentLoading = ref(false);
+const keyCopied = ref(false);
 
 const errorDialogOpen = ref(false);
 const errorDialogTitle = ref("Payment could not be created");
@@ -244,6 +245,17 @@ const statusLabel = computed(() => {
   return labels[paymentStatus.value.paymentStatus] ?? paymentStatus.value.paymentStatus;
 });
 
+/**
+ * The PRO entitlement receipt key, straight from the status payload.
+ * Server-side disclosure (decision 3-i) only includes it once the payment
+ * is confirmed AND our poll supplied the matching orderId — so rendering
+ * purely on presence is both correct and safe pre-deploy (field absent).
+ */
+const receiptKey = computed(() => {
+  const key = paymentStatus.value?.entitlementKey;
+  return typeof key === "string" && key.trim() !== "" ? key : null;
+});
+
 const statusColor = computed(() => {
   if (!paymentStatus.value) return "text-gray-400";
   const colors: Record<string, string> = {
@@ -376,9 +388,25 @@ function resetCheckout(): void {
   paymentStatus.value = null;
   paymentError.value = null;
   priceLockCountdown.value = "";
+  keyCopied.value = false;
   step.value = "details";
   stopStatusPolling();
   stopPriceLockTimer();
+}
+
+/** Copy the entitlement receipt key (bearer secret — clipboard is HTTPS-only) */
+async function copyReceiptKey(): Promise<void> {
+  if (!receiptKey.value) return;
+
+  try {
+    await navigator.clipboard.writeText(receiptKey.value);
+    keyCopied.value = true;
+    debug("Receipt key copied to clipboard");
+  } catch (err) {
+    // Clipboard API unavailable (non-secure context / permission denied) —
+    // the key text is select-all, so the user can still copy it manually.
+    debugError("Clipboard copy failed (key remains selectable):", err);
+  }
 }
 
 /** Select a cryptocurrency */
@@ -439,12 +467,15 @@ async function createPaymentInvoice(): Promise<void> {
   }
 }
 
-/** Poll payment status */
+/** Poll payment status (orderId included: mandatory for key disclosure) */
 async function pollStatus(): Promise<void> {
   if (!paymentData.value) return;
 
   try {
-    paymentStatus.value = await getPaymentStatus(paymentData.value.paymentId);
+    paymentStatus.value = await getPaymentStatus(
+      paymentData.value.paymentId,
+      paymentData.value.orderId,
+    );
     debug("Payment status:", paymentStatus.value?.paymentStatus);
 
     if (isTerminalStatus.value) {
@@ -882,6 +913,34 @@ onUnmounted(() => {
             >
               Received {{ paymentStatus.actuallyPaid }} / {{ paymentStatus.payAmount }}
               {{ paymentStatus.payCurrency?.toUpperCase() }}
+            </p>
+          </div>
+
+          <!-- ─── Receipt key (bearer secret — shown once, presence-driven) ── -->
+          <div
+            v-if="receiptKey"
+            class="mt-6 rounded-xl border border-amber-500/50 bg-amber-950/20 p-5"
+          >
+            <p class="text-center text-xs font-semibold uppercase tracking-[0.2em] text-amber-400">
+              Your PRO receipt key
+            </p>
+            <p class="mt-3 select-all break-all rounded-lg border border-amber-900/60 bg-gray-950 p-3 text-center font-mono text-sm font-bold text-amber-100">
+              {{ receiptKey }}
+            </p>
+            <button
+              class="mt-3 w-full rounded-lg bg-amber-500 py-2.5 text-sm font-bold text-gray-950 transition-all hover:bg-amber-400"
+              @click="copyReceiptKey"
+            >
+              {{ keyCopied ? "Copied ✓" : "Copy key" }}
+            </button>
+            <p class="mt-3 text-center text-xs leading-5 text-amber-200">
+              Save this key now — it is the ONLY receipt for your purchase and
+              it unlocks PRO on any device. With no account and no email on
+              file, we cannot recover it for you.
+            </p>
+            <p class="mt-2 text-center text-xs leading-5 text-gray-400">
+              In the Sidecoin app: Settings → Sidecoin PRO → Activate PRO key.
+              (F-Droid builds come fully unlocked and never need it.)
             </p>
           </div>
 

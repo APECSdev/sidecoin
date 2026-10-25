@@ -143,9 +143,12 @@ this shape.
    `/v1/pay/status?paymentId=…` until `confirmed` (there is no
    `pro/success` page — API-team correction 2026-10-23).
 4. **(NEW)** On confirmed payment, issue the entitlement key in the
-   webhook and disclose it (pending API-team decision 3 — recommended:
-   `/v1/pay/status` returns it when `confirmed: true` AND the caller
-   supplies `orderId`); the web "receipt key" UI is unbuilt.
+   webhook and disclose it via `/v1/pay/status` (decision 3-i APPROVED
+   2026-10-24): the caller must supply `orderId`; the response gains an
+   `entitlementKey` string field when `confirmed: true`. **Client side
+   SHIPPED 26.10.24** — `PaymentFlow.vue` polls with `orderId` and
+   renders the receipt-key panel (mono key, copy-to-clipboard,
+   save-it-now warning) purely on field presence.
 5. User pastes the key in the app: **Settings → Sidecoin PRO → Activate
    PRO key** (mobile, shipped). The app calls
    `GET /v1/me/entitlements`, applies the payload, caches it.
