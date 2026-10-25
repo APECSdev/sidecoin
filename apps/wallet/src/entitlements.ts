@@ -24,6 +24,7 @@
 //     DEFAULT_BASE_URL.
 
 import { ref, type Ref } from "vue";
+import { DEFAULT_BASE_URL } from "@sidecoin/api-client";
 
 import { getApiBaseUrl } from "./api";
 
@@ -129,9 +130,12 @@ export function isProPlatform(platformId: string): boolean {
 // ──────────────────────────────────────────────────────
 // Backend state (key + cache + refresh)
 
-/** REST base serving the entitlements route (same adapter as the rest of /v1). */
+/** REST base serving the entitlements route (same adapter as the rest of
+ * /v1). getApiBaseUrl() returns "" when the wallet runs on the client
+ * default — fall back to DEFAULT_BASE_URL so the default path still hits
+ * the production adapter. */
 export function entitlementsBaseUrl(): string {
-  return getApiBaseUrl();
+  return getApiBaseUrl() || DEFAULT_BASE_URL;
 }
 
 /** localStorage key for the user-pasted entitlement key (payment receipt). */
