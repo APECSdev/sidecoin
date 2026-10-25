@@ -70,7 +70,8 @@ adb -s $D install -r <binary.apk>                       # streamed install
 adb -s $D shell am start -n <appid>/.<MainActivity>     # launch
 ```
 
-Assert via **text, never screenshots**:
+Assert via **text, never screenshots** — with ONE mandatory exception: a post-tap
+screencap is REQUIRED before any "dead/unresponsive" finding (learning 17):
 ```bash
 adb -s $D shell uiautomator dump /sdcard/ui.xml >/dev/null
 adb -s $D shell cat /sdcard/ui.xml > ui.xml   # then grep locally on the VM
@@ -165,3 +166,5 @@ Operational facts learned the hard way; fold into the rhythm above.
 14. **`glab api ... | ssh apecsdev 'cat > file'` streams artifacts token-free** — glab's token is keyring-backed and not extractable; running glab on the host and piping bytes into the VM satisfies both the no-tokens-on-VM and no-artifacts-on-host rules.
 15. **apecsdev base tooling now present:** docker.io + compose v2 + openjdk-21 (apt, sudo), Android platform-tools AND build-tools (aapt/apksigner/dexdump) user-space in `~/opt` + `~/bin`, review kit in `~/staging/fdroid-review-kit`, `tap.py`, PCAPdroid APK. adb still needs the reverse-forward: `ssh -f -N -R 5037:127.0.0.1:5037 apecsdev` + `ADB_SERVER_SOCKET=tcp:localhost:5037`. The vboxadd kernel-module build warning after `dpkg --configure -a` is cosmetic for headless use.
 16. **Pixel 5 WiFi dropped mid-session once** (`Active default network: none`, no inet on wlan0); `svc wifi`/`cmd wifi` could not re-associate — needed manual reconnect on the device. If captures show literal silence, verify the device is online before blaming the app.
+17. **Instrumentation can NEVER prove a button dead in a WebView app — a post-tap screencap is mandatory.** The BombVault "Scan QR code" false positive (filed, then withdrawn after the author disputed it): the button opened an in-WebView consent modal ("Camera access is needed…" → "Allow access" → system prompt). Window focus stayed on `MainActivity`, logcat was silent, the permission grant never fired, and uiautomator saw **8 nodes, zero WebView content** — every signal I cited as "dead" evidence is blind to WebView-rendered UI, and no screenshot was taken after the tap. **Rule: before reporting any element as dead/unresponsive, `adb exec-out screencap -p` BEFORE and AFTER the tap and LOOK at both.** This is the one exception to "assert via text, never screenshots" (that rule governs selectors; visual confirmation governs negative findings). The author re-tested on a real phone, quoted the modal text back, and asked a question ("did that window appear?") the report could not answer — a review-report killer.
+18. **Re-verify review asks against CURRENT upstream metadata before repeating them.** The "name the default relay in the description" ask was fixed upstream in 9.9.1 (Oct 9) yet repeated in the Oct 23 report because it was copied from the Oct 6 static review. Before listing any "the description should mention X" nit, fetch the app's fastlane/Triple-T `full_description.txt` at the TESTED tag and check. Recipe files with no `Description:` field inherit the upstream store metadata — look there, not in the recipe.
