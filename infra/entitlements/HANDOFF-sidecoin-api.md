@@ -277,6 +277,12 @@ owns, like §9):
   `first-platform-deposit`) so the server can verify against an Esplora
   backend before crediting — the client currently trusts its own
   observation, which is the gameable part.
+  **Deferral (2026-10-25): `grant:first-platform-deposit` has NO call
+  site in v26.10.24** — the in-app platform deposit flow is "in
+  development", so nothing observes a confirmed L1→sidechain deposit.
+  The other two grants are wired (DashboardScreen balance poll →
+  `first-l1-deposit`; SendScreen broadcast → `first-broadcast`). Wire
+  the third where the PlatformDetail deposit flow lands.
 - Constants to mirror (`apps/mobile/src/alpha.ts` is the source of truth):
   cap 100, drain 100/hour while a PRO screen is foregrounded, regen
   8/hour while idle, grant amounts 25/20/15, daily grant cap 50,

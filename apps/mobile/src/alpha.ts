@@ -93,6 +93,9 @@ export const ALPHA_GRANTS: readonly AlphaGrantDef[] = [
     id: "grant:first-platform-deposit",
     amount: 15,
     description: "First sidechain platform deposit",
+    // DEFERRED (v26.10.24): no call site yet — the in-app platform deposit
+    // flow is "in development", so nothing observes a confirmed L1→sidechain
+    // deposit to fire this. Wire it where that flow lands (PlatformDetail).
   },
 ];
 
