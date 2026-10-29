@@ -575,8 +575,9 @@ export function SettingsScreen(): React.JSX.Element {
               {demoMode ? <Badge label="Active" tone="active" /> : null}
             </View>
             <Muted style={styles.hint}>
-              Explore Sidecoin with sample balances, platform activity, and PRO
-              previews. Demo Mode changes display data only.
+              {IS_FDROID_BUILD
+                ? "Explore Sidecoin with sample balances and platform activity. Demo Mode changes display data only."
+                : "Explore Sidecoin with sample balances, platform activity, and PRO previews. Demo Mode changes display data only."}
             </Muted>
             {demoMode ? (
               <Text style={styles.demoActiveNote}>
@@ -606,32 +607,37 @@ export function SettingsScreen(): React.JSX.Element {
         </View>
       </Card>
 
-      {/* ─── Founder Identity Key ──────────────────────────── */}
-      <Card style={styles.section}>
-        <Text style={styles.labelStrong}>Founder Identity Key</Text>
-        <Muted style={styles.hint}>
-          Paste this at <Text style={styles.ecashText}>sidecoin.app/pro</Text> to
-          claim your Founder profile. It's your public Nostr identity — safe to
-          share.
-        </Muted>
+      {/* ─── Founder Identity Key ────────────────────────────
+          Appstore/dev builds only: the claim flow lives at sidecoin.app/pro
+          (a paid program), and F-Droid builds must carry no PRO/paid mention
+          anywhere in the UI (fdroiddata!50457 note 4064134145). */}
+      {!IS_FDROID_BUILD ? (
+        <Card style={styles.section}>
+          <Text style={styles.labelStrong}>Founder Identity Key</Text>
+          <Muted style={styles.hint}>
+            Paste this at <Text style={styles.ecashText}>sidecoin.app/pro</Text>{" "}
+            to claim your Founder profile. It's your public Nostr identity —
+            safe to share.
+          </Muted>
 
-        {identityKey ? (
-          <View style={styles.identityRow}>
-            <View style={styles.identityCode}>
-              <Mono style={styles.identityText}>{identityKey}</Mono>
+          {identityKey ? (
+            <View style={styles.identityRow}>
+              <View style={styles.identityCode}>
+                <Mono style={styles.identityText}>{identityKey}</Mono>
+              </View>
+              <Button
+                label={copied ? "Copied ✓" : "Copy"}
+                size="sm"
+                onPress={copyIdentityKey}
+              />
             </View>
-            <Button
-              label={copied ? "Copied ✓" : "Copy"}
-              size="sm"
-              onPress={copyIdentityKey}
-            />
-          </View>
-        ) : identityError ? (
-          <Text style={styles.amberText}>{identityError}</Text>
-        ) : (
-          <Muted style={styles.hint}>Deriving…</Muted>
-        )}
-      </Card>
+          ) : identityError ? (
+            <Text style={styles.amberText}>{identityError}</Text>
+          ) : (
+            <Muted style={styles.hint}>Deriving…</Muted>
+          )}
+        </Card>
+      ) : null}
 
       {/* ─── Sidecoin PRO ────────────────────────────────
           Appstore/dev builds only: F-Droid ships every feature free and must

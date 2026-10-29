@@ -26,6 +26,7 @@ import {
 import { WebView } from "react-native-webview";
 import type { WebViewNavigation } from "react-native-webview";
 import MaterialIcons from "react-native-vector-icons/MaterialIcons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GRAY, SC } from "../theme/colors";
 
@@ -102,8 +103,14 @@ export function ExploreScreen(): React.JSX.Element {
     setCanGoForward(nav.canGoForward);
   }, []);
 
+  // This screen rolls its own root container (not the shared Screen
+  // primitive), so it must apply the top safe-area inset itself — with
+  // targetSdk 35 edge-to-edge is enforced on Android 15+ and the toolbar
+  // would otherwise render under the status bar (fdroiddata!50457 review).
+  const insets = useSafeAreaInsets();
+
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
       {/* Address bar + basic controls. One compact row, no chrome beyond it. */}
       <View style={styles.bar}>
         <Pressable

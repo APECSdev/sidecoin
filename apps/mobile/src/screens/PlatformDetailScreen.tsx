@@ -330,8 +330,8 @@ export function PlatformDetailScreen(): React.JSX.Element {
       return [
         {
           label: "Transparent Balance",
-          value: "2.25000000",
-          caption: "ready to shield",
+          value: "—",
+          caption: "wallet balance not connected yet",
         },
         {
           label: "Shielded Balance",

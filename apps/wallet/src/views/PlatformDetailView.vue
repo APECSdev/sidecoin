@@ -215,7 +215,7 @@ const metricCards = computed<MetricCard[]>(() => {
 
   if (id === "zside") {
     return [
-      { label: "Transparent Balance", value: "2.25000000", caption: "ready to shield" },
+      { label: "Transparent Balance", value: "—", caption: "wallet balance not connected yet" },
       { label: "Shielded Balance", value: "—", caption: "PRO analytics" },
       { label: "Privacy Set", value: "—", caption: "PRO review" },
       { label: "Private Activity", value: "—", caption: "PRO history" },

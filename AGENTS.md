@@ -262,9 +262,48 @@ pushing a recipe update.
 6. **The Skia `.a` scanignore question is deferred to the maintainers**
    (linsui) — it is NOT a blocker and needs no author action. Do not try to
    "fix" it unilaterally.
+7. **Flavor-scoped string audit — grep, never memory.** After any flavor
+   sweep, enumerate EVERY user-visible paid-tier string that renders when
+   `IS_FDROID_BUILD === false`, and gate or reword each one. The 26.10.22
+   sweep gated components/sections but never grepped strings, so two PRO
+   mentions survived in `SettingsScreen.tsx` (Demo Mode hint; Founder
+   Identity card → sidecoin.app/pro) despite the commit message claiming
+   "no PRO mention anywhere" (junkerderprovinz, 2026-10-29). Never write an
+   absolute claim ("no X anywhere") in a commit message without running the
+   grep that proves it:
+   `grep -rn 'PRO\b\|sidecoin\.app/pro\|Upgrade' apps/mobile/src/screens/ apps/mobile/src/components/`
+   — every hit must be behind `!IS_FDROID_BUILD` or flavor-conditional.
+8. **Enumerate self-rooted screens; verify insets on API 35+.** Any screen
+   that does NOT use the shared `Screen` primitive applies its own top
+   inset — maintain the list by grep, not inspection:
+   `grep -rLn 'from "../components/ui"' apps/mobile/src/screens/*.tsx` plus
+   `grep -ln 'style={styles.root}'`. The 26.10.22 inset sweep listed
+   self-rooted screens from memory and missed `ExploreScreen` (toolbar
+   rendered under the status bar). Verify on an **API-35+ emulator or
+   device**: targetSdk 35 enforces edge-to-edge on Android 15+, and the
+   overlap does NOT reproduce on the Android 14 test phone (Jest cannot
+   render insets at all).
+9. **Post-flavor-change walkthrough of every newly-unlocked screen.**
+   Removing a gate changes what a fresh user sees — walk each
+   newly-reachable screen and metric card for placeholder data. The zSide
+   "Transparent Balance 2.25000000" literal (`PlatformDetailScreen.tsx`,
+   transplanted verbatim from `apps/wallet` `PlatformDetailView.vue` in the
+   Phase 4d port) was invisible behind the PRO gate until 26.10.22 ungated
+   it and a reviewer found it on first open. Placeholders must be honest
+   (`"—"` + "not connected/indexed yet", like the neighboring cards).
 
 ### F-Droid past review findings (each cost a round — do not repeat)
 
+- **PRO leftovers + Explore inset + zSide mock literal in 26.10.22**
+  (junkerderprovinz, 2026-10-29): Demo Mode hint said "PRO previews" and
+  the Founder Identity card named sidecoin.app/pro, neither behind
+  `IS_FDROID_BUILD`; `ExploreScreen` never applied the top inset (toolbar
+  under the status bar on Android 15+); zSide "Transparent Balance
+  2.25000000" was a hardcoded literal exposed when the flavor swap removed
+  the gates. Root cause for all three: the sweep fixed its list but never
+  verified the complement (all strings / all self-rooted screens / all
+  newly-unlocked screens). Fixed on master; checklist items 7–9 are the
+  regression gates.
 - **26.10.1 block kept alongside 26.10.5** (mezinster `3983603322`): F-Droid
   built and published BOTH; only the latest may stay. Root cause: version
   bump didn't drop the superseded block.
