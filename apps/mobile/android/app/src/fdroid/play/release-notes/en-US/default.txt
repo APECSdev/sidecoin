@@ -1,7 +1,10 @@
-• F-Droid build: every platform and feature is now included free of
-  charge — all ten sidechains plus Coin Control simply work, with no
-  paid tier, no locked features, and no upgrade prompts anywhere
-• The dashboard "Platform Activity" card is now labeled "Network
-  Activity": it aggregates network-wide deposits, not your wallet's
-• Screen titles no longer render underneath the status bar (safe-area
-  top inset applied app-wide)
+• F-Droid review follow-up: the Demo Mode hint and the Founder Identity
+  card no longer mention the paid tier, and the PRO screen shows an
+  "everything unlocked, free of charge" notice on the F-Droid build
+• Screen toolbars no longer underlap the status bar on Android 15+ —
+  the top inset now applies to Explore, Swap, Markets, Receive,
+  Toolbox, and PRO screens too
+• zSide "Transparent Balance" no longer shows a sample figure — it
+  shows an honest placeholder until wallet data is connected
+• Platform action/workflow buttons are disabled and clearly marked as
+  under development
