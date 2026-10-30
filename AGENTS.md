@@ -116,10 +116,12 @@ publish rather than re-signing.
 not the filename — use `gh release upload vX.Y.Z /path/to/app-fdroid-release.apk`.
 A wrong asset name makes `%v` 404 and breaks the next update check.
 
-**Current state:** 26.10.5 (`versionCode 20261005`, recipe commit
-`52b1d37559`, source commit `2eb9a668cf019b002195fc8b4c0f07264442652b`), MR
-pipeline `2915044830` all green including the reproducible `check apk` step
-(28.7 MB, 44 native libs — quick-crypto/nitro/OpenSSL removed). mezinster's
+**Current state:** 26.10.29 (`versionCode 20261029`, fdroiddata recipe commit
+`f1a3075ad1`, source commit `570f266348d8bf40e4aaf6e35b1a6ed24fbc30ba`; GitHub
+release v26.10.29 asset `app-fdroid-release.apk` 20,287,580 bytes, sha256
+`3f851735…a928b83`, signer cert matches `AllowedAPKSigningKeys`). Earlier:
+26.10.5 pipeline `2915044830` all green including the reproducible `check apk`
+step (28.7 MB, 44 native libs — quick-crypto/nitro/OpenSSL removed). mezinster's
 review was answered with note `3958314135`; their follow-up (note
 `3983603322`) asked for the stale 26.10.1 `Builds` block to be dropped —
 done in `52b1d37559`, the recipe now carries a single entry (the Skia `.a`

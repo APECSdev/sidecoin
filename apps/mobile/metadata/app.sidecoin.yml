@@ -64,17 +64,17 @@
 #
 #   Route (a) additionally needs a HOSTED binary at `Binaries:`/`binary:` for
 #   publish.py to fetch and compare. The signed release APK is attached to the
-#   v26.10.22 GitHub release (asset app-fdroid-release.apk, 20,265,036 bytes,
-#   SHA-256 a21c8b3d52328fecce3bdf893b81a72553fc616c3b68d18bbb69df7c891ede8c),
+#   v26.10.29 GitHub release (asset app-fdroid-release.apk, 20,287,580 bytes,
+#   SHA-256 3f8517359b5a5cbd82c59326f82a5da44f3c6c06c4448403f67e05618a928b83),
 #   so `Binaries:` below resolves to it via %v -> versionName. If verification
 #   ever fails, publish is SKIPPED (publish.py counts it as failed), not
 #   silently re-signed, so an upstream mismatch can never ship a wrong APK.
 #
 #   NOTE: `Binaries:` uses %v -> versionName, so it currently resolves to the
-#   v26.10.22 release, which must be tagged and uploaded before submission.
+#   v26.10.29 release, which must be tagged and uploaded before submission.
 #
-#   The binary is REBUILT at commit 06745903 (was 66a95bb2 at 26.10.12,
-#   2eb9a668 at 26.10.5). 26.10.22 answers junkerderprovinz's review (note
+#   The binary is REBUILT at commit 570f2663 (was 06745903 at 26.10.22,
+#   66a95bb2 at 26.10.12, 2eb9a668 at 26.10.5). 26.10.22 answers junkerderprovinz's review (note
 #   4064134145): the fdroid flavor now unlocks every platform and feature
 #   free of charge — no paid tier, no upgrade CTAs, no PRO mention in the UI
 #   — via a Metro build-flavor flag module (src/buildFlavor.ts, swapped to
@@ -184,10 +184,10 @@ Repo: https://github.com/APECSdev/sidecoin.git
 # Hosted reference binary: the APK we signed with our own release key, from the
 # SAME commit as the build below, so publish.py (route (a)) can verify F-Droid's
 # source build byte-for-byte against it and then SHIP OURS. %v resolves to
-# versionName (26.10.22), matching the v26.10.22 tag/release. GitHub returns a
+# versionName (26.10.29), matching the v26.10.29 tag/release. GitHub returns a
 # 302 redirect to the asset; fdroidserver's net.download_file follows it
-# (verified: HTTP 200, content-length 20265036, sha256 a21c8b3d52328fecce3bdf893
-# b81a72553fc616c3b68d18bbb69df7c891ede8c). 26.10.22 answers junkerderprovinz's
+# (verified: HTTP 200, content-length 20287580, sha256 3f8517359b5a5cbd82c59326f
+# 82a5da44f3c6c06c4448403f67e05618a928b83). 26.10.22 answers junkerderprovinz's
 # review on this MR (note 4064134145): the fdroid build now unlocks every
 # platform and feature free of charge (no paid tier, no upgrade CTAs, no PRO
 # mention in the UI) via a Metro build-flavor flag, the "Platform Activity"
@@ -207,15 +207,15 @@ Builds:
   # Keep ONLY the latest block: F-Droid builds and publishes every entry, and
   # mezinster (MR fdroiddata!50457) asked for the 26.10.1 block to be dropped
   # — it was the build that still shipped prebuilt OpenSSL.
-  - versionName: 26.10.22
-    versionCode: 20261022
-    # FULL 40-char hash, not the v26.10.22 tag. Build_Metadata_Reference:
+  - versionName: 26.10.29
+    versionCode: 20261029
+    # FULL 40-char hash, not the v26.10.29 tag. Build_Metadata_Reference:
     # "Don't use branch name or tag name. The full commit hash should be used."
     # This commit's build is CI-verified byte-identical to the hosted
     # reference binary (fdroid build: "compared built binary to supplied
     # reference binary successfully"); earlier commits embed absolute build
     # paths and the build-machine IP in resources.arsc (see the SIGNING note).
-    commit: 06745903f6e6195165dbaa8a49a0263adc5d4f2c
+    commit: 570f266348d8bf40e4aaf6e35b1a6ed24fbc30ba
     # `subdir` is the MODULE directory, not the Gradle project root. fdroidserver
     # roots both the gradle invocation (build.py) and the APK search at
     # `root_dir = build_dir/subdir` (common.prepare_source), and its default
@@ -364,8 +364,8 @@ AllowedAPKSigningKeys:
 
 AutoUpdateMode: Version
 UpdateCheckMode: Tags
-CurrentVersion: 26.10.22
-CurrentVersionCode: 20261022
+CurrentVersion: 26.10.29
+CurrentVersionCode: 20261029
 
 # NonFreeNet: the wallet talks to third-party hosted services that are not
 # free software and cannot be self-hosted by the user from within the app:
