@@ -27,6 +27,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useFocusEffect } from "@react-navigation/native";
 import Clipboard from "@react-native-clipboard/clipboard";
 import QRCode from "react-native-qrcode-svg";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { deriveReceiveAddress } from "@sidecoin/shared";
 
 import { loadWallet, setWalletNetwork, type WalletNetwork } from "../keystore";
@@ -104,6 +105,7 @@ function formatHistoryAmount(entry: HistoryEntry): string {
 }
 
 export function ReceiveScreen(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const [mnemonic, setMnemonic] = useState("");
   const [hasKey, setHasKey] = useState(false);
   const [selectedNetwork, setSelectedNetwork] = useState<WalletNetwork>("betanet");
@@ -256,7 +258,10 @@ export function ReceiveScreen(): React.JSX.Element {
   }, [paymentCodePreview]);
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.rootContent}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.rootContent, { paddingTop: insets.top + 20 }]}
+    >
       <Card style={styles.hero}>
         <View style={styles.heroHead}>
           <View style={styles.heroCopy}>

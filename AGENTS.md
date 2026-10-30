@@ -294,6 +294,21 @@ pushing a recipe update.
 
 ### F-Droid past review findings (each cost a round — do not repeat)
 
+- **2026-10-29 follow-up self-audit (same day, pre-reply)** found the
+  round's fixes necessary but NOT sufficient: the same inset bug existed on
+  FIVE more self-rooted screens the reviewer had not opened (AssetSwap,
+  Markets, ProBenefits, Receive, Toolbox — fixed identically, all 289 mobile
+  tests green); two dead `<Pressable>` buttons survived the 26.10.1 pass
+  ("Start workflow" overview card + the workflow submit button in
+  `PlatformDetailScreen` — now `disabled` + `soonNote`, and the listing's IN
+  DEVELOPMENT line now covers platform workflows); and `ProBenefitsScreen`
+  was latent-exposed on the fdroid flavor (unreachable via UI — all
+  `navigate("pro")` call sites are entitlement-gated — but it rendered the
+  full paid-tier upsell if navigated to; now renders an everything-unlocked
+  card when `IS_FDROID_BUILD`). Disclosed-mock audit confirmed CLEAN: Swap
+  "Preview mode" badge, Markets "Mock data" badge (`MOCK_ECX_HISTORY`), Feed
+  per-item "Mock" labels, Send coin-control "Display-only sample coins"
+  card. Checklist item 10 is the dead-control regression gate.
 - **PRO leftovers + Explore inset + zSide mock literal in 26.10.22**
   (junkerderprovinz, 2026-10-29): Demo Mode hint said "PRO previews" and
   the Founder Identity card named sidecoin.app/pro, neither behind

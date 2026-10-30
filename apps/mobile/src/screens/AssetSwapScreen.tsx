@@ -23,6 +23,7 @@
 
 import React, { useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ECASH, GRAY } from "../theme/colors";
 import {
@@ -84,6 +85,7 @@ const marketRows = [
 ];
 
 export function AssetSwapScreen(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const [fromAsset, setFromAsset] = useState("eCash");
   const [toAsset, setToAsset] = useState("THUNDER");
   const [amount, setAmount] = useState("");
@@ -150,7 +152,7 @@ export function AssetSwapScreen(): React.JSX.Element {
   }
 
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
       <Card style={styles.hero}>
         <View style={styles.heroTags}>
           <Eyebrow>Asset routing</Eyebrow>

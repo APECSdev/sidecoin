@@ -19,6 +19,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import Clipboard from "@react-native-clipboard/clipboard";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ECASH, GRAY } from "../theme/colors";
 import {
@@ -86,6 +87,7 @@ const wizardSteps = [
 ];
 
 export function ToolboxScreen(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const [activeStep, setActiveStep] = useState(0);
   const [copied, setCopied] = useState(false);
 
@@ -122,7 +124,10 @@ export function ToolboxScreen(): React.JSX.Element {
   }, []);
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.rootContent}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.rootContent, { paddingTop: insets.top + 20 }]}
+    >
       <View>
         <Eyebrow>Wallet utilities</Eyebrow>
         <Title>Toolbox</Title>

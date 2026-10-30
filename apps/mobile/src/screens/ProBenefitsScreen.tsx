@@ -16,11 +16,13 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useNavigation } from "@react-navigation/native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 
 import { ECASH, GRAY } from "../theme/colors";
 import type { RootStackParamList } from "../navigation/types";
 import { Body, Button, Card, Eyebrow, Muted } from "../components/ui";
+import { IS_FDROID_BUILD } from "../buildFlavor";
 
 const platformBenefits = [
   "Unlock zSide, BitAssets, Photon, Truthcoin, CoinShift, and RISCy",
@@ -90,14 +92,42 @@ const founderEligibility = [
 export function ProBenefitsScreen(): React.JSX.Element {
   const navigation =
     useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const insets = useSafeAreaInsets();
 
   function openPlatforms(): void {
     // "/platforms" is the "platforms" tab inside the tab shell ("main").
     navigation.navigate("main", { screen: "platforms" });
   }
 
+  // The F-Droid build ships with every platform and feature unlocked, so the
+  // paid-tier upsell has no purpose on that flavor — and store policy bars the
+  // paid-tier mention there (junkerderprovinz review, fdroiddata!50457 note
+  // 4064134145). The route stays registered (React Navigation drops actions to
+  // unregistered routes); only the content is swapped.
+  if (IS_FDROID_BUILD) {
+    return (
+      <View style={[styles.root, { paddingTop: insets.top }]}>
+        <Card tone="pro" style={styles.hero}>
+          <Eyebrow style={styles.heroEyebrow}>Sidecoin F-Droid</Eyebrow>
+          <Text style={styles.heroTitle}>Everything unlocked</Text>
+          <Body style={styles.heroBody}>
+            The F-Droid build includes every platform and feature free of
+            charge — no paid tier, no locked features.
+          </Body>
+          <View style={styles.heroCtas}>
+            <Button
+              label="Explore platforms"
+              variant="secondary"
+              onPress={openPlatforms}
+            />
+          </View>
+        </Card>
+      </View>
+    );
+  }
+
   return (
-    <View style={styles.root}>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
       <Card tone="pro" style={styles.hero}>
         <Eyebrow style={styles.heroEyebrow}>Sidecoin PRO</Eyebrow>
         <Text style={styles.heroTitle}>

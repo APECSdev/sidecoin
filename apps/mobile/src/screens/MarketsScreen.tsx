@@ -26,6 +26,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { LineChart } from "react-native-gifted-charts";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { getMarketPrice, type MarketPrice } from "../api";
 import { ECASH, GRAY } from "../theme/colors";
@@ -114,6 +115,7 @@ function formatSource(value: string): string {
 }
 
 export function MarketsScreen(): React.JSX.Element {
+  const insets = useSafeAreaInsets();
   const [price, setPrice] = useState<MarketPrice | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -139,7 +141,10 @@ export function MarketsScreen(): React.JSX.Element {
   }, [loadMarketPrice]);
 
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.rootContent}>
+    <ScrollView
+      style={styles.root}
+      contentContainerStyle={[styles.rootContent, { paddingTop: insets.top + 20 }]}
+    >
       <View>
         <Eyebrow>Live market data</Eyebrow>
         <Title>Markets</Title>

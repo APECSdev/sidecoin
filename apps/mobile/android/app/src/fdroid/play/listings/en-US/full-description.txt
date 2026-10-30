@@ -10,7 +10,7 @@ Sidecoin puts a whole ecosystem of sidechains in your pocket. One wallet, one se
 • 🔐 Unlock with biometrics — just one prompt per session
 
 🚧 DEPOSIT & WITHDRAW — IN DEVELOPMENT
-Moving value between L1 and a sidechain is shown in the app for review, but the deposit and withdrawal flows are not live yet — the buttons are clearly marked as under development.
+Moving value between L1 and a sidechain is shown in the app for review, but the deposit and withdrawal flows are not live yet — the buttons are clearly marked as under development. Per-platform action workflows are also not wired yet and carry the same under-development marking.
 
 🌐 THE SIDECHAINS
 • ⚡ Thunder Network — fast, low-fee everyday payments

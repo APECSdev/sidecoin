@@ -24,6 +24,13 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 // screen passes so the assertions below can inspect them.
 const chartProps: any = {};
 
+// The screen reads the top safe-area inset for its scroll container (junker-
+// derprovinz review fix); pin the hook the same way DashboardScreen.test.tsx
+// does instead of pulling in a SafeAreaProvider.
+jest.mock("react-native-safe-area-context", () => ({
+  useSafeAreaInsets: () => ({ top: 0, right: 0, bottom: 0, left: 0 }),
+}));
+
 jest.mock("react-native-gifted-charts", () => {
   const React = require("react");
   const { View } = require("react-native");

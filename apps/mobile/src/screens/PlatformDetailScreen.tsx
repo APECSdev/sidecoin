@@ -682,12 +682,17 @@ export function PlatformDetailScreen(): React.JSX.Element {
                         <Text style={styles.insetTitle}>{actionLabel()}</Text>
                         <Pressable
                           accessibilityRole="button"
-                          style={styles.solidButton}
+                          disabled
+                          style={[styles.solidButton, styles.soonButton]}
                         >
                           <Text style={styles.solidButtonText}>
                             Start workflow
                           </Text>
                         </Pressable>
+                        <Text style={styles.soonNote}>
+                          Platform workflows are under development — live
+                          platform actions are not wired yet.
+                        </Text>
                       </View>
 
                       <View style={styles.insetCard}>
@@ -1317,10 +1322,15 @@ export function PlatformDetailScreen(): React.JSX.Element {
 
                     <Pressable
                       accessibilityRole="button"
-                      style={styles.solidButton}
+                      disabled
+                      style={[styles.solidButton, styles.soonButton]}
                     >
                       <Text style={styles.solidButtonText}>{actionLabel()}</Text>
                     </Pressable>
+                    <Text style={styles.soonNote}>
+                      This workflow is under development — submissions are not
+                      wired yet.
+                    </Text>
                   </View>
                 </View>
 
