@@ -293,6 +293,23 @@ pushing a recipe update.
    Phase 4d port) was invisible behind the PRO gate until 26.10.22 ungated
    it and a reviewer found it on first open. Placeholders must be honest
    (`"—"` + "not connected/indexed yet", like the neighboring cards).
+10. **Dead-control sweep — no `<Pressable>` without `onPress` unless
+    `disabled`.** A control that renders tappable but does nothing is the
+    26.10.1 finding (mezinster) and it recurred: the 2026-10-29 self-audit
+    found two more ("Start workflow" overview card + the workflow submit
+    button, both `PlatformDetailScreen.tsx`) that survived the first pass.
+    Verify with a scripted sweep over `src/screens/` + `src/components/` —
+    grep for `<Pressable` opening tags lacking `onPress`, then confirm each
+    is `disabled` and carries a `soonNote` explaining the state.
+11. **Release sequencing — push the fdroiddata recipe LAST.** Pushing the
+    recipe branch triggers the MR pipeline immediately, and the `fdroid
+    build` job downloads `Binaries:` at the END of an otherwise successful
+    build. Sequence: bump + tag + push master → build APK → GitHub release
+    + asset upload → `curl -sIL` the `v%v` URL for 200 + content-length →
+    ONLY THEN bump + push fdroiddata. Pipeline `3006811594` (2026-10-30)
+    built 26.10.29 successfully, then failed on `Binaries:` 404 because the
+    recipe was pushed before the release asset existed; the retry after
+    upload went green. A 404 here costs a full pipeline round (~25 min).
 
 ### F-Droid past review findings (each cost a round — do not repeat)
 
