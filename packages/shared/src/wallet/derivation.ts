@@ -224,6 +224,53 @@ export function deriveDrivechainAddress(
 }
 
 /**
+ * Format a sidechain deposit address — the `s{slot}_{addr}_{checksum}`
+ * wrapper that routes an L1 deposit to an L2 address.
+ *
+ * Matches thunder-rust's `Address::format_for_deposit` (types/address.rs)
+ * and the reference C++ implementation (testchain-deprecated
+ * src/sidechain.cpp GenerateDepositAddress) byte-for-byte:
+ *
+ *   body     = `s{slot}_{address}_`   (trailing underscore INCLUDED in hash)
+ *   checksum = hex(sha256(body))[..6] (first 3 bytes → 6 lowercase hex chars)
+ *   result   = `{body}{checksum}`     → s{slot}_{addr}_{6 hex chars}
+ *
+ * The slot is the unpadded decimal BIP-300 slot number (std::to_string /
+ * Rust format! semantics). NOTE: the bip300301_enforcer wallet.proto
+ * comment says "first 6 bytes" — that comment is wrong; BOTH the C++
+ * reference and thunder-rust take the first 3 bytes (6 hex chars). This
+ * implementation follows the code, not the comment.
+ *
+ * The wrapper itself is sidechain-agnostic upstream, but callers should
+ * only present it for chains whose deposit conventions are verified —
+ * Thunder (slot 9) today.
+ *
+ * @param slot    - The BIP-300 slot number (0-255)
+ * @param address - The bare L2 receive address (base58 drivechain form)
+ * @returns The formatted deposit address string
+ * @throws If the slot is out of range or the address is empty
+ */
+export function formatDepositAddress(slot: number, address: string): string {
+  if (!Number.isInteger(slot) || slot < 0 || slot > 255) {
+    throw new Error(
+      `Deposit address slot must be an integer 0-255, got ${slot}.`,
+    );
+  }
+
+  if (!address) {
+    throw new Error("Deposit address requires a non-empty L2 address.");
+  }
+
+  // The hashed body INCLUDES the trailing underscore (both reference
+  // implementations build `s{slot}_{addr}_` first, then hash it).
+  const body = `s${slot}_${address}_`;
+  const digest = Buffer.from(sha256(Buffer.from(body, "utf8")));
+  const checksum = digest.toString("hex").slice(0, 6);
+
+  return `${body}${checksum}`;
+}
+
+/**
  * Apply the EIP-55 mixed-case checksum to a 40-char lowercase hex address.
  *
  * EIP-55: hash the lowercase hex STRING (UTF-8 bytes, NOT the decoded

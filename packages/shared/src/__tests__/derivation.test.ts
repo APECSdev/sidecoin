@@ -13,6 +13,7 @@ import {
   deriveReceiveAddress,
   deriveDrivechainAddress,
   deriveEvmAddress,
+  formatDepositAddress,
   scriptPubKeyFromAddress,
 } from "../wallet/derivation";
 
@@ -268,5 +269,82 @@ describe("scriptPubKeyFromAddress", () => {
     expect(() => scriptPubKeyFromAddress("1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2")).toThrow(
       /bech32/i,
     );
+  });
+});
+
+// ---------------------------------------------------------------------------
+// formatDepositAddress — s{slot}_{addr}_{checksum} deposit wrapper
+// ---------------------------------------------------------------------------
+
+describe("formatDepositAddress — canonical vectors", () => {
+  // Vectors computed independently with Node's crypto (sha256 of the body
+  // INCLUDING its trailing underscore, first 3 bytes hex-encoded) so a
+  // passing test proves cross-implementation agreement with @noble/hashes.
+  // The thunder-rust reference is Address::format_for_deposit
+  // (types/address.rs) — the C++ reference is GenerateDepositAddress in
+  // testchain-deprecated src/sidechain.cpp; both produce these exact bytes.
+
+  it("wraps the pinned Thunder index-1 vector (slot 9)", () => {
+    // Same mnemonic → base58 address locked in the deriveDrivechainAddress
+    // vector block above.
+    expect(
+      formatDepositAddress(9, "k81Deknpsx5Zi6WxUkeMQYrohvt"),
+    ).toBe("s9_k81Deknpsx5Zi6WxUkeMQYrohvt_fbbfdc");
+  });
+
+  it("wraps a live Thunder deposit address observed on the adapter", () => {
+    // Address taken from a real /v1/wallet/9/deposits row (l2_credited).
+    expect(
+      formatDepositAddress(9, "2QQkc3D71Tw7zx9vLhADj2wNkvhC"),
+    ).toBe("s9_2QQkc3D71Tw7zx9vLhADj2wNkvhC_468e32");
+  });
+
+  it("changes both slot prefix and checksum for a different slot", () => {
+    expect(
+      formatDepositAddress(4, "k81Deknpsx5Zi6WxUkeMQYrohvt"),
+    ).toBe("s4_k81Deknpsx5Zi6WxUkeMQYrohvt_8b05d4");
+  });
+
+  it("uses the unpadded decimal slot (s9, not s09)", () => {
+    const addr = formatDepositAddress(9, "k81Deknpsx5Zi6WxUkeMQYrohvt");
+    expect(addr.startsWith("s9_")).toBe(true);
+    expect(addr.startsWith("s09_")).toBe(false);
+  });
+
+  it("produces 6 lowercase hex checksum chars (3 bytes)", () => {
+    const addr = formatDepositAddress(9, "k81Deknpsx5Zi6WxUkeMQYrohvt");
+    // s{slot}_{addr}_{6 hex} — the trailing 6 chars are lowercase hex.
+    expect(addr).toMatch(/^s9_[1-9A-HJ-NP-Za-km-z]+_[0-9a-f]{6}$/);
+  });
+
+  it("differs from the bare L2 address (wrapper is not a valid L2 addr)", () => {
+    const bare = deriveDrivechainAddress(TEST_MNEMONIC, 1);
+    const wrapped = formatDepositAddress(9, bare);
+    expect(wrapped).not.toBe(bare);
+    expect(wrapped.startsWith(`s9_${bare}_`)).toBe(true);
+  });
+});
+
+describe("formatDepositAddress — input validation", () => {
+  it("rejects a slot above 255", () => {
+    expect(() => formatDepositAddress(256, "k81Deknpsx5Zi6WxUkeMQYrohvt")).toThrow(
+      /integer 0-255/i,
+    );
+  });
+
+  it("rejects a negative slot", () => {
+    expect(() => formatDepositAddress(-1, "k81Deknpsx5Zi6WxUkeMQYrohvt")).toThrow(
+      /integer 0-255/i,
+    );
+  });
+
+  it("rejects a non-integer slot", () => {
+    expect(() => formatDepositAddress(9.5, "k81Deknpsx5Zi6WxUkeMQYrohvt")).toThrow(
+      /integer 0-255/i,
+    );
+  });
+
+  it("rejects an empty L2 address", () => {
+    expect(() => formatDepositAddress(9, "")).toThrow(/non-empty L2 address/i);
   });
 });
