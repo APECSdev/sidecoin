@@ -23,6 +23,7 @@ import { scriptPubKeyFromAddress } from "@sidecoin/shared";
 export type {
   SidechainSummary,
   DepositsPage,
+  Deposit,
   WalletBalance,
   ChainBalance,
   ListDepositsParams,

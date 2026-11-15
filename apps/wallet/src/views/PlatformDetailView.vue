@@ -5,6 +5,10 @@ import { computed, onBeforeUnmount, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import { getPlatformById } from "../data/platforms";
 import type { PlatformFeatureTab } from "../data/platforms";
+import { getWalletBalance, getDeposits, satsToBtc } from "../api";
+import type { Deposit, WalletBalance } from "../api";
+import { deriveDrivechainAddress, formatDepositAddress } from "@sidecoin/shared";
+import { loadWallet } from "../keystore";
 import { canAccessPlatform, isProPlatform, platformFeatureId } from "../entitlements";
 import { beginProSession, endProSession, isAlphaMetered } from "../alpha";
 import ProBadge from "../components/pro/ProBadge.vue";
@@ -82,6 +86,59 @@ const bitNamesContacts: BitNamesContact[] = [];
 
 const bitNamesMessages: BitNamesMessage[] = [];
 
+// ---------------------------------------------------------------------------
+// Live Thunder data (adapter slot-9 routes; Thunder is a Basic platform)
+// ---------------------------------------------------------------------------
+//
+// Phase A hub wiring — read-only. Balance comes from the adapter's
+// slot-addressed balance route ("seen" false means the upstream balance
+// index has not observed the address, so the credited-deposit list is the
+// reliable per-user signal today — verified against the live adapter).
+// Deposit history uses the exact-match address filter. Payments, channels,
+// and liquidity keep their honest disabled shells until a Thunder write
+// path exists (the adapter returns 501 for L2 broadcast today).
+const THUNDER_SLOT = 9;
+
+const thunderHasWallet = ref(false);
+const thunderAddress = ref("");
+const thunderDepositAddress = ref("");
+const thunderBalance = ref<WalletBalance | null>(null);
+const thunderDeposits = ref<Deposit[]>([]);
+const thunderLoading = ref(false);
+const thunderError = ref("");
+
+const thunderBalanceValue = computed(() => {
+  return thunderBalance.value ? satsToBtc(thunderBalance.value.totalSats) : "—";
+});
+
+const thunderBalanceCaption = computed(() => {
+  if (thunderLoading.value) return "Loading Thunder balance…";
+  if (!thunderHasWallet.value) {
+    return "Wallet setup required — balance appears once key setup is complete.";
+  }
+  if (thunderError.value || thunderBalance.value == null) {
+    return "Live balance data not indexed yet";
+  }
+  if (thunderBalance.value.seen) {
+    return thunderBalance.value.updatedAtHeight != null
+      ? `Indexed balance (height ${thunderBalance.value.updatedAtHeight})`
+      : "Indexed balance";
+  }
+  return "No spendable balance indexed yet — credited deposits shown below";
+});
+
+function thunderStatusLabel(status: string): string {
+  // Only statuses observed on the live adapter are given friendly labels;
+  // anything else renders verbatim (honest fallback).
+  if (status === "l2_credited") return "Credited on Thunder";
+  return status;
+}
+
+function depositTime(ts: number | null): string {
+  if (ts == null) return "—";
+  return new Date(ts * 1000).toLocaleString();
+}
+
 const platform = computed(() => {
   const id = String(route.params.platformId ?? "");
   return getPlatformById(id);
@@ -108,6 +165,73 @@ watch(meteredProScreen, (active) => {
   }
 });
 onBeforeUnmount(() => endProSession());
+
+function resetThunderData() {
+  thunderHasWallet.value = false;
+  thunderAddress.value = "";
+  thunderDepositAddress.value = "";
+  thunderBalance.value = null;
+  thunderDeposits.value = [];
+  thunderLoading.value = false;
+  thunderError.value = "";
+}
+
+async function loadThunderData() {
+  if (platform.value?.id !== "thunder" || locked.value) {
+    resetThunderData();
+    return;
+  }
+
+  const wallet = loadWallet();
+  if (!wallet) {
+    resetThunderData();
+    return;
+  }
+
+  thunderHasWallet.value = true;
+
+  try {
+    thunderAddress.value = deriveDrivechainAddress(wallet.mnemonic, 1);
+  } catch (e) {
+    console.error("[PlatformDetailView] Failed to derive Thunder address:", e);
+    thunderAddress.value = "";
+    thunderDepositAddress.value = "";
+    thunderError.value =
+      "Unable to derive a Thunder address from the stored key.";
+    return;
+  }
+
+  thunderDepositAddress.value = formatDepositAddress(THUNDER_SLOT, thunderAddress.value);
+
+  thunderLoading.value = true;
+  thunderError.value = "";
+  try {
+    // Balance + deposit history load in parallel. A failure here is
+    // surfaced as a non-fatal banner; the metric cards keep their "—"
+    // fallbacks instead of breaking the page.
+    const [balance, depositsPage] = await Promise.all([
+      getWalletBalance(THUNDER_SLOT, thunderAddress.value),
+      getDeposits(THUNDER_SLOT, { address: thunderAddress.value, limit: 10 }),
+    ]);
+    thunderBalance.value = balance;
+    thunderDeposits.value = depositsPage.deposits;
+  } catch (e) {
+    console.error("[PlatformDetailView] Failed to load Thunder data:", e);
+    thunderError.value = String(e);
+  } finally {
+    thunderLoading.value = false;
+  }
+}
+
+// Reload when the route moves between platforms or the unlock state
+// changes (the component is reused across /platforms/:platformId).
+watch(
+  () => [platform.value?.id, locked.value],
+  () => {
+    void loadThunderData();
+  },
+  { immediate: true },
+);
 
 const platformSlotLabel = computed(() => {
   return platform.value?.slot == null ? "Slot TBD" : `Slot ${platform.value.slot}`;
@@ -197,7 +321,7 @@ const metricCards = computed<MetricCard[]>(() => {
 
   if (id === "thunder") {
     return [
-      { label: "Platform Balance", value: "—", caption: "Live balance data not indexed yet" },
+      { label: "Platform Balance", value: thunderBalanceValue.value, caption: thunderBalanceCaption.value },
       { label: "Payments", value: "—", caption: "Live payment data not indexed yet" },
       { label: "Channels", value: "—", caption: "Live channel data not indexed yet" },
       { label: "Liquidity", value: "—", caption: "Live liquidity data not indexed yet" },
@@ -267,7 +391,16 @@ const metricCards = computed<MetricCard[]>(() => {
 });
 
 const activityRows = computed<ActivityRow[]>(() => {
-  return [];
+  // Thunder: credited L1→Thunder deposits for the user's own address.
+  // Other platforms have no verified backend yet — stay empty (honest).
+  if (platform.value?.id !== "thunder") return [];
+  return thunderDeposits.value.map((d) => ({
+    time: depositTime(d.l2CreditedTs ?? d.firstSeenTs),
+    type: "Deposit",
+    amount: satsToBtc(d.valueSats),
+    status: thunderStatusLabel(d.status),
+    txid: d.l1Txid,
+  }));
 });
 
 function actionLabel(): string {
@@ -326,6 +459,16 @@ function secondaryFieldPlaceholder(): string {
   if (id === "coinshift") return "0.00000000";
   return "0.00000000";
 }
+
+const thunderActivityEmptyLabel = computed(() => {
+  if (!thunderHasWallet.value) {
+    return "Wallet setup required — your Thunder activity appears once key setup is complete.";
+  }
+  if (!thunderAddress.value) {
+    return "Live Thunder activity is unavailable right now.";
+  }
+  return "No Thunder deposits yet for your address.";
+});
 
 function openBitNamesMessages(contactName: string) {
   selectedBitNamesContact.value = contactName;
@@ -403,6 +546,14 @@ function openBitNamesMessages(contactName: string) {
         <p class="mt-1 text-xs text-gray-500">{{ card.caption }}</p>
       </div>
     </section>
+
+    <div
+      v-if="platform.id === 'thunder' && thunderError"
+      class="mt-4 rounded bg-red-900/30 p-4 text-red-400"
+    >
+      <p class="font-semibold">Error loading Thunder data</p>
+      <p class="mt-1 text-sm">{{ thunderError }}</p>
+    </div>
 
     <ProGate
       v-if="locked"
@@ -518,7 +669,7 @@ function openBitNamesMessages(contactName: string) {
             Recent activity
           </p>
           <div v-if="activityRows.length === 0" class="rounded-xl border border-gray-800 bg-gray-900 p-4 text-sm text-gray-500">
-            Live platform activity is not indexed yet.
+            {{ thunderActivityEmptyLabel }}
           </div>
 
           <div v-else class="overflow-x-auto">
@@ -950,11 +1101,26 @@ function openBitNamesMessages(contactName: string) {
           <label class="mt-5 block">
             <span class="text-xs uppercase tracking-widest text-gray-500">Platform deposit address</span>
             <input
+              v-if="platform.id === 'thunder' && thunderDepositAddress"
+              disabled
+              :value="thunderDepositAddress"
+              class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 font-mono text-xs text-ecash-400"
+            />
+            <input
+              v-else
               disabled
               placeholder="Live deposit address not indexed"
               class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 font-mono text-xs text-gray-400 placeholder-gray-600"
             />
           </label>
+
+          <p
+            v-if="platform.id === 'thunder' && thunderDepositAddress"
+            class="mt-2 text-xs text-gray-500"
+          >
+            Send L1 funds to this address to deposit into Thunder.
+            In-wallet deposit execution is not wired yet.
+          </p>
 
           <label class="mt-4 block">
             <span class="text-xs uppercase tracking-widest text-gray-500">Deposit amount</span>
@@ -1021,7 +1187,7 @@ function openBitNamesMessages(contactName: string) {
           v-if="activityRows.length === 0"
           class="mt-5 rounded-xl border border-gray-800 bg-gray-950 p-5 text-sm text-gray-500"
         >
-          Live platform activity is not indexed yet.
+          {{ thunderActivityEmptyLabel }}
         </div>
 
         <div v-else class="mt-5 overflow-x-auto rounded-xl border border-gray-800 bg-gray-950">

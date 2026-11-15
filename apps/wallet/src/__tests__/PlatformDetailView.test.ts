@@ -12,13 +12,59 @@ vi.mock("../api", async () => {
     ...actual,
     getCoinNewsFeeds: vi.fn(),
     getCoinNewsPosts: vi.fn(),
+    getWalletBalance: vi.fn(),
+    getDeposits: vi.fn(),
   };
 });
 
-import { getCoinNewsFeeds, getCoinNewsPosts } from "../api";
+import { getCoinNewsFeeds, getCoinNewsPosts, getWalletBalance, getDeposits } from "../api";
 
 const mockGetCoinNewsFeeds = vi.mocked(getCoinNewsFeeds);
 const mockGetCoinNewsPosts = vi.mocked(getCoinNewsPosts);
+const mockGetWalletBalance = vi.mocked(getWalletBalance);
+const mockGetDeposits = vi.mocked(getDeposits);
+
+// The standard all-"abandon" BIP-39 test mnemonic. Its pinned Thunder
+// (index-1) address comes from packages/shared derivation vectors:
+// k81Deknpsx5Zi6WxUkeMQYrohvt → deposit wrapper s9_…_fbbfdc.
+const TEST_MNEMONIC =
+  "abandon abandon abandon abandon abandon abandon " +
+  "abandon abandon abandon abandon abandon about";
+
+/** Seed the REAL keystore (localStorage) with the pinned test wallet. */
+function seedTestWallet() {
+  localStorage.setItem(
+    "sidecoin.wallet.v1",
+    JSON.stringify({
+      version: 1,
+      network: "betanet",
+      mnemonic: TEST_MNEMONIC,
+      createdAt: 0,
+    }),
+  );
+}
+
+const EMPTY_THUNDER_BALANCE = {
+  slot: 9,
+  chainId: "thunder",
+  address: "k81Deknpsx5Zi6WxUkeMQYrohvt",
+  source: "indexed" as const,
+  provisioned: true,
+  totalSats: 0n,
+  depositCount: 0,
+  truncated: false,
+  seen: false,
+  updatedAtHeight: null,
+  note: "indexed balance from upstream (sats)",
+};
+
+const EMPTY_THUNDER_DEPOSITS = {
+  slot: 9,
+  chainId: "thunder",
+  provisioned: true,
+  deposits: [],
+  nextCursor: null,
+};
 
 
 async function mountPlatform(path: string) {
@@ -44,6 +90,9 @@ async function mountPlatform(path: string) {
 describe("PlatformDetailView.vue", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
+    mockGetWalletBalance.mockResolvedValue(EMPTY_THUNDER_BALANCE);
+    mockGetDeposits.mockResolvedValue(EMPTY_THUNDER_DEPOSITS);
     mockGetCoinNewsFeeds.mockResolvedValue([
       {
         id: "us-weekly",
@@ -309,5 +358,109 @@ describe("PlatformDetailView.vue", () => {
   it("shows a not-found state for unknown platforms", async () => {
     const wrapper = await mountPlatform("/platforms/unknown");
     expect(wrapper.text()).toContain("Platform not found");
+  });
+
+  it("loads live Thunder balance and credited deposits into the hub", async () => {
+    seedTestWallet();
+    mockGetWalletBalance.mockResolvedValue({
+      ...EMPTY_THUNDER_BALANCE,
+      totalSats: 150000n,
+      depositCount: 1,
+      seen: true,
+      updatedAtHeight: 2700,
+    });
+    mockGetDeposits.mockResolvedValue({
+      ...EMPTY_THUNDER_DEPOSITS,
+      deposits: [
+        {
+          slot: 9,
+          chainId: "thunder",
+          l1Txid: "1a23f9d2455137e63f6dc87f90514ef33258746cebf6fd7ebb6c96416b4cc4eb",
+          vout: 0,
+          ctipSeq: null,
+          address: "k81Deknpsx5Zi6WxUkeMQYrohvt",
+          valueSats: 100000n,
+          status: "l2_credited",
+          confirmations: null,
+          firstSeenTs: 1782171004,
+          l1ConfirmedTs: null,
+          l2CreditedTs: 1782171004,
+        },
+      ],
+    });
+
+    const wrapper = await mountPlatform("/platforms/thunder");
+    await flushPromises();
+
+    // Balance is queried for the wallet's own derived Thunder address.
+    expect(mockGetWalletBalance).toHaveBeenCalledWith(9, "k81Deknpsx5Zi6WxUkeMQYrohvt");
+    expect(mockGetDeposits).toHaveBeenCalledWith(9, {
+      address: "k81Deknpsx5Zi6WxUkeMQYrohvt",
+      limit: 10,
+    });
+
+    // Live indexed balance renders formatted — satsToBtc keeps a minimum
+    // of 2 decimals and trims trailing zeros (150000 sats → "0.0015").
+    expect(wrapper.text()).toContain("0.0015");
+    expect(wrapper.text()).toContain("Indexed balance (height 2700)");
+
+    // The credited deposit feeds the overview activity table.
+    expect(wrapper.text()).toContain("Credited on Thunder");
+    expect(wrapper.text()).not.toContain("No Thunder deposits yet for your address.");
+  });
+
+  it("shows the formatted s9 deposit address in the Parent Chain tab", async () => {
+    seedTestWallet();
+
+    const wrapper = await mountPlatform("/platforms/thunder");
+    const parentChain = wrapper.findAll("button").find((b) => b.text() === "Parent Chain");
+    expect(parentChain).toBeDefined();
+    await parentChain!.trigger("click");
+    await flushPromises();
+
+    // formatDepositAddress(9, k81Deknpsx5Zi6WxUkeMQYrohvt) — checksum locked
+    // in the @sidecoin/shared derivation vectors. The address lives in an
+    // input's value (not a text node), so assert on the DOM element.
+    const depositInput = wrapper
+      .findAll("input")
+      .find((i) => (i.element as HTMLInputElement).value === "s9_k81Deknpsx5Zi6WxUkeMQYrohvt_fbbfdc");
+    expect(depositInput).toBeDefined();
+    expect(wrapper.text()).toContain("In-wallet deposit execution is not wired yet.");
+  });
+
+  it("keeps the honest fallback and error banner when Thunder data fails", async () => {
+    seedTestWallet();
+    mockGetWalletBalance.mockRejectedValue(new Error("upstream down"));
+    mockGetDeposits.mockRejectedValue(new Error("upstream down"));
+
+    const wrapper = await mountPlatform("/platforms/thunder");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("Error loading Thunder data");
+    expect(wrapper.text()).toContain("upstream down");
+    // Balance card falls back to the em-dash placeholder, not a fake zero.
+    expect(wrapper.text()).toContain("Live balance data not indexed yet");
+  });
+
+  it("shows a wallet-setup state and makes no Thunder calls without a key", async () => {
+
+    const wrapper = await mountPlatform("/platforms/thunder");
+    await flushPromises();
+
+    expect(mockGetWalletBalance).not.toHaveBeenCalled();
+    expect(mockGetDeposits).not.toHaveBeenCalled();
+    expect(wrapper.text()).toContain(
+      "Wallet setup required — balance appears once key setup is complete.",
+    );
+  });
+
+  it("does not fetch Thunder data for other platforms", async () => {
+    seedTestWallet();
+
+    await mountPlatform("/platforms/zside");
+    await flushPromises();
+
+    expect(mockGetWalletBalance).not.toHaveBeenCalled();
+    expect(mockGetDeposits).not.toHaveBeenCalled();
   });
 });
