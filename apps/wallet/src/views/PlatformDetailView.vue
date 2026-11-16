@@ -5,9 +5,25 @@ import { computed, onBeforeUnmount, ref, watch, watchEffect } from "vue";
 import { useRoute } from "vue-router";
 import { getPlatformById } from "../data/platforms";
 import type { PlatformFeatureTab } from "../data/platforms";
-import { getWalletBalance, getDeposits, satsToBtc } from "../api";
-import type { Deposit, WalletBalance } from "../api";
-import { deriveDrivechainAddress, formatDepositAddress } from "@sidecoin/shared";
+import {
+  getWalletBalance,
+  getDeposits,
+  getL1Utxos,
+  getCtip,
+  broadcastTransaction,
+  satsToBtc,
+  L1_CHAIN_ID,
+} from "../api";
+import type { Deposit, WalletBalance, Utxo } from "../api";
+import {
+  deriveDrivechainAddress,
+  deriveSigningKey,
+  formatDepositAddress,
+  buildAndSignDepositTransaction,
+  estimateDepositVsize,
+  type SignedDepositTransaction,
+} from "@sidecoin/shared";
+import { parseCoinsToSats, toSpendableUtxo } from "../send";
 import { loadWallet } from "../keystore";
 import { canAccessPlatform, isProPlatform, platformFeatureId } from "../entitlements";
 import { beginProSession, endProSession, isAlphaMetered } from "../alpha";
@@ -174,6 +190,152 @@ function resetThunderData() {
   thunderDeposits.value = [];
   thunderLoading.value = false;
   thunderError.value = "";
+  resetThunderDepositFlow();
+}
+
+// ---------------------------------------------------------------------------
+// Thunder deposit execution (client-side M5 build + sign + broadcast)
+// ---------------------------------------------------------------------------
+// 100% client: the deposit is an L1 transaction built and signed in this
+// wallet (shared buildAndSignDepositTransaction) and broadcast through the
+// same public Esplora endpoint as any L1 send. The only chain-side read is
+// the treasury CTIP from the public enforcer, fetched immediately before
+// build (the builder's output 0 must match the CURRENT CTIP value at
+// confirmation — a stale CTIP means the node rejects the tx; re-review to
+// retry).
+
+/** Wallet-wide flat fee rate (szats/vB) — same policy as the Send flow. */
+const FEE_RATE_SAT_PER_VB = 2;
+
+const thunderDepositAmountInput = ref("");
+const thunderDepositReview = ref<SignedDepositTransaction | null>(null);
+const thunderDepositAmountSatoshis = ref(0n);
+const thunderDepositBusy = ref(false);
+const thunderDepositReceiptTxid = ref("");
+const thunderDepositFlowError = ref("");
+
+function resetThunderDepositFlow() {
+  thunderDepositReview.value = null;
+  thunderDepositAmountSatoshis.value = 0n;
+  thunderDepositReceiptTxid.value = "";
+  thunderDepositFlowError.value = "";
+}
+
+async function reviewThunderDeposit() {
+  resetThunderDepositFlow();
+
+  const wallet = loadWallet();
+  if (!wallet) {
+    thunderDepositFlowError.value =
+      "Wallet setup required — create a wallet key before depositing.";
+    return;
+  }
+
+  let depositSats: bigint;
+  try {
+    depositSats = parseCoinsToSats(thunderDepositAmountInput.value);
+  } catch (e) {
+    thunderDepositFlowError.value = String(e);
+    return;
+  }
+  if (depositSats <= 0n) {
+    thunderDepositFlowError.value = "Enter a deposit amount greater than zero.";
+    return;
+  }
+  if (!thunderAddress.value || !thunderDepositAddress.value) {
+    thunderDepositFlowError.value =
+      "Thunder address not derived yet — try again in a moment.";
+    return;
+  }
+
+  thunderDepositBusy.value = true;
+  try {
+    const network = wallet.network;
+    const key = deriveSigningKey(wallet.mnemonic, network, 0);
+
+    // CTIP fetched immediately before build — see the race note above.
+    const ctip = await getCtip(network, THUNDER_SLOT);
+    const utxoSet = await getL1Utxos(key.address, {}, network);
+    // Funding inputs must be confirmed and non-coinbase (maturity guard).
+    const spendable = utxoSet.utxos.filter(
+      (u) => u.confirmations >= 1 && !u.isCoinbase,
+    );
+
+    // Greedy largest-first selection; the fee is re-estimated as inputs are
+    // added so the final selection actually covers deposit + fee(count).
+    const vsizeFor = (n: number) =>
+      estimateDepositVsize({
+        numUserInputs: n,
+        l2Address: thunderAddress.value,
+        hasChange: true,
+      });
+    const sorted = [...spendable].sort((a, b) =>
+      b.valueSats > a.valueSats ? 1 : b.valueSats < a.valueSats ? -1 : 0,
+    );
+    const chosen: Utxo[] = [];
+    let userTotal = 0n;
+    let fee = 0n;
+    for (const utxo of sorted) {
+      chosen.push(utxo);
+      userTotal += utxo.valueSats;
+      fee = BigInt(Math.ceil(vsizeFor(chosen.length) * FEE_RATE_SAT_PER_VB));
+      if (userTotal >= depositSats + fee) break;
+    }
+    if (userTotal < depositSats + fee) {
+      throw new Error(
+        `Not enough L1 balance: ${satsToBtc(userTotal)} available, need ` +
+          `${satsToBtc(depositSats + fee)} (deposit + fee).`,
+      );
+    }
+
+    const signed = buildAndSignDepositTransaction({
+      network,
+      sidechainSlot: THUNDER_SLOT,
+      ctip,
+      l2Address: thunderAddress.value,
+      depositSatoshis: depositSats,
+      feeSatoshis: fee,
+      selectedUtxos: chosen.map(toSpendableUtxo),
+      changeScriptPubKey: key.scriptPubKey,
+      signingKeys: [key],
+    });
+    thunderDepositAmountSatoshis.value = depositSats;
+    thunderDepositReview.value = signed;
+  } catch (e) {
+    console.error("[PlatformDetailView] Deposit build failed:", e);
+    thunderDepositFlowError.value = String(e);
+  } finally {
+    thunderDepositBusy.value = false;
+  }
+}
+
+async function broadcastThunderDeposit() {
+  const built = thunderDepositReview.value;
+  if (!built) return;
+
+  const wallet = loadWallet();
+  if (!wallet) {
+    thunderDepositFlowError.value =
+      "Wallet setup required — create a wallet key before depositing.";
+    return;
+  }
+
+  thunderDepositBusy.value = true;
+  try {
+    const receipt = await broadcastTransaction(
+      L1_CHAIN_ID,
+      built.hex,
+      wallet.network,
+    );
+    thunderDepositReceiptTxid.value = receipt.txid;
+    thunderDepositReview.value = null;
+    thunderDepositAmountInput.value = "";
+  } catch (e) {
+    console.error("[PlatformDetailView] Deposit broadcast failed:", e);
+    thunderDepositFlowError.value = String(e);
+  } finally {
+    thunderDepositBusy.value = false;
+  }
 }
 
 async function loadThunderData() {
@@ -1125,15 +1287,90 @@ function openBitNamesMessages(contactName: string) {
           <label class="mt-4 block">
             <span class="text-xs uppercase tracking-widest text-gray-500">Deposit amount</span>
             <input
+              v-if="platform.id === 'thunder'"
+              v-model="thunderDepositAmountInput"
+              :disabled="thunderDepositBusy"
+              placeholder="0.00000000"
+              class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-200 placeholder-gray-600"
+            />
+            <input
+              v-else
               disabled
               placeholder="0.00000000"
               class="mt-2 w-full rounded border border-gray-800 bg-gray-900 px-3 py-2 text-sm text-gray-400 placeholder-gray-600"
             />
           </label>
 
-          <button class="mt-5 rounded-lg bg-ecash-600 px-4 py-2 text-sm font-bold text-white hover:bg-ecash-500">
+          <button
+            v-if="platform.id === 'thunder'"
+            :disabled="thunderDepositBusy || !thunderDepositAddress"
+            class="mt-5 rounded-lg bg-ecash-600 px-4 py-2 text-sm font-bold text-white hover:bg-ecash-500 disabled:bg-gray-800 disabled:text-gray-600"
+            @click="reviewThunderDeposit"
+          >
+            {{ thunderDepositBusy ? "Working…" : "Review deposit" }}
+          </button>
+          <button
+            v-else
+            class="mt-5 rounded-lg bg-ecash-600 px-4 py-2 text-sm font-bold text-white hover:bg-ecash-500"
+          >
             Review deposit
           </button>
+
+          <div
+            v-if="platform.id === 'thunder' && thunderDepositFlowError"
+            class="mt-3 rounded bg-red-900/30 p-3 text-xs text-red-400"
+          >
+            {{ thunderDepositFlowError }}
+          </div>
+
+          <div
+            v-if="platform.id === 'thunder' && thunderDepositReview"
+            class="mt-4 rounded border border-ecash-800 bg-gray-900 p-3 text-xs text-gray-300"
+          >
+            <p class="font-semibold text-white">Deposit ready — review before broadcast</p>
+            <dl class="mt-2 space-y-1">
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Deposit</dt>
+                <dd>{{ satsToBtc(thunderDepositAmountSatoshis) }}</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Fee</dt>
+                <dd>{{ thunderDepositReview.feeSatoshis }} szats</dd>
+              </div>
+              <div class="flex justify-between gap-4">
+                <dt class="text-gray-500">Change back</dt>
+                <dd>{{ satsToBtc(thunderDepositReview.changeSatoshis) }}</dd>
+              </div>
+            </dl>
+            <p class="mt-2 text-gray-500">
+              CTIP-spending deposit (M5). If another deposit advances the treasury
+              before this confirms, the node rejects the broadcast — re-review to
+              retry with a fresh CTIP.
+            </p>
+            <div class="mt-3 flex gap-2">
+              <button
+                :disabled="thunderDepositBusy"
+                class="rounded-lg bg-ecash-600 px-4 py-2 text-sm font-bold text-white hover:bg-ecash-500 disabled:bg-gray-800 disabled:text-gray-600"
+                @click="broadcastThunderDeposit"
+              >
+                Broadcast deposit
+              </button>
+              <button
+                :disabled="thunderDepositBusy"
+                class="rounded-lg border border-gray-700 px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-800"
+                @click="thunderDepositReview = null"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <p
+            v-if="platform.id === 'thunder' && thunderDepositReceiptTxid"
+            class="mt-3 break-all rounded bg-ecash-950/40 p-3 font-mono text-xs text-ecash-400"
+          >
+            Deposit broadcast: {{ thunderDepositReceiptTxid }}
+          </p>
         </div>
 
         <div class="rounded-xl border border-gray-800 bg-gray-950 p-5">

@@ -19,6 +19,9 @@ import {
   type GetUtxosParams,
 } from "@sidecoin/api-client";
 import { scriptPubKeyFromAddress } from "@sidecoin/shared";
+import type { Ctip } from "@sidecoin/shared";
+
+export type { Ctip };
 
 export type {
   SidechainSummary,
@@ -613,4 +616,93 @@ export async function getRawTransaction(
     throw new Error(`Raw tx ${txid} returned non-hex data: ${hex.slice(0, 40)}…`);
   }
   return hex;
+}
+
+// ---------------------------------------------------------------------------
+// BIP-300 deposit support (client-side M5 construction)
+// ---------------------------------------------------------------------------
+// A deposit is an L1 transaction paying into a sidechain's treasury, so it
+// broadcasts through the SAME public Esplora endpoint used for L1 sends —
+// no backend integration. The only chain-side data the builder needs is the
+// sidechain's current treasury UTXO (CTIP), served by the public CUSF
+// enforcer (drivechain.dev/config services.enforcer) over Connect JSON.
+
+/**
+ * Public CUSF-enforcer Connect endpoints per L1 network (drivechain.dev/config).
+ */
+const ENFORCER_BASES: Record<L1Network, string> = {
+  signet: "https://enforcer.signet.drivechain.info",
+  betanet: "https://enforcer.beta.ecash.ninja",
+};
+
+/** Reverse a hex string's byte order (the enforcer serves internal-order txids). */
+function reverseHexPairs(hex: string): string {
+  const bytes = hex.match(/.{2}/g) ?? [];
+  return bytes.reverse().join("");
+}
+
+/**
+ * Fetch the sidechain's current treasury UTXO (CTIP) via the enforcer's
+ * GetCtip Connect JSON route.
+ *
+ * NOTE (verified against the live chain): the response txid hex is INTERNAL
+ * byte order ("ReverseHex") — reversed to display order here (the enforcer's
+ * hex is NOT what Esplora indexes; its reverse is). The `vout` field is a
+ * proto3 scalar omitted when 0; every observed CTIP sits at vout 0. Call
+ * this immediately before building a deposit: the builder's output 0 must
+ * match the chain's CURRENT CTIP value at confirmation, so a stale CTIP
+ * (another deposit landing in between) makes the transaction invalid.
+ *
+ * @throws Error with the enforcer's message on failure, or when the chain
+ *         reports no CTIP yet (empty treasury).
+ */
+export async function getCtip(network: L1Network, slot: number): Promise<Ctip> {
+  const base = ENFORCER_BASES[network];
+  if (!base) {
+    throw new Error(`No enforcer endpoint configured for network "${network}".`);
+  }
+  const res = await globalThis.fetch(
+    `${base}/cusf.mainchain.v1.ValidatorService/GetCtip`,
+    {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sidechainNumber: slot }),
+    },
+  );
+  const text = await res.text();
+  let body: unknown = null;
+  if (text.trim()) {
+    try {
+      body = JSON.parse(text);
+    } catch {
+      body = null;
+    }
+  }
+  if (!res.ok) {
+    const message =
+      body && typeof body === "object" && "message" in (body as Record<string, unknown>)
+        ? String((body as Record<string, unknown>).message)
+        : `Enforcer GetCtip failed with HTTP ${res.status} ${res.statusText}.`;
+    throw new Error(message);
+  }
+  const ctip = (
+    body as {
+      ctip?: { txid?: { hex?: string }; vout?: number; value?: string };
+    }
+  )?.ctip;
+  const hexInternal = ctip?.txid?.hex;
+  if (typeof hexInternal !== "string" || !/^[0-9a-fA-F]{64}$/.test(hexInternal)) {
+    throw new Error(
+      "The enforcer reports no treasury UTXO for this sidechain (empty CTIP).",
+    );
+  }
+  const valueSats = BigInt(ctip?.value ?? "0");
+  if (valueSats <= 0n) {
+    throw new Error("The enforcer returned a non-positive treasury value.");
+  }
+  return {
+    txid: reverseHexPairs(hexInternal),
+    vout: ctip?.vout ?? 0,
+    valueSats,
+  };
 }

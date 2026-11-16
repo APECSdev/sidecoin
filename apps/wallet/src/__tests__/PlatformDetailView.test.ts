@@ -1,6 +1,7 @@
 // apps/wallet/src/__tests__/PlatformDetailView.test.ts
 
 import { beforeEach, describe, it, expect, vi } from "vitest";
+import { bytesToHex } from "@noble/hashes/utils";
 import { mount, flushPromises } from "@vue/test-utils";
 import { createRouter, createWebHashHistory } from "vue-router";
 import PlatformDetailView from "../views/PlatformDetailView.vue";
@@ -14,15 +15,30 @@ vi.mock("../api", async () => {
     getCoinNewsPosts: vi.fn(),
     getWalletBalance: vi.fn(),
     getDeposits: vi.fn(),
+    getL1Utxos: vi.fn(),
+    getCtip: vi.fn(),
+    broadcastTransaction: vi.fn(),
   };
 });
 
-import { getCoinNewsFeeds, getCoinNewsPosts, getWalletBalance, getDeposits } from "../api";
+import {
+  getCoinNewsFeeds,
+  getCoinNewsPosts,
+  getWalletBalance,
+  getDeposits,
+  getL1Utxos,
+  getCtip,
+  broadcastTransaction,
+} from "../api";
+import { deriveSigningKey } from "@sidecoin/shared";
 
 const mockGetCoinNewsFeeds = vi.mocked(getCoinNewsFeeds);
 const mockGetCoinNewsPosts = vi.mocked(getCoinNewsPosts);
 const mockGetWalletBalance = vi.mocked(getWalletBalance);
 const mockGetDeposits = vi.mocked(getDeposits);
+const mockGetL1Utxos = vi.mocked(getL1Utxos);
+const mockGetCtip = vi.mocked(getCtip);
+const mockBroadcastTransaction = vi.mocked(broadcastTransaction);
 
 // The standard all-"abandon" BIP-39 test mnemonic. Its pinned Thunder
 // (index-1) address comes from packages/shared derivation vectors:
@@ -93,6 +109,12 @@ describe("PlatformDetailView.vue", () => {
     localStorage.clear();
     mockGetWalletBalance.mockResolvedValue(EMPTY_THUNDER_BALANCE);
     mockGetDeposits.mockResolvedValue(EMPTY_THUNDER_DEPOSITS);
+    mockGetL1Utxos.mockResolvedValue({
+      chainId: "signet",
+      address: "tb1qtest",
+      utxos: [],
+      truncated: false,
+    });
     mockGetCoinNewsFeeds.mockResolvedValue([
       {
         id: "us-weekly",
@@ -440,6 +462,117 @@ describe("PlatformDetailView.vue", () => {
     expect(wrapper.text()).toContain("upstream down");
     // Balance card falls back to the em-dash placeholder, not a fake zero.
     expect(wrapper.text()).toContain("Live balance data not indexed yet");
+  });
+
+  it("builds, reviews, and broadcasts a Thunder deposit end-to-end (mocked)", async () => {
+    seedTestWallet();
+    // The flow derives the REAL signing key from the seeded mnemonic and
+    // matches funding UTXOs by scriptPubKey — use the derived key's script.
+    const keyScript = bytesToHex(deriveSigningKey(TEST_MNEMONIC, "betanet", 0).scriptPubKey);
+    // Funding UTXO for the deposit (confirmed, spendable).
+    mockGetL1Utxos.mockResolvedValue({
+      chainId: "betanet",
+      address: "tb1qtest",
+      utxos: [
+        {
+          chainId: "betanet",
+          address: "tb1qtest",
+          txid: "7d10f8714839cf6f840792348ba0b3dbbaabdf9ae28b8c58df0ec306496b6fcc",
+          vout: 1,
+          valueSats: 900000n,
+          scriptPubKey: keyScript,
+          isCoinbase: false,
+          confirmations: 10,
+          blockHeight: 1000,
+        },
+      ],
+      truncated: false,
+    });
+    mockGetCtip.mockResolvedValue({
+      txid: "a4d84730a0857b6e46c1e6e7174bb675bb1b1a9b0419783a4fdacf4c6eade149",
+      vout: 0,
+      valueSats: 767280000n,
+    });
+    mockBroadcastTransaction.mockResolvedValue({
+      chainId: "signet",
+      txid: "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+      accepted: true,
+      broadcastAt: 1,
+    });
+
+    const wrapper = await mountPlatform("/platforms/thunder");
+    const parentChain = wrapper.findAll("button").find((b) => b.text() === "Parent Chain");
+    await parentChain!.trigger("click");
+    await flushPromises();
+
+    // Enter the amount and review.
+    const amountInput = wrapper.findAll("input").find(
+      (i) => (i.element as HTMLInputElement).placeholder === "0.00000000" && !i.attributes().disabled,
+    );
+    expect(amountInput).toBeDefined();
+    await amountInput!.setValue("0.001");
+
+    const reviewBtn = wrapper.findAll("button").find((b) => b.text() === "Review deposit");
+    expect(reviewBtn).toBeDefined();
+    await reviewBtn!.trigger("click");
+    await flushPromises();
+
+    // The seeded wallet's network is betanet — the deposit flow follows it.
+    expect(mockGetCtip).toHaveBeenCalledWith("betanet", 9);
+    expect(wrapper.text()).toContain("Deposit ready — review before broadcast");
+    expect(wrapper.text()).toContain("Deposit0.001");
+    expect(wrapper.text()).toContain("szats");
+
+    // Broadcast.
+    const broadcastBtn = wrapper.findAll("button").find((b) => b.text() === "Broadcast deposit");
+    await broadcastBtn!.trigger("click");
+    await flushPromises();
+
+    expect(mockBroadcastTransaction).toHaveBeenCalledTimes(1);
+    expect(wrapper.text()).toContain(
+      "Deposit broadcast: fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210",
+    );
+    // The review panel clears after broadcast.
+    expect(wrapper.text()).not.toContain("Deposit ready — review before broadcast");
+  });
+
+  it("surfaces a CTIP fetch failure as a flow error, not a crash", async () => {
+    seedTestWallet();
+    mockGetCtip.mockRejectedValue(new Error("enforcer unreachable"));
+
+    const wrapper = await mountPlatform("/platforms/thunder");
+    const parentChain = wrapper.findAll("button").find((b) => b.text() === "Parent Chain");
+    await parentChain!.trigger("click");
+    await flushPromises();
+
+    const amountInput = wrapper.findAll("input").find(
+      (i) => (i.element as HTMLInputElement).placeholder === "0.00000000" && !i.attributes().disabled,
+    );
+    await amountInput!.setValue("0.001");
+    const reviewBtn = wrapper.findAll("button").find((b) => b.text() === "Review deposit");
+    await reviewBtn!.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("enforcer unreachable");
+  });
+
+  it("rejects a deposit amount below dust with an honest error", async () => {
+    seedTestWallet();
+
+    const wrapper = await mountPlatform("/platforms/thunder");
+    const parentChain = wrapper.findAll("button").find((b) => b.text() === "Parent Chain");
+    await parentChain!.trigger("click");
+    await flushPromises();
+
+    const amountInput = wrapper.findAll("input").find(
+      (i) => (i.element as HTMLInputElement).placeholder === "0.00000000" && !i.attributes().disabled,
+    );
+    await amountInput!.setValue("0.000000001"); // 9 decimals — parse error
+    const reviewBtn = wrapper.findAll("button").find((b) => b.text() === "Review deposit");
+    await reviewBtn!.trigger("click");
+    await flushPromises();
+
+    expect(wrapper.text()).toContain("more than 8 decimal places");
   });
 
   it("shows a wallet-setup state and makes no Thunder calls without a key", async () => {
