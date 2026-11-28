@@ -6,6 +6,7 @@
 
 import {
   generateMnemonic as scureGenerate,
+  mnemonicToSeedSync as scureToSeed,
   validateMnemonic as scureValidate,
 } from "@scure/bip39";
 import { wordlist } from "@scure/bip39/wordlists/english";
@@ -32,4 +33,12 @@ export function generateMnemonic(strength: MnemonicStrength = 128): string {
 /** True only if the phrase is a valid BIP-39 mnemonic with a good checksum. */
 export function validateMnemonic(mnemonic: string): boolean {
   return scureValidate(normalizeMnemonic(mnemonic), wordlist);
+}
+
+/** The 64-byte BIP-39 seed of a mnemonic (PBKDF2-HMAC-SHA512, 2048 rounds,
+ * passphrase "mnemonic" + passphrase). Consumers must NOT hold the seed in
+ * long-term storage — it is the wallet. Thunder derives its account keys
+ * from these same 64 bytes (thunder-v18/v19 masters). */
+export function mnemonicToSeed(mnemonic: string, passphrase = ""): Uint8Array {
+  return scureToSeed(normalizeMnemonic(mnemonic), passphrase);
 }

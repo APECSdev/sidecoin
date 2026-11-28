@@ -79,3 +79,6 @@ test-results/
 .dev.vars
 .dev.vars.*
 wrangler.log
+
+# Thunder integration scratch (upstream clones, funded test wallet) — never commit
+tmp/
