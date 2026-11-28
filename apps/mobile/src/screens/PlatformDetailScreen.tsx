@@ -49,6 +49,8 @@ import {
 import { ProBadge } from "../components/pro/ProBadge";
 import { ProGate } from "../components/pro/ProGate";
 import { BitMessagesPreview } from "../components/bitnames/BitMessagesPreview";
+import { satsToBtc } from "../api";
+import { useThunderAccount } from "../thunder/useThunderAccount";
 import type { RootStackParamList } from "../navigation/types";
 import { ECASH, GRAY } from "../theme/colors";
 import { Alert, Screen } from "../components/ui";
@@ -146,6 +148,11 @@ export function PlatformDetailScreen(): React.JSX.Element {
     const id = String(route.params?.platformId ?? "");
     return getPlatformById(id);
   }, [route.params]);
+
+  // Live Thunder thin-client state (balance/history/escrow + receive
+  // address) — synced from the Thunder index on mount; null on every other
+  // platform. Only the Thunder branches read it.
+  const thunderLive = useThunderAccount(platform?.id === "thunder");
 
   const locked = platform ? !canUseProPlatform(platform.id, entitlements) : false;
 
@@ -277,16 +284,31 @@ export function PlatformDetailScreen(): React.JSX.Element {
     const id = platform?.id;
 
     if (id === "thunder") {
+      // Live thin-client data from the Thunder index (betanet mainnet-family
+      // deployments have one; see shared thunder.THUNDER_NETWORKS). Balance is
+      // the synced spendable set; Payments counts our confirmed history rows.
+      const live = thunderLive.state;
+      const balance = live ? satsToBtc(BigInt(live.balanceSats)) : "—";
+      const payments = live ? String(live.history.length) : "—";
+      const balanceCaption = live
+        ? live.indexEmpty
+          ? "Chain indexed, no blocks yet"
+          : `Thunder tip ${live.tipHeight ?? "—"}`
+        : thunderLive.error
+          ? thunderLive.error
+          : thunderLive.syncing
+            ? "Syncing from the index…"
+            : "Live balance data not indexed yet";
       return [
         {
           label: "Platform Balance",
-          value: "—",
-          caption: "Live balance data not indexed yet",
+          value: balance,
+          caption: balanceCaption,
         },
         {
           label: "Payments",
-          value: "—",
-          caption: "Live payment data not indexed yet",
+          value: payments,
+          caption: live ? "Confirmed history rows" : "Live payment data not indexed yet",
         },
         {
           label: "Channels",
@@ -389,9 +411,25 @@ export function PlatformDetailScreen(): React.JSX.Element {
       { label: "Contracts", value: "—", caption: "interaction review" },
       { label: "Developer", value: "—", caption: "simulation tools" },
     ];
-  }, [platform]);
+    // thunderLive feeds the Thunder branch above — recompute when the sync
+    // lands (state/error/syncing transitions), not just when the platform
+    // changes.
+  }, [platform, thunderLive.state, thunderLive.error, thunderLive.syncing]);
 
-  const activityRows: ActivityRow[] = [];
+  // Live Thunder history doubles as the platform activity rows; every other
+  // platform keeps its honest empty state.
+  const activityRows: ActivityRow[] =
+    platform?.id === "thunder" && thunderLive.state
+      ? thunderLive.state.history.map((row) => ({
+          time: row.time ? new Date(row.time).toLocaleString() : "—",
+          type: row.confirmed ? "Payment" : "Pending",
+          amount: `${row.deltaSats.startsWith("-") ? "" : "+"}${satsToBtc(
+            BigInt(row.deltaSats.startsWith("-") ? row.deltaSats.slice(1) : row.deltaSats),
+          )}`,
+          status: row.confirmed ? "Confirmed" : "Pending",
+          txid: `${row.txid.slice(0, 10)}…`,
+        }))
+      : [];
 
   const actionLabel = (): string => {
     const id = platform?.id;
@@ -806,30 +844,44 @@ export function PlatformDetailScreen(): React.JSX.Element {
                     </View>
                   </View>
 
-                  {thunderPaymentRows.length === 0 ? (
-                    <View style={styles.emptyPanel}>
-                      <Text style={styles.emptyPanelText}>
-                        No live Thunder payments are indexed yet.
-                      </Text>
-                    </View>
-                  ) : (
-                    <StubTable
-                      headers={[
-                        "Time",
-                        "Type",
-                        "Amount",
-                        "Status",
-                        "Payment ID",
-                      ]}
-                      rows={thunderPaymentRows.map((row) => [
-                        row.time,
-                        row.type,
-                        row.amount,
-                        row.status,
-                        row.paymentId,
-                      ])}
-                    />
-                  )}
+                  {(() => {
+                    // Live history rows from the synced account state —
+                    // net effect on this wallet per confirmed/pending tx.
+                    const live = thunderLive.state;
+                    const rows: [string, string, string, string, string][] =
+                      (live?.history ?? []).map((row) => [
+                        row.time
+                          ? new Date(row.time).toLocaleString()
+                          : "—",
+                        row.confirmed ? "Confirmed" : "Pending",
+                        `${row.deltaSats.startsWith("-") ? "-" : "+"}${satsToBtc(
+                            BigInt(row.deltaSats.startsWith("-") ? row.deltaSats.slice(1) : row.deltaSats),
+                          )} ECX`,
+                        row.blockHeight == null ? "—" : String(row.blockHeight),
+                        `${row.txid.slice(0, 10)}…`,
+                      ]);
+                    if (rows.length === 0) {
+                      return (
+                        <View style={styles.emptyPanel}>
+                          <Text style={styles.emptyPanelText}>
+                            {live
+                              ? live.indexEmpty
+                                ? "The Thunder index is live but holds no blocks yet."
+                                : "No Thunder payments found for this wallet yet."
+                              : thunderLive.error
+                                ? thunderLive.error
+                                : "No live Thunder payments are indexed yet."}
+                          </Text>
+                        </View>
+                      );
+                    }
+                    return (
+                      <StubTable
+                        headers={["Time", "Status", "Amount", "Block", "Txid"]}
+                        rows={rows}
+                      />
+                    );
+                  })()}
                 </View>
 
                 <View style={styles.asideStack}>
@@ -1052,11 +1104,28 @@ export function PlatformDetailScreen(): React.JSX.Element {
                     Move L1 value into {platform.displayName}.
                   </Text>
 
+                  {/* Thunder: the live deposit wrapper (s9_…) and the bare
+                      sidechain address it wraps, derived on-device from the
+                      wallet seed. The M5 builder ships next; the address is
+                      what a manual deposit needs today. */}
                   <DisabledField
                     label="Platform deposit address"
                     placeholder="Live deposit address not indexed"
+                    value={
+                      platform.id === "thunder" && thunderLive.receive
+                        ? thunderLive.receive.depositString
+                        : undefined
+                    }
                     mono
                   />
+                  {platform.id === "thunder" && thunderLive.receive ? (
+                    <DisabledField
+                      label="Sidechain receive address (bare)"
+                      placeholder="—"
+                      value={thunderLive.receive.address}
+                      mono
+                    />
+                  ) : null}
                   <DisabledField
                     label="Deposit amount"
                     placeholder="0.00000000"
@@ -1361,10 +1430,13 @@ export function PlatformDetailScreen(): React.JSX.Element {
 function DisabledField({
   label,
   placeholder,
+  value,
   mono = false,
 }: {
   label: string;
   placeholder: string;
+  /** Live text to display instead of the placeholder (read-only). */
+  value?: string;
   mono?: boolean;
 }): React.JSX.Element {
   return (
@@ -1373,6 +1445,7 @@ function DisabledField({
       <TextInput
         editable={false}
         placeholder={placeholder}
+        value={value}
         placeholderTextColor={GRAY[600]}
         style={[styles.disabledInput, mono ? styles.disabledInputMono : null]}
       />

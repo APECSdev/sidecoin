@@ -58,6 +58,44 @@ jest.mock("../keystore", () => ({
   clearWallet: jest.fn(async () => undefined),
 }));
 
+// Thunder live wiring: the platform screen syncs the Thunder account on
+// mount (for the thunder platform). The SERVICE is mocked (presentation
+// granularity — the service has its own suite) with a fixed state: a
+// 5000-sat balance, one confirmed received row, tip 2422, and the receive
+// address at index 0 of the mocked keystore's golden wallet.
+const THUNDER_ADDRESS_0 = "NKqSr4bQejFbKpd5yLQgWEiMJFx";
+jest.mock("../thunder/service", () => ({
+  __esModule: true,
+  THUNDER_GAP_LIMIT: 20,
+  THUNDER_MAX_DISCOVERY_ROUNDS: 20,
+  syncThunderAccount: jest.fn(async () => ({
+    network: "betanet",
+    balanceSats: "5000",
+    utxos: [],
+    history: [
+      {
+        txid: "a3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        time: "2026-11-27T00:00:00.000Z",
+        confirmed: true,
+        deltaSats: "5000",
+        feeSats: "0",
+        blockHeight: 2400,
+      },
+    ],
+    tipHeight: 2422,
+    sidechain: {
+      activationHeight: 968998,
+      treasuryValueSats: "101206685589",
+    },
+    indexEmpty: false,
+  })),
+  thunderReceiveAddress: jest.fn(async () => ({
+    address: THUNDER_ADDRESS_0,
+    index: 0,
+  })),
+  thunderDepositString: (address: string) => `s9_${address}_abc123`,
+}));
+
 // The BitMessages tab renders CoinNewsPreview, which fetches the feeds.
 // The whole module is mocked (as the sibling screen tests do) so importing
 // PlatformDetailScreen does not pull the real keystore in via the api layer.
@@ -144,6 +182,18 @@ function pressTab(platformId: string, tabId: string): string {
   return tree && !Array.isArray(tree) ? treeText(tree) : "";
 }
 
+/** Render and let the async Thunder account sync settle (the mocked
+ * service resolves instantly; a few act rounds flush the promise chain). */
+async function mountPlatformAsync(platformId: string): Promise<string> {
+  mockPlatformId = platformId;
+  const { toJSON } = render(<PlatformDetailScreen />);
+  for (let i = 0; i < 8; i++) {
+    await act(async () => {});
+  }
+  const tree = toJSON();
+  return tree && !Array.isArray(tree) ? treeText(tree) : "";
+}
+
 beforeEach(() => {
   jest.clearAllMocks();
   mockPlatformId = "thunder";
@@ -176,6 +226,28 @@ afterEach(() => {
 });
 
 describe("PlatformDetailScreen", () => {
+  it("shows the live Thunder balance, tip and payment count on mount", async () => {
+    const text = await mountPlatformAsync("thunder");
+    // satsToBtc is mocked to String(s): the balance metric shows raw sats.
+    expect(text).toContain("5000");
+    expect(text).toContain("Thunder tip 2422");
+    expect(text).toContain("Confirmed history rows");
+  });
+
+  it("shows the live deposit wrapper and bare address on the parent-chain tab", async () => {
+    mockPlatformId = "thunder";
+    const { getByDisplayValue, getByTestId } = render(<PlatformDetailScreen />);
+    for (let i = 0; i < 8; i++) {
+      await act(async () => {});
+    }
+    fireEvent.press(getByTestId("platform-tab-parent-chain"));
+    // TextInput values are props, not text nodes — assert via display value.
+    expect(
+      getByDisplayValue(`s9_${THUNDER_ADDRESS_0}_abc123`),
+    ).toBeTruthy();
+    expect(getByDisplayValue(THUNDER_ADDRESS_0)).toBeTruthy();
+  });
+
   it("renders Thunder as a dedicated platform page", () => {
     const text = mountPlatform("thunder");
     expect(text).toContain("Thunder Network");
