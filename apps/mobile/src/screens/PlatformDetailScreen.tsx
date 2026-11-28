@@ -284,7 +284,7 @@ export function PlatformDetailScreen(): React.JSX.Element {
     const id = platform?.id;
 
     if (id === "thunder") {
-      // Live thin-client data from the Thunder index (betanet mainnet-family
+      // Live thin-client data from the Thunder index (mainnet-family
       // deployments have one; see shared thunder.THUNDER_NETWORKS). Balance is
       // the synced spendable set; Payments counts our confirmed history rows.
       const live = thunderLive.state;

@@ -13,7 +13,7 @@
 //   • The warning banner text is updated: the Vue copy said the phrase is
 //     "stored unencrypted in this browser". That is not true of this app —
 //     see apps/mobile/src/keystore.ts, which stores the mnemonic in the
-//     platform keychain (encrypted at rest) and defaults to betanet.
+//     platform keychain (encrypted at rest) and defaults to mainnet.
 //   • The checkbox is a pressable row (RN has no <input type="checkbox">).
 
 import React, { useEffect, useMemo, useState } from "react";
@@ -98,7 +98,7 @@ export function OnboardingScreen(): React.JSX.Element {
     <View style={[styles.root, { paddingTop: insets.top + 32 }]}>
       <Title style={styles.heading}>Set up your wallet</Title>
       <Body style={styles.sub}>
-        eCash Drivechains · Betanet test wallet
+        eCash Drivechains · eCash mainnet wallet
       </Body>
 
       <Alert tone="warning" style={styles.warn}>

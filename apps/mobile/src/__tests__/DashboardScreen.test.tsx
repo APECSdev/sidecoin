@@ -100,7 +100,7 @@ const mockGetCoinNewsPosts = getCoinNewsPosts as jest.Mock;
 const mockGetMarketPrice = getMarketPrice as jest.Mock;
 const mockLoadWallet = loadWallet as jest.Mock;
 
-// Default network is betanet, a mainnet fork, so it uses the "bc" HRP.
+// Default network is mainnet, so it uses the "bc" HRP.
 const VALID_12 =
   "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
 
@@ -535,7 +535,7 @@ describe("DashboardScreen", () => {
   it("should display the derived L1 balance when a wallet exists", async () => {
     mockLoadWallet.mockResolvedValue({
       mnemonic: VALID_12,
-      network: "betanet",
+      network: "mainnet",
       createdAt: 1787320000000,
       version: 1,
     });
@@ -547,7 +547,7 @@ describe("DashboardScreen", () => {
     });
     // The address queried is the real BIP-84 receive address derived from the
     // stored mnemonic — never a hardcoded string. The default network is
-    // betanet, which is a mainnet fork, so it uses the "bc" HRP.
+    // mainnet, which uses the "bc" HRP.
     const queried = mockGetL1Balance.mock.calls[0][0];
     expect(queried.startsWith("bc1q")).toBe(true);
 
@@ -564,7 +564,7 @@ describe("DashboardScreen", () => {
     // the next microtask).
     mockLoadWallet.mockResolvedValue({
       mnemonic: VALID_12,
-      network: "betanet",
+      network: "mainnet",
       createdAt: 1787320000000,
       version: 1,
     });
@@ -581,7 +581,7 @@ describe("DashboardScreen", () => {
   it("should replace the balance skeleton once the balance resolves", async () => {
     mockLoadWallet.mockResolvedValue({
       mnemonic: VALID_12,
-      network: "betanet",
+      network: "mainnet",
       createdAt: 1787320000000,
       version: 1,
     });
@@ -608,7 +608,7 @@ describe("DashboardScreen", () => {
   it("should show a not-yet-indexed note when the address is unseen", async () => {
     mockLoadWallet.mockResolvedValue({
       mnemonic: VALID_12,
-      network: "betanet",
+      network: "mainnet",
       createdAt: 1787320000000,
       version: 1,
     });

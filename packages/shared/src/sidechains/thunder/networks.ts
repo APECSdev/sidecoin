@@ -1,23 +1,23 @@
 // packages/shared/src/sidechains/thunder/networks.ts
 //
-// Per-network Thunder deployment facts, live-verified 2026-11-27:
+// Per-network Thunder deployment facts, live-verified 2026-11-27 (with the
+// 2026-11-27 evening retirement of betanet — its L1 infrastructure went
+// dark: esplora.beta.ecash.ninja connection-refused; owner order):
 //
-//   betanet — the only Thunder with a live third-party-usable backend TODAY.
-//     Index (drivechain-esplora): https://seed.beta.ecash.eu.com/thunder
-//     (tip 2422 at verification). Slot 9 active: proposal height 967,989,
-//     activation 968,998, funded treasury (CTIP
-//     10355f72…1ac1:0, 101,206,685,589 sats). Node image sha-2ea74b0
-//     (2026-10-07, PRE-0.19) → key scheme thunder-v18. L1 index:
-//     https://esplora.beta.ecash.ninja.
-//
-//   mainnet (eCash) — REQUIRED as the default for a complete integration.
-//     Index: https://seed.ecash.eu.com/thunder (tip 429 at verification;
-//     slot 9 active since mainchain height 978,324). Node v0.19.3
+//   mainnet (eCash) — THE deployment. Index (drivechain-esplora):
+//     https://seed.ecash.eu.com/thunder (tip 429 at verification, 3/3
+//     probes; slot 9 active since mainchain height 978,324). Node v0.19.3
 //     (drivechain.dev/config image sha-b0d3544) → key scheme thunder-v19.
-//     L1 index: https://esplora.ecash.ninja / https://esplora.ecash.com.
-//     Deposit network params: OP_DRIVECHAIN = 0xb7 (OP_NOP8), replay
-//     nLockTime 499,999,998 — already encoded in
+//     L1 index: https://esplora.ecash.ninja (tip 985,975 at verification)
+//     / https://esplora.ecash.com. Deposit params: OP_DRIVECHAIN = 0xb7
+//     (OP_NOP8), replay nLockTime 499,999,998 — already encoded in
 //     packages/shared/src/tx/deposit.ts getDepositNetworkParams.
+//
+//   betanet — RETIRED 2026-11-27. The L1 chain's public index went dark
+//     (esplora.beta.ecash.ninja unreachable; the owner confirmed it is not
+//     coming back). The Thunder index (seed.beta.ecash.eu.com/thunder, tip
+//     2422, v18 keys) still answers but is unreachable-without-its-L1 and
+//     is kept here as historical record only — backendAvailable: false.
 //
 //   signet (L2L Signet) — Thunder node v0.19.3 exists (P2P
 //     node.signet.drivechain.info:4009, QUIC) but there is NO public RPC
@@ -44,10 +44,12 @@ export interface ThunderNetworkConfig {
 
 export const THUNDER_NETWORKS: Record<ThunderNetworkId, ThunderNetworkConfig> = {
   betanet: {
+    // RETIRED 2026-11-27 — historical record; unreachable in practice
+    // (dead L1) and never returned as a usable deployment.
     thunderEsploraBaseUrl: "https://seed.beta.ecash.eu.com/thunder",
     mainchainEsploraBaseUrl: "https://esplora.beta.ecash.ninja",
     keyScheme: "thunder-v18",
-    backendAvailable: true,
+    backendAvailable: false,
   },
   mainnet: {
     thunderEsploraBaseUrl: "https://seed.ecash.eu.com/thunder",

@@ -24,8 +24,9 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 const REVEALED_INDEX_KEY = "sidecoin.thunder.revealedIndex.v1";
 const ACCOUNT_PUB_KEY_KEY = "sidecoin.thunder.accountPubKey.v1";
 
-/** Scope a wallet's state to one Thunder deployment (betanet keys differ
- * from mainnet keys — different schemes, never mixed). */
+/** Scope a wallet's state to one Thunder deployment (keys are
+ * scheme-bound per deployment — mainnet v19, the retired betanet v18 —
+ * and never mixed). */
 function scopedKey(base: string, walletId: string, chain: string): string {
   return `${base}.${walletId}.${chain}`;
 }

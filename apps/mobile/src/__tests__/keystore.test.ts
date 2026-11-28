@@ -233,6 +233,28 @@ describe("session unlock", () => {
     expect(reread?.network).toBe("signet");
   });
 
+  it("migrates a stored betanet wallet to mainnet on load (betanet retired 2026-11-27)", async () => {
+    // A wallet persisted before the retirement carries network: "betanet".
+    // The allowlist no longer knows it, so the loader's unknown-network
+    // fallback lands it on the DEFAULT (mainnet) — same coinType-0 addresses,
+    // same seed, so the wallet simply continues on the production chain.
+    await saveWallet(MNEMONIC, false);
+    const envelope = JSON.parse(
+      (await AsyncStorage.getItem("sidecoin.wallet.v1")) as string,
+    ) as { network: string };
+    envelope.network = "betanet";
+    await AsyncStorage.setItem(
+      "sidecoin.wallet.v1",
+      JSON.stringify(envelope),
+    );
+    clearSession();
+
+    const wallet = await loadWallet({ authenticate: false });
+
+    expect(wallet?.network).toBe("mainnet");
+    expect(wallet?.mnemonic).toBe(MNEMONIC);
+  });
+
   it("drops the cached mnemonic on clearWallet", async () => {
     await saveWallet(MNEMONIC, true);
     await loadWallet();

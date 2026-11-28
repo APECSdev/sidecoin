@@ -66,7 +66,7 @@ export type HistoryStatus = "pending" | "confirmed" | "failed";
 export interface HistoryEntry {
   /** Transaction id (hex). Primary key — a txid is unique per chain. */
   txid: string;
-  /** Network the transaction belongs to ("signet" | "betanet"). */
+  /** Network the transaction belongs to ("signet" | "mainnet"). */
   network: string;
   /** Which way the value moved. */
   direction: HistoryDirection;

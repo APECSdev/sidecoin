@@ -76,15 +76,15 @@ import {
   Title,
 } from "../components/ui";
 
-// ─── Network selector (Betanet / Signet) ────────
-// Persists the wallet's L1 network to the keystore. Both are
-// non-production (betanet = the ECX beta practice network, the wallet
-// default; signet = the live L2L signet). Betanet is a mainnet fork from
-// drivechain.dev/config. Switching emits the wallet-network listener so the
+// ─── Network selector (Mainnet / Signet) ────────
+// Persists the wallet's L1 network to the keystore: mainnet (the eCash
+// production chain — REAL MONEY — the default; betanet is retired, its L1
+// infrastructure went dark 2026-11-27) and signet (the live L2L signet,
+// non-production). Switching emits the wallet-network listener so the
 // Dashboard and Receive re-derive / re-fetch for the new network immediately.
 const NETWORK_OPTIONS: { id: WalletNetwork; label: string; description: string }[] = [
-  { id: "betanet", label: "Betanet", description: "ECX beta practice network (mainnet fork) — the default." },
-  { id: "signet", label: "Signet", description: "Live L2L signet — the default test network." },
+  { id: "mainnet", label: "Mainnet", description: "eCash production chain — real money (the default)." },
+  { id: "signet", label: "Signet", description: "Live L2L signet — the test network." },
 ];
 
 export function SettingsScreen(): React.JSX.Element {
@@ -99,7 +99,7 @@ export function SettingsScreen(): React.JSX.Element {
   const [selectedTheme, setSelectedTheme] = useState<WalletTheme>("default");
   const [showDemoModeExplainer, setShowDemoModeExplainer] = useState(false);
 
-  const [selectedNetwork, setSelectedNetwork] = useState<WalletNetwork>("betanet");
+  const [selectedNetwork, setSelectedNetwork] = useState<WalletNetwork>("mainnet");
   const [networkSaved, setNetworkSaved] = useState(false);
   const [networkError, setNetworkError] = useState<string | null>(null);
 
@@ -386,7 +386,7 @@ export function SettingsScreen(): React.JSX.Element {
     >
       <Title style={styles.heading}>Settings</Title>
 
-      {/* Network selector — Betanet / Signet. Persisted to the keystore. */}
+      {/* Network selector — Mainnet / Signet. Persisted to the keystore. */}
       <Card style={styles.section} testID="network-selector-card">
         <View style={styles.rowBetween}>
           <View style={styles.growShrink}>

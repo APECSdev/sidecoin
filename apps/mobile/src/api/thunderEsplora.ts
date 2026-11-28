@@ -1,7 +1,8 @@
 // apps/mobile/src/api/thunderEsplora.ts
 //
 // Client for the drivechain-esplora Thunder index (the default Thunder
-// backend on every network with one — betanet and eCash mainnet today).
+// backend on every network with one — eCash mainnet today; betanet is
+// retired, its infrastructure went dark 2026-11-27).
 //
 // The index walks the sidechain block by block, keeps an address index in
 // Postgres, and answers an Esplora-compatible REST surface. It exists

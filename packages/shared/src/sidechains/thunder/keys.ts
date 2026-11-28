@@ -79,9 +79,10 @@ export const THUNDER_SLOT = 9;
 /**
  * Which scheme a Thunder deployment uses, per verified node versions
  * (drivechain.dev/config, 2026-11-27):
- *   betanet       → v0.18 (node image sha-2ea74b0, 2026-10-07, pre-0.19)
- *   signet        → v0.19 (node v0.19.3)
- *   eCash mainnet → v0.19 (node v0.19.3)
+ *   eCash mainnet → v0.19 (node v0.19.3) — the live deployment
+ *   signet        → v0.19 (node v0.19.3, no public backend yet)
+ *   betanet       → v0.18 (node image sha-2ea74b0, 2026-10-07, pre-0.19) —
+ *                   RETIRED 2026-11-27; historical mapping, unreachable
  */
 export function schemeForNetwork(network: "betanet" | "signet" | "mainnet"): ThunderKeySchemeId {
   return network === "betanet" ? "thunder-v18" : "thunder-v19";

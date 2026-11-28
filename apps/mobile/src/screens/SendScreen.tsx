@@ -165,9 +165,9 @@ export function SendScreen(): React.JSX.Element {
   }, [route.params?.autoScan, navigation]);
 
   // The network label tracks the stored wallet network (the wallet default is
-  // betanet), so the header chip stays truthful instead of hardcoding one
+  // mainnet), so the header chip stays truthful instead of hardcoding one
   // network name.
-  const [walletNetwork, setWalletNetworkState] = useState<WalletNetwork>("betanet");
+  const [walletNetwork, setWalletNetworkState] = useState<WalletNetwork>("mainnet");
   React.useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -244,7 +244,7 @@ export function SendScreen(): React.JSX.Element {
 
       // Spendable set for this one address (the only coins we hold a key for).
       // Reads from the public Esplora endpoint for the wallet's current
-      // network (betanet or signet).
+      // network (mainnet or signet).
       const utxoSet = await getL1Utxos(key.address, {}, wallet.network);
       if (utxoSet.truncated) {
         setError(
@@ -282,14 +282,14 @@ export function SendScreen(): React.JSX.Element {
   }
 
   /** Relay the already-signed tx to the L1 node via the public Esplora
-   * endpoint for the wallet's current network (betanet or signet). */
+   * endpoint for the wallet's current network (mainnet or signet). */
   async function broadcast(): Promise<void> {
     if (!built) return;
     setBroadcasting(true);
     setError(null);
     try {
       const wallet = await loadWallet();
-      const network = wallet?.network ?? "betanet";
+      const network = wallet?.network ?? "mainnet";
       const receipt = await broadcastTransaction(L1_CHAIN_ID, built.hex, network);
       setReceipt(receipt);
       // Record the send locally so the Receive-history panel has a durable
@@ -341,7 +341,7 @@ export function SendScreen(): React.JSX.Element {
   const networkLabel =
     walletNetwork === "signet"
       ? "Signet"
-      : "Betanet";
+      : "Mainnet";
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>

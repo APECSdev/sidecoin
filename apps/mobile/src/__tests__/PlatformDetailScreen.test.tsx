@@ -46,7 +46,7 @@ jest.mock("react-native-safe-area-context", () => ({
 jest.mock("../keystore", () => ({
   loadWallet: jest.fn(async () => ({
     version: 1,
-    network: "betanet",
+    network: "mainnet",
     mnemonic:
       "abandon abandon abandon abandon abandon abandon abandon abandon " +
       "abandon abandon abandon about",
@@ -69,7 +69,7 @@ jest.mock("../thunder/service", () => ({
   THUNDER_GAP_LIMIT: 20,
   THUNDER_MAX_DISCOVERY_ROUNDS: 20,
   syncThunderAccount: jest.fn(async () => ({
-    network: "betanet",
+    network: "mainnet",
     balanceSats: "5000",
     utxos: [],
     history: [

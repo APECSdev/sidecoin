@@ -303,7 +303,7 @@ export async function getChainBalance(
 
 /**
  * Convenience: indexed L1 balance for an address on the wallet's current
- * network (signet or betanet). Reads from the public Esplora endpoint
+ * network (signet or mainnet). Reads from the public Esplora endpoint
  * (drivechain.dev/config) so balances work even while the sidecoin.app/v1
  * adapter is offline. `network` defaults to "signet" for back-compat with
  * callers that haven't been updated.
@@ -338,7 +338,7 @@ export async function getUtxos(
 
 /**
  * Convenience: spendable L1 UTXO set for an address on the wallet's current
- * network (signet or betanet). Reads from the public Esplora endpoint so
+ * network (signet or mainnet). Reads from the public Esplora endpoint so
  * Send/CoinNews can fund txs even while the sidecoin.app/v1 adapter is offline.
  * `network` defaults to "signet" for back-compat.
  */
@@ -352,7 +352,7 @@ export async function getL1Utxos(
 
 /**
  * Relay a fully-signed raw tx hex to the L1 node for the wallet's current
- * network (signet or betanet) via the public Esplora `POST /tx` endpoint
+ * network (signet or mainnet) via the public Esplora `POST /tx` endpoint
  * (drivechain.dev/config). This keeps Send/CoinNews working while the
  * sidecoin.app/v1 adapter is offline.
  *
@@ -360,7 +360,7 @@ export async function getL1Utxos(
  * returns the txid as plain text on success, or an RPC error body on
  * failure (mapped to a thrown Error). `network` defaults to "signet" for
  * back-compat; `chainId` is accepted but ignored — Esplora broadcasts to
- * whichever chain its instance serves (signet or betanet).
+ * whichever chain its instance serves (signet or mainnet).
  */
 export async function broadcastTransaction(
   chainId: string,
@@ -386,13 +386,15 @@ export async function broadcastTransaction(
 // The returned objects are coerced into the same ChainBalance / UtxosResult /
 // BroadcastReceipt shapes the views already consume, so callers are unchanged.
 
-/** The two L1 networks a user can toggle between. Both are non-production. */
-export type L1Network = "signet" | "betanet";
+/** The two L1 networks a user can toggle between: mainnet (production,
+ *  real money) and signet (non-production). Betanet is retired — its L1
+ *  index went dark 2026-11-27. */
+export type L1Network = "signet" | "mainnet";
 
 /** Public Esplora base URLs per L1 network (from drivechain.dev/config). */
 const ESPLORA_BASES: Record<L1Network, string> = {
   signet: "https://esplora.signet.drivechain.info",
-  betanet: "https://esplora.beta.ecash.ninja",
+  mainnet: "https://esplora.ecash.ninja",
 };
 
 /** Resolve the Esplora base URL for a network (throws on unknown). */

@@ -49,8 +49,8 @@ export const THUNDER_GAP_LIMIT = 20;
 export const THUNDER_MAX_DISCOVERY_ROUNDS = 20;
 
 /** Thunder account identity: the wallet + the Thunder deployment it lives
- * on. Betanet and mainnet keys differ (v18 vs v19 schemes) and are never
- * mixed. */
+ * on. Mainnet keys are v19-scheme; signet would be too (no backend yet);
+ * the retired betanet used v18. Deployments and schemes are never mixed. */
 export interface ThunderAccount {
   /** Arbitrary stable id for the local stores (the app's wallet id). */
   walletId: string;
@@ -66,7 +66,9 @@ function deploymentFor(l1Network: string): ThunderNetworkId {
   const config = thunder.THUNDER_NETWORKS[network];
   if (!config.backendAvailable) {
     throw new Error(
-      `Thunder on ${network} has no public backend yet — the node's RPC is not exposed and no index exists. Blocked on L2L.`,
+      network === "betanet"
+        ? "Thunder on betanet is retired (2026-11-27) — its L1 infrastructure went dark and is not coming back."
+        : `Thunder on ${network} has no public backend yet — the node's RPC is not exposed and no index exists. Blocked on L2L.`,
     );
   }
   return network;

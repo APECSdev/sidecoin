@@ -15,9 +15,15 @@
 //   The public API is async because both backends are async. `hasWallet()`
 //   is therefore async, which matters for the navigation gate in the router.
 //
-// ⚠️  The network is limited to non-production networks (betanet,
-//     signet). Encryption-at-rest is in place, but a real-funds mnemonic
-//     still warrants hardware signing before mainnet support.
+// ⚠️  NETWORK MODEL (retired betanet, 2026-11-27): the wallet networks are
+//     MAINNET (the eCash real-fork production chain — REAL MONEY — the
+//     default) and SIGNET (the live L2L signet, non-production).
+//     Betanet is RETIRED: its L1 infrastructure went dark (esplora.beta.
+//     ecash.ninja connection-refused, verified 2026-11-27) and is not
+//     coming back. Stored wallets carrying the old `betanet` value load
+//     as MAINNET via the unknown-network fallback below — the addresses
+//     are identical (betanet was a coinType-0 mainnet fork), so the same
+//     seed controls the same mainnet addresses.
 
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Keychain from "react-native-keychain";
@@ -42,21 +48,23 @@ const KEYCHAIN_SERVICE = "app.sidecoin.wallet";
 const BIOMETRIC_ACCESS_CONTROL =
   Keychain.ACCESS_CONTROL.BIOMETRY_CURRENT_SET_OR_DEVICE_PASSCODE;
 
-/** The L1 networks a user can toggle between in Settings. Both are
- *  non-production: betanet = the ECX beta practice network (the default);
- *  signet = the live L2L signet. Betanet is a mainnet fork, from
- *  drivechain.dev/config. */
-export type WalletNetwork = "signet" | "betanet";
+/** The L1 networks a user can toggle between in Settings: mainnet (the
+ *  eCash production chain — real money — the default) and signet (the live
+ *  L2L signet, non-production). Mainnet L1 index: esplora.ecash.ninja;
+ *  signet L1 index: esplora.signet.drivechain.info (drivechain.dev/config). */
+export type WalletNetwork = "signet" | "mainnet";
 
 /** Runtime allowlist for WalletNetwork. Persisted values are validated
- *  against this set; anything else falls back to DEFAULT_WALLET_NETWORK. */
+ *  against this set; anything else — including the retired `betanet` —
+ * falls back to DEFAULT_WALLET_NETWORK (the mainnet migration path). */
 const WALLET_NETWORKS: readonly WalletNetwork[] = [
   "signet",
-  "betanet",
+  "mainnet",
 ];
 
-/** Network used when a stored wallet has no (or an unknown) network field. */
-const DEFAULT_WALLET_NETWORK: WalletNetwork = "betanet";
+/** Network used when a stored wallet has no (or an unknown) network field.
+ * Also the landing network for retired values (betanet → mainnet). */
+const DEFAULT_WALLET_NETWORK: WalletNetwork = "mainnet";
 
 export interface StoredWallet {
   version: 1;
@@ -452,7 +460,7 @@ export async function setBiometricsEnabled(
 }
 
 /**
- * Persist a new network choice (signet or betanet) onto the stored
+ * Persist a new network choice (signet or mainnet) onto the stored
  * wallet. The mnemonic is untouched; only the envelope's `network` changes.
  *
  * PORT NOTE: the Vue original emitted a `window` CustomEvent here so live

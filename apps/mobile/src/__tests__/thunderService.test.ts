@@ -19,13 +19,16 @@ import {
 } from "../thunder/service";
 
 const MNEMONIC = "abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about";
-const ACCOUNT: ThunderAccount = { walletId: "test-wallet", l1Network: "betanet" };
-const BASE = thunder.THUNDER_NETWORKS.betanet.thunderEsploraBaseUrl;
+const ACCOUNT: ThunderAccount = { walletId: "test-wallet", l1Network: "mainnet" };
+const BASE = thunder.THUNDER_NETWORKS.mainnet.thunderEsploraBaseUrl;
 
-// Index fixtures — the golden wallet's index-0 address holds two UTXOs.
-const V18_ACCOUNT = thunder.deriveAccountKey(mnemonicToSeed(MNEMONIC, ""), "thunder-v18");
+// Index fixtures — this wallet's index-0 address (v19 scheme, the
+// mainnet deployment's) holds two UTXOs. No public golden vector exists
+// for v19 yet; the fixture derives its addresses through the same shared
+// code the service uses, so the test stays self-consistent.
+const V19_ACCOUNT = thunder.deriveAccountKey(mnemonicToSeed(MNEMONIC, ""), "thunder-v19");
 const ADDRESS_0 = thunder.thunderAddress(
-  thunder.deriveAddressPublicKey(thunder.toPublicKey(V18_ACCOUNT), 0, "thunder-v18"),
+  thunder.deriveAddressPublicKey(thunder.toPublicKey(V19_ACCOUNT), 0, "thunder-v19"),
 );
 const RAW_TXID = "0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f20";
 
@@ -107,7 +110,7 @@ describe("thunder receive", () => {
 describe("thunder sync", () => {
   it("computes the balance from value rows, excludes withdrawals, reports the escrow", async () => {
     const state = await syncThunderAccount(MNEMONIC, ACCOUNT);
-    expect(state.network).toBe("betanet");
+    expect(state.network).toBe("mainnet");
     expect(state.balanceSats).toBe("5000");
     expect(state.utxos).toHaveLength(2);
     expect(state.tipHeight).toBe(2422);
@@ -147,7 +150,7 @@ describe("thunder send (full pipeline)", () => {
       },
     );
 
-    const dest = "8twUkpctzwgbjqi5o14qWjrD9uk"; // real betanet deposit address (self)
+    const dest = "8twUkpctzwgbjqi5o14qWjrD9uk"; // real mainnet deposit address (self)
     const result = await sendThunder(MNEMONIC, ACCOUNT, dest, 1500n, 1n);
 
     // Fee = exact borsh size × rate (2 inputs, 2 outputs) — computed from

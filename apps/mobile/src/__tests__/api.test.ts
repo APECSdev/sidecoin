@@ -493,7 +493,7 @@ describe("SupaQt live data helpers", () => {
 // URL shape + the ChainBalance / UtxosResult / BroadcastReceipt coercion.
 
 const ESPLORA_SIGNET = "https://esplora.signet.drivechain.info";
-const ESPLORA_BETANET = "https://esplora.beta.ecash.ninja";
+const ESPLORA_BETANET = "https://esplora.ecash.ninja";
 
 function jsonBody(body: unknown, status = 200) {
   return {
@@ -539,7 +539,7 @@ describe("Esplora fallback — getL1Balance", () => {
     expect(bal.updatedAtHeight).toBe(10808);
   });
 
-  it("hits the betanet Esplora endpoint when network=betanet", async () => {
+  it("hits the mainnet Esplora endpoint when network=mainnet", async () => {
     const fetchSpy = jest
       .spyOn(globalThis, "fetch")
       .mockResolvedValueOnce(
@@ -551,12 +551,12 @@ describe("Esplora fallback — getL1Balance", () => {
       )
       .mockResolvedValueOnce(textBody("987875"));
 
-    const bal = await getL1Balance("bc1qexample", "betanet");
+    const bal = await getL1Balance("bc1qexample", "mainnet");
 
     expect(fetchSpy.mock.calls[0][0]).toBe(
       `${ESPLORA_BETANET}/address/bc1qexample`,
     );
-    expect(bal.chainId).toBe("betanet");
+    expect(bal.chainId).toBe("mainnet");
     expect(bal.totalSats).toBe(6000000n); // 10_000_000 - 4_000_000
     expect(bal.seen).toBe(true);
   });
@@ -638,11 +638,11 @@ describe("Esplora fallback — getL1Utxos", () => {
     expect(res.utxos[0].txid).toBe("a".repeat(64));
   });
 
-  it("hits the betanet Esplora endpoint when network=betanet", async () => {
+  it("hits the mainnet Esplora endpoint when network=mainnet", async () => {
     const fetchSpy = jest.spyOn(globalThis, "fetch").mockResolvedValue(
       jsonBody([]),
     );
-    await getL1Utxos("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu", {}, "betanet");
+    await getL1Utxos("bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu", {}, "mainnet");
     expect(fetchSpy.mock.calls[0][0]).toBe(
       `${ESPLORA_BETANET}/address/bc1qcr8te4kr609gcawutmrza0j4xv80jy8z306fyu/utxo`,
     );
@@ -664,11 +664,11 @@ describe("Esplora fallback — broadcastTransaction", () => {
     expect(typeof receipt.broadcastAt).toBe("number");
   });
 
-  it("POSTs to the betanet endpoint when network=betanet", async () => {
+  it("POSTs to the mainnet endpoint when network=mainnet", async () => {
     const fetchSpy = jest.spyOn(globalThis, "fetch").mockResolvedValue(
       textBody("0".repeat(64)),
     );
-    await broadcastTransaction("signet", "deadbeef", "betanet");
+    await broadcastTransaction("signet", "deadbeef", "mainnet");
     expect(fetchSpy.mock.calls[0][0]).toBe(`${ESPLORA_BETANET}/tx`);
   });
 
@@ -696,11 +696,11 @@ describe("Esplora fallback — getRawTransaction", () => {
     expect(hex).toBe("deadbeef");
   });
 
-  it("fetches from the betanet endpoint when network=betanet", async () => {
+  it("fetches from the mainnet endpoint when network=mainnet", async () => {
     const fetchSpy = jest.spyOn(globalThis, "fetch").mockResolvedValue(
       textBody("deadbeef"),
     );
-    await getRawTransaction("b".repeat(64), "betanet");
+    await getRawTransaction("b".repeat(64), "mainnet");
     expect(fetchSpy.mock.calls[0][0]).toBe(
       `${ESPLORA_BETANET}/tx/${"b".repeat(64)}/hex`,
     );

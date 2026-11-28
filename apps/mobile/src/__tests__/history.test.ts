@@ -23,7 +23,7 @@ const mock = require("@op-engineering/op-sqlite");
 
 const base = {
   txid: "aa11bb22cc33dd44",
-  network: "betanet",
+  network: "mainnet",
   direction: "send" as const,
   amountSats: "150000",
   address: "tb1qexample",
@@ -43,7 +43,7 @@ describe("history store", () => {
     expect(stored.status).toBe("pending");
     expect(typeof stored.createdAt).toBe("number");
 
-    const rows = listHistory("betanet");
+    const rows = listHistory("mainnet");
     expect(rows).toHaveLength(1);
     expect(rows[0].amountSats).toBe("150000");
     expect(rows[0].feeSats).toBe("420");
@@ -56,13 +56,13 @@ describe("history store", () => {
     // round-trips it exactly.
     const big = "9007199254740993";
     recordTransaction({ ...base, amountSats: big });
-    expect(listHistory("betanet")[0].amountSats).toBe(big);
+    expect(listHistory("mainnet")[0].amountSats).toBe(big);
   });
 
   it("filters by network", () => {
-    recordTransaction({ ...base, network: "betanet" });
+    recordTransaction({ ...base, network: "mainnet" });
     recordTransaction({ ...base, txid: "ff", network: "signet" });
-    expect(listHistory("betanet")).toHaveLength(1);
+    expect(listHistory("mainnet")).toHaveLength(1);
     expect(listHistory("signet")).toHaveLength(1);
     expect(listHistory("signet")[0].txid).toBe("ff");
   });
@@ -70,7 +70,7 @@ describe("history store", () => {
   it("orders newest first", () => {
     recordTransaction({ ...base, txid: "old", createdAt: 100 });
     recordTransaction({ ...base, txid: "new", createdAt: 200 });
-    expect(listHistory("betanet").map((r: HistoryEntry) => r.txid)).toEqual([
+    expect(listHistory("mainnet").map((r: HistoryEntry) => r.txid)).toEqual([
       "new",
       "old",
     ]);
@@ -79,7 +79,7 @@ describe("history store", () => {
   it("re-recording the same txid replaces rather than duplicates", () => {
     recordTransaction(base);
     recordTransaction({ ...base, amountSats: "999" });
-    const rows = listHistory("betanet");
+    const rows = listHistory("mainnet");
     expect(rows).toHaveLength(1);
     expect(rows[0].amountSats).toBe("999");
   });
@@ -87,7 +87,7 @@ describe("history store", () => {
   it("marks a transaction confirmed with a block height", () => {
     recordTransaction(base);
     markConfirmed(base.txid, 123456);
-    const row = listHistory("betanet")[0];
+    const row = listHistory("mainnet")[0];
     expect(row.status).toBe("confirmed");
     expect(row.blockHeight).toBe(123456);
   });
@@ -95,14 +95,14 @@ describe("history store", () => {
   it("marks a transaction failed", () => {
     recordTransaction(base);
     markFailed(base.txid);
-    expect(listHistory("betanet")[0].status).toBe("failed");
+    expect(listHistory("mainnet")[0].status).toBe("failed");
   });
 
   it("clearHistory removes only the named network", () => {
-    recordTransaction({ ...base, network: "betanet" });
+    recordTransaction({ ...base, network: "mainnet" });
     recordTransaction({ ...base, txid: "ff", network: "signet" });
-    clearHistory("betanet");
-    expect(listHistory("betanet")).toHaveLength(0);
+    clearHistory("mainnet");
+    expect(listHistory("mainnet")).toHaveLength(0);
     expect(listHistory("signet")).toHaveLength(1);
   });
 
@@ -111,32 +111,32 @@ describe("history store", () => {
 
     it("flips pending rows to confirmed with the block height", async () => {
       recordTransaction(base);
-      await refreshHistoryStatuses("betanet", fetchOk);
-      const row = listHistory("betanet")[0];
+      await refreshHistoryStatuses("mainnet", fetchOk);
+      const row = listHistory("mainnet")[0];
       expect(row.status).toBe("confirmed");
       expect(row.blockHeight).toBe(777);
     });
 
     it("marks never-accepted txids as failed on a 404", async () => {
       recordTransaction(base);
-      await refreshHistoryStatuses("betanet", async () => {
+      await refreshHistoryStatuses("mainnet", async () => {
         throw new Error("Failed to fetch tx status: HTTP 404 Not Found");
       });
-      expect(listHistory("betanet")[0].status).toBe("failed");
+      expect(listHistory("mainnet")[0].status).toBe("failed");
     });
 
     it("leaves rows pending on non-404 errors", async () => {
       recordTransaction(base);
-      await refreshHistoryStatuses("betanet", async () => {
+      await refreshHistoryStatuses("mainnet", async () => {
         throw new Error("Failed to fetch tx status: HTTP 502 Bad Gateway");
       });
-      expect(listHistory("betanet")[0].status).toBe("pending");
+      expect(listHistory("mainnet")[0].status).toBe("pending");
     });
 
     it("skips rows that are already confirmed", async () => {
       recordTransaction({ ...base, status: "confirmed", blockHeight: 1 });
       const fetcher = jest.fn();
-      await refreshHistoryStatuses("betanet", fetcher);
+      await refreshHistoryStatuses("mainnet", fetcher);
       expect(fetcher).not.toHaveBeenCalled();
     });
 

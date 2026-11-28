@@ -13,8 +13,8 @@ describe("coinTypeFor", () => {
   it("returns 0 for mainnet", () => {
     expect(coinTypeFor("mainnet" as NetworkId)).toBe(0);
   });
-  it("returns 0 for betanet (mainnet fork)", () => {
-    expect(coinTypeFor("betanet" as NetworkId)).toBe(0);
+  it("returns 0 for mainnet (mainnet fork)", () => {
+    expect(coinTypeFor("mainnet" as NetworkId)).toBe(0);
   });
   it("returns 1 for signet, testnet, regtest, l2l-signet", () => {
     expect(coinTypeFor("signet" as NetworkId)).toBe(1);
@@ -40,8 +40,8 @@ describe("coinIdFor", () => {
   it("returns 'btc' for mainnet", () => {
     expect(coinIdFor("mainnet" as NetworkId)).toBe("btc");
   });
-  it("returns 'btc' for betanet (mainnet fork)", () => {
-    expect(coinIdFor("betanet" as NetworkId)).toBe("btc");
+  it("returns 'btc' for mainnet (mainnet fork)", () => {
+    expect(coinIdFor("mainnet" as NetworkId)).toBe("btc");
   });
   it("returns 'test' for signet, testnet, l2l-signet", () => {
     expect(coinIdFor("signet" as NetworkId)).toBe("test");
